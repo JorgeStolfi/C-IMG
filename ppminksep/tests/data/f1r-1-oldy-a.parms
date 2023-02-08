@@ -1,0 +1,11 @@
+# -inGamma 2.0 2.0 2.0
+-layer bg -color 178 166 147 / 255
+-layer ca -color 152 123 089 / 255
+-layer cb -color 255 000 255 / 255
+-layer sh -color 035 019 008 / 255
+-exceptions ex
+-stretched xx
+-shrink 0
+-bgColor 255 255 255 / 255
+# -outGamma 2.0 2.0 2.0
+

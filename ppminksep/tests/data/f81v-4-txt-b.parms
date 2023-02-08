@@ -1,0 +1,15 @@
+# Last edited on 2004-07-31 03:49:17 by stolfi
+# A tight enclosing tetrahedron
+
+# -inGamma 0.5 0.5 0.5
+# -inGamma 2.0 2.0 2.0
+# -logScale
+-layer bg -color 224 219 213 / 255 -remap 1.0 1.0 1.0 # Vellum
+-layer ca -color 114 140 103 / 255 -remap 0.0 1.0 0.7 # Green
+-layer cb -color 142 102 079 / 255 -remap 1.0 0.7 0.0 # Brown
+-layer sh -color 000 000 000 / 255 -remap 0.0 0.0 0.0 # Shadow
+-exceptions ex
+-stretched xx
+-bgColor 255 255 255 / 255
+# -outGamma 0.5 0.5 0.5
+# -outGamma 2.0 2.0 2.0

@@ -1,0 +1,20 @@
+# Last edited on 2004-07-30 19:51:18 by stolfi
+
+# -inGamma 0.5 0.5 0.5
+# -inGamma 2.0 2.0 2.0
+-layer bg -color 236 227 225 / 255 -remap 1.0 0.5 1.0 # Vellum
+-layer ca -color 105 136 109 / 255 -remap 0.0 1.0 0.7 # Green
+-layer cb -color 127 127 000 / 255 -remap 1.0 0.7 0.0 # Brown
+-layer sh -color 044 056 036 / 255 -remap 0.0 0.0 0.0 # Shadow
+-exceptions ex
+-stretched xx
+-bgColor 255 255 255 / 255
+-logScale
+# -outGamma 0.5 0.5 0.5
+# -outGamma 2.0 2.0 2.0
+
+# Green ink on edge of blotted area
+#  72 77 49
+#  70 82 59
+#  71 82 58
+#  74 83 57

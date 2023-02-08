@@ -1,0 +1,9 @@
+# Last edited on 2004-07-09 05:04:42 by stolfi
+
+{ define
+  bola = 
+  appearance { material { ks 0.0 } }
+  SPHERE
+    1.0
+    0.0 0.0 0.0
+}  

@@ -1,0 +1,34 @@
+# Last edited on 2004-07-29 07:04:32 by stolfi
+
+# -inGamma 2.0 2.0 2.0
+-logScale
+-layer bg -color 224 219 213 / 255 # Vellum
+-layer ca -color 101 127 096 / 255 # Green
+-layer cb -color 142 102 079 / 255 # Brown
+-layer sh -color 025 010 000 / 255 # Shadow
+-exceptions ex
+-stretched xx
+-bgColor 255 255 255 / 255
+# -outGamma 2.0 2.0 2.0
+
+# Brown on hair of nymph 2, second row:
+#  67 65 55
+#  66 63 50
+#  68 65 50
+#  66 69 60
+#  68 54 45
+#  64 56 48
+#  62 63 49
+
+# Green ink on edge of blotted area
+#  72 77 49
+#  70 82 59
+#  71 82 58
+#  74 83 57
+
+# Red ink on lips of nymphs
+#
+# 163 90 73
+# 155 85 72
+# 152 89 73
+

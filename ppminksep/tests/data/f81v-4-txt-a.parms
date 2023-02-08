@@ -1,0 +1,15 @@
+# Last edited on 2004-07-31 04:06:04 by stolfi
+# A tetrahedron that encloses all colors, not tightly
+
+# -inGamma 0.5 0.5 0.5
+# -inGamma 2.0 2.0 2.0
+# -logScale
+-layer bg -color 250 248 255 / 255 -remap 0.5 0.0 1.0 # Vellum
+-layer ca -color 152 170 090 / 255 -remap 0.3 1.0 0.0 # Green
+-layer cb -color 150 105 079 / 255 -remap 1.0 0.3 0.0 # Brown
+-layer sh -color 017 000 007 / 255 -remap 0.0 0.0 0.0 # Shadow
+-exceptions ex
+-stretched xx
+-bgColor 255 255 255 / 255
+# -outGamma 0.5 0.5 0.5
+# -outGamma 2.0 2.0 2.0

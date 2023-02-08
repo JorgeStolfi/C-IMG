@@ -1,0 +1,8 @@
+-layer bg -color 255 255 245 / 255
+-layer ca -color 230 217 189 / 255
+-layer cb -color 050 120 000 / 255
+-layer sh -color 045 000 000 / 255
+-exceptions ex
+-stretched xx
+-bgColor 255 255 255 / 255
+
