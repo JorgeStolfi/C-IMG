@@ -1,0 +1,18 @@
+#! /bin/bash -f
+# Last edited on 2010-06-06 18:48:39 by stolfi
+
+../pnmift \
+  -radius 1.1 \
+  -rootCost lum \
+  -pathCost mono \
+  -arcCost lum \
+  -output out/ladys-2 \
+  -roots out/ladys-2-roots.pgm \
+  -spread out/ladys-2-spread.pgm \
+  -extract 1 out/ladys-2-extract.pgm \
+  -boxes out/ladys-2-boxes.txt \
+  -plot out/ladys-2-trees.eps \
+  -lifo \
+  -verbose \
+  data/ladys.pgm
+

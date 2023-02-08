@@ -1,0 +1,15 @@
+# Last edited on 2010-06-07 12:21:42 by stolfi
+
+Files for testing the {pnmift} program.
+
+  XXXXX.{pgm|ppm} - input images
+  
+  XXXXX-N.doit      - script to run test N on image XXXXX.{pgm|ppm}
+  XXXXX-N-seeds.pgm - seed positions and labels (value 0 = not a seed)
+  XXXXX-N-seeds.txt - seed positions and labels (ditto)
+  
+Special files:
+
+  footb-0-seeds.ppm - seeds used by Spina et al (yellow and blue pixels)
+  footb-0-segm.ppm  - segmentation of footb.ppm by Spina et al.
+  

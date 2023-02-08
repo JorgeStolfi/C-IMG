@@ -1,0 +1,16 @@
+#! /bin/bash -f
+# Last edited on 2010-06-07 13:20:14 by stolfi
+
+../pnmift \
+  -seedImage data/footb-1-seeds.pgm \
+  -radius 1.0 \
+  -rootCost zero \
+  -arcCost ediff_yuv \
+  -pathCost max \
+  -output out/footb-1 \
+  -roots out/footb-1-roots.pgm \
+  -extract 1 out/footb-1-extract.ppm \
+  -boxes out/footb-1-boxes.txt \
+  -verbose \
+  data/footb.ppm
+

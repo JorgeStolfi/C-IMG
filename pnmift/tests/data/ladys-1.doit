@@ -1,0 +1,19 @@
+#! /bin/bash -f
+# Last edited on 2010-06-06 18:07:38 by stolfi
+
+../pnmift \
+  -seedPixels data/ladys-1-seeds.txt \
+  -radius 1.0 \
+  -rootCost zero \
+  -arcCost ediff_rgb \
+  -pathCost max \
+  -output out/ladys-1 \
+  -roots out/ladys-1-roots.pgm \
+  -spread out/ladys-1-spread.pgm \
+  -extract 1 out/ladys-1-extract.pgm \
+  -boxes out/ladys-1-boxes.txt \
+  -plot out/ladys-1-trees.eps \
+  -reverse \
+  -verbose \
+  data/ladys.pgm
+

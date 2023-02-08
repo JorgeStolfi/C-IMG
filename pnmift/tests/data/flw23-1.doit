@@ -1,0 +1,19 @@
+#! /bin/bash -f
+# Last edited on 2010-06-06 21:56:24 by stolfi
+
+../pnmift \
+  -seedImage data/flw23-1-seeds.pgm \
+  -radius 1.5 \
+  -rootCost zero \
+  -arcCost ediff_rgb \
+  -pathCost max \
+  -output out/flw23-1 \
+  -roots out/flw23-1-roots.pgm \
+  -spread out/flw23-1-spread.ppm \
+  -extract 1 out/flw23-1-extract.ppm \
+  -boxes out/flw23-1-boxes.txt \
+  -plot out/flw23-1-trees.eps \
+  -reverse \
+  -verbose \
+  data/flw23.ppm
+

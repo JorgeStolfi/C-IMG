@@ -1,0 +1,18 @@
+#! /bin/csh -f
+# Last edited on 2010-06-06 19:53:54 by stolfi
+
+../pnmift \
+  -seedPixels data/figs1-1-seeds.txt \
+  -radius 1.0 \
+  -rootCost zero \
+  -arcCost ediff_rgb \
+  -pathCost max \
+  -output out/figs1-1 \
+  -roots out/figs1-1-roots.pgm \
+  -spread out/figs1-1-spread.pgm \
+  -extract 1 out/figs1-1-extract.pgm \
+  -plot out/figs1-1-trees.eps \
+  -reverse \
+  -verbose \
+  data/figs1.pgm
+

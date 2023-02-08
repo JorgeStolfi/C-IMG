@@ -1,0 +1,12 @@
+#! /bin/csh -f
+
+../pnmift \
+  -seedPixels data/mrng3-1-seeds.txt \
+  -radius 1.0 \
+  -rootCost zero \
+  -arcCost ediff_rgb \
+  -pathCost max \
+  -output out/mrng3-1 \
+  -extract 1 out/mrng3-1-extract.pgm \
+  -verbose \
+  data/mrng3.pgm

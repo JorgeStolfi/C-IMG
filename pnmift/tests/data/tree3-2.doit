@@ -1,0 +1,14 @@
+#! /bin/csh -f
+# Last edited on 2010-06-06 20:37:27 by stolfi
+
+../pnmift \
+  -radius 1.5 \
+  -pathCost mono \
+  -rootCost lum \
+  -arcCost lum \
+  -output out/tree3-2 \
+  -roots out/tree3-2-roots.pgm \
+  -extract 1 out/tree3-2-extract.pgm \
+  -lifo \
+  -verbose \
+  data/tree3.pgm

@@ -1,0 +1,13 @@
+#! /bin/csh -f
+# Last edited on 2010-06-06 20:33:25 by stolfi
+
+../pnmift \
+  -seedPixels data/tree3-1-seeds.txt \
+  -radius 1.5 \
+  -rootCost zero \
+  -pathCost max \
+  -arcCost ediff_rgb \
+  -output out/tree3-1 \
+  -extract 1 out/tree3-1-extract.pgm \
+  -verbose \
+  data/tree3.pgm

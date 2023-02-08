@@ -1,0 +1,16 @@
+#! /bin/csh -f
+# Last edited on 2010-06-06 21:09:06 by stolfi
+
+../pnmift \
+  -seedPixels data/unifm-3-seeds.txt \
+  -radius 1.0 \
+  -rootCost zero \
+  -pathCost max \
+  -arcCost ediff_rgb \
+  -output out/unifm-3 \
+  -plot out/unifm-3-trees.eps \
+  -roots out/unifm-3-roots.pgm \
+  -maxCostValue 1 \
+  -lifo \
+  -verbose \
+  data/unifm.pgm
