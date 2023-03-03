@@ -4,7 +4,7 @@
 
 #define pnmift_C_COPYRIGHT "Copyright © 2001 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2023-02-08 01:05:26 by stolfi */
+/* Last edited on 2023-02-12 07:53:24 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME  " \\\n" \
@@ -565,13 +565,13 @@ void pnmift_set_labels_and_costs_from_text_file
         else if (ch == '#')
           { while ((ch != '\n') && (ch != EOF)) { ch = fgetc(f); } }
         else if (ch == '(')
-          { int32_t col = fget_int(f); 
+          { int32_t col = fget_int32(f); 
             demand((col >= 0) && (col < G->cols), "bad col in seed file"); 
-            int32_t row = fget_int(f);
+            int32_t row = fget_int32(f);
             demand((row >= 0) && (row < G->rows), "bad row in seed file");
-            fget_skip_and_match(f, ")");
-            fget_skip_and_match(f, "=");
-            int32_t lab = fget_int(f);
+            fget_skip_spaces_and_match(f, ")");
+            fget_skip_spaces_and_match(f, "=");
+            int32_t lab = fget_int32(f);
             demand((lab >= 0) && (lab <= pnmift_MAX_LABEL), "bad label in seed file");
             int32_t ig = ift_node_index(G, (int16_t)col, (int16_t)row);
             ift_node_t *pg = &(G->node[ig]);
@@ -866,9 +866,9 @@ options_t *pnmift_parse_options(int32_t argc, char **argv)
 void skip_rest_of_line(FILE *f)
   {
     fget_skip_spaces(f);
-    int32_t ch;
     if (fget_test_char(f, '#'))
-      { do { ch = fgetc(f); } while ((ch != EOF) || (ch != '\n')); }
+      { int32_t r; char c;
+        do { r = fgetc(f); c = (char)r; } while ((r != EOF) || (c != '\n')); }
     else
       { fget_eol(f); }
   }

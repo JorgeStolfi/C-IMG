@@ -1,8 +1,10 @@
 # Prerequisites
 *.d
+Deps.make
 
 # Object files
 *.o
+*.ho
 *.ko
 *.obj
 *.elf
@@ -50,3 +52,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Editor backup files
+*~

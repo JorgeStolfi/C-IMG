@@ -4,7 +4,7 @@
 
 /* Copyright © 2006 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2017-06-24 01:51:05 by stolfilocal */
+/* Last edited on 2023-02-23 19:27:45 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME "\\\n" \
@@ -137,8 +137,8 @@ typedef enum {
 typedef struct options_t 
   { Input_Fmt_t ifmt;     /* Format of input file. */
     Window_Type_t wtype;  /* Window function type. */
-    int wsize;            /* Window width. */
-    int stride;           /* Samples to skip between successive windows. */
+    int32_t wsize;            /* Window width. */
+    int32_t stride;           /* Samples to skip between successive windows. */
     double vmin;          /* Map this spectrogram value to 0.0 output. */
     double vmax;          /* Map this spectrogram value to 1.0 output. */
     Output_Fmt_t ofmt;    /* Format of output file. */
@@ -148,58 +148,58 @@ typedef struct options_t
 
 sound_t read_signal(FILE *rd, Input_Fmt_t ifmt);
 sound_t read_signal_ascii(FILE *rd);
-void write_output_header(FILE *wr, Output_Fmt_t ofmt, int ne, int nf, double tstep, double fstep);
-void write_frame(FILE *wr, double_vec_t *fr, double t, double fstep, Output_Fmt_t ofmt, double vmin, double vmax);
+void write_output_header(FILE *wr, Output_Fmt_t ofmt, int32_t ne, int32_t nf, double tstep, double fstep);
+void write_frame(FILE *wr, int32_t nfrq, double pwr[], double t, double fstep, Output_Fmt_t ofmt, double vmin, double vmax);
 void write_output_trailer(FILE *wr, Output_Fmt_t ofmt);
 void compute_frame
   ( sound_t *s, 
-    int skip, 
+    int32_t skip, 
     Window_Type_t wtype,
-    int nw,
+    int32_t nw,
     fftw_complex *in, 
     fftw_complex *out, 
     fftw_plan *plan,
-    double_vec_t *fr
+    double pwr[]
   );
-void update_egram_range(double_vec_t *fr, double *emin, double *emax);
+void update_egram_range(int32_t nfrq, double pwr[], double *emin, double *emax);
 double safelog(double v, double vmin);
-options_t* get_options(int argc, char **argv);
+options_t* get_options(int32_t argc, char **argv);
 
-int main(int argc, char **argv);
+int32_t main(int32_t argc, char **argv);
 
 /* IMPLEMENTATIONS */
 
-int main(int argc, char **argv)
+int32_t main(int32_t argc, char **argv)
   {
     options_t *o = get_options(argc, argv);
     
-    sound_t s = read_signal(stdin, o->ifmt);
-    fprintf(stderr, "input channels = %d\n", s.nc);
-    fprintf(stderr, "input samples %d\n", s.ns);
-    fprintf(stderr, "sampling frequency = %.4f  Hz\n", s.fsmp);
+    sound_t si = read_signal(stdin, o->ifmt);
+    fprintf(stderr, "input channels = %d\n", si.nc);
+    fprintf(stderr, "input samples %d\n", si.ns);
+    fprintf(stderr, "sampling frequency = %.4f  Hz\n", si.fsmp);
     
     /* Sampling step: */
-    double tstep = 1.0/s.fsmp;
+    double tstep = 1.0/si.fsmp;
     fprintf(stderr, "sampling step = %.6f sec\n", tstep);
 
     /* Get number {nw} of time steps in window: */
-    int nw = o->wsize;
-    fprintf(stderr, "window size = %d samples (%.6f sec)\n", nw, ((double)nw)/s.fsmp);
+    int32_t nw = o->wsize;
+    fprintf(stderr, "window size = %d samples (%.6f sec)\n", nw, ((double)nw)/si.fsmp);
     
     /* Get number {stride} os samples between spectrograms: */
-    int stride = o->stride;
-    fprintf(stderr, "frame spacing = %d samples (%.6f sec)\n", stride, ((double)stride)/s.fsmp);
+    int32_t stride = o->stride;
+    fprintf(stderr, "frame spacing = %d samples (%.6f sec)\n", stride, ((double)stride)/si.fsmp);
     
     /* Get number {nf} of frames in spectrogram: */
-    int nf = (s.ns - nw)/stride + 1; 
+    int32_t nf = (si.ns - nw)/stride + 1; 
     fprintf(stderr, "number of frames = %d\n", nf);
     
-    /* Get number {ne} of values (freqs) in each frame of the spectrogram: */
-    int ne = nw/2 + 1;
-    fprintf(stderr, "number of frequencies = %d\n", ne);
+    /* Get number {nfrq} of values (freqs) in each frame of the spectrogram: */
+    int32_t nfrq = nw/2 + 1;
+    fprintf(stderr, "number of distinct frequencies = %d\n", nfrq);
     
     /* Frequency step: */
-    double fstep = s.fsmp/nw;
+    double fstep = si.fsmp/nw;
     fprintf(stderr, "frequency step = %.3f Hz\n", fstep);
     
     /* Allocate working storage for Fast Fourier Transform (FFT): */
@@ -212,24 +212,23 @@ int main(int argc, char **argv)
     plan = fftw_plan_dft_1d(nw, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
 
     /* Output header: */
-    write_output_header(stdout, o->ofmt, ne, nf, tstep, fstep);
+    write_output_header(stdout, o->ofmt, nfrq, nf, tstep, fstep);
     
     /* Compute frames and output them: */
-    double_vec_t fr = double_vec_new(ne); /* Power spectrum of slice. */
+    double pwr[nfrq]; /* Power spectrum of slice. */
     double emin = +INFINITY;
     double emax = -INFINITY;
-    int ifr;
-    for (ifr = 0; ifr < nf; ifr++)
+    for (int32_t ifrm = 0; ifrm < nf; ifrm++)
       { 
-        /* Compute index {i} of first sample in frame: */
-        int i = ifr*stride;
+        /* Compute index {skip} of first sample in frame: */
+        int32_t skip = ifrm*stride;
         /* Compute time at center of window: */
-        double t = (i + 0.5*nw)/s.fsmp; 
+        double t = (skip + 0.5*nw)/si.fsmp; 
         /* Compute the power spectrum: */
-        compute_frame(&s, i, o->wtype, nw, in, out, &plan, &fr);
-        update_egram_range(&fr, &emin, &emax);
+        compute_frame(&si, skip, o->wtype, nw, in, out, &plan, pwr);
+        update_egram_range(nfrq, pwr, &emin, &emax);
         /* Write it out: */
-        write_frame(stdout, &fr, t, fstep, o->ofmt, o->vmin, o->vmax);
+        write_frame(stdout, nfrq, pwr, t, fstep, o->ofmt, o->vmin, o->vmax);
       }
       
     /* Show egram range: */
@@ -238,7 +237,7 @@ int main(int argc, char **argv)
     /* Output header: */
     write_output_trailer(stdout, o->ofmt);
 
-    fprintf(stderr, "fim.\n");
+    fprintf(stderr, "done.\n");
     return 0;
   }
   
@@ -261,13 +260,13 @@ sound_t read_signal(FILE *rd, Input_Fmt_t ifmt)
 
 sound_t read_signal_ascii(FILE *rd)
   {
-    int nc = nget_int(rd, "channels"); fget_eol(rd);
-    int ns = nget_int(rd, "samples");  fget_eol(rd);
+    int32_t nc = nget_int32(rd, "channels"); fget_eol(rd);
+    int32_t ns = nget_int32(rd, "samples");  fget_eol(rd);
     double fsmp = nget_double(rd, "frequency");  fget_eol(rd);
-    sound_t s = jsa_allocate_sound(nc, ns); 
+    sound_t si = jsa_allocate_sound(nc, ns); 
 
-    int r = getc(rd);
-    int k = 0; /* Sample index */
+    int32_t r = getc(rd);
+    int32_t k = 0; /* Sample index */
     while (TRUE)
       { /* Skip spaces and TABs: */
         while ((r == '\011') || (r == ' ')) { r = getc(rd); }
@@ -281,35 +280,34 @@ sound_t read_signal_ascii(FILE *rd)
           { /* Data line, read time {t} and {nc} channel samples: */
             ungetc(r, rd);
             (void)fget_double(rd); /* Sampling time. */
-            int c; /* Channel index. */
-            for (c = 0; c < nc; c++) { s.sv[c][k] = fget_double(rd); }
+            for (int32_t c = 0; c < nc; c++) { si.sv[c][k] = fget_double(rd); }
             k++;
             fget_eol(rd);
           }
         r = getc(rd);
       }
     assert(k == ns);
-    s.ns = ns;
-    s.fsmp = fsmp;
-    return s;
+    si.ns = ns;
+    si.fsmp = fsmp;
+    return si;
   }       
 
 /* Max pixel value for PGM output: */
 #define PGM_MAXVAL 65535
 
-void write_output_header(FILE *wr, Output_Fmt_t ofmt, int ne, int nf, double tstep, double fstep)
+void write_output_header(FILE *wr, Output_Fmt_t ofmt, int32_t nfrq, int32_t nf, double tstep, double fstep)
   { 
     if (ofmt == OFM_PGM)
       { 
         fprintf(wr, "P2\n"); /* PGM ASCII format. */
-        fprintf(wr, "%d %d\n", ne, nf); /* Width and height of image. */
+        fprintf(wr, "%d %d\n", nfrq, nf); /* Width and height of image. */
         fprintf(wr, "%d\n", PGM_MAXVAL);
       }
     else if (ofmt == OFM_ASCII)
       {
         fprintf(wr, "# tstep = %24.16e\n", tstep);
         fprintf(wr, "# fstep = %24.16e\n", fstep);
-        fprintf(wr, "# freqs = %d\n", ne);
+        fprintf(wr, "# freqs = %d\n", nfrq);
         fprintf(wr, "# times = %d\n", nf);
       }
     else
@@ -323,30 +321,33 @@ double safelog(double v, double vmin)
     return log(hypot(v, vmin));
   }
 
-void write_frame(FILE *wr, double_vec_t *fr, double t, double fstep, Output_Fmt_t ofmt, double vmin, double vmax)
+void write_frame(FILE *wr, int32_t nfrq, double pwr[], double t, double fstep, Output_Fmt_t ofmt, double vmin, double vmax)
   { 
     if (ofmt == OFM_PGM)
       { 
         /* Make sure that {vmin} is positive, to avoid {log} errors: */
         if (vmin <= 0) { vmin = 1.0e-100; }
-        double umin = safelog(vmin, vmin);
-        double umax = safelog(vmax, vmin);
-        int k;
-        for (k = 0; k < fr->ne; k++)
+        /* Ensure {vmax > vmin}, to avoid divide by zero: */
+        if (vmax <= vmin) { vmax = (1 + 1.0e-14)*vmin; }
+        double umin = log(vmin);
+        double umax = log(vmax);
+        for (int32_t k = 0; k < nfrq; k++)
           { if (k > 0) { fprintf(wr, "%c", (k % 10 == 0 ? '\n' : ' ')); }
-            double u = safelog(fr->e[k], vmin);
+            double pk = fmin(vmax, fmax(vmin, pwr[k]));
+            double u = log(pk);
             double v = (u - umin)/(umax - umin); 
+            assert(isfinite(v));
             if (v < 0.0) { v = 0.0; }
             if (v > 1.0) { v = 1.0; }
-            fprintf(wr, "%d", (int)(v*PGM_MAXVAL + 0.5)); 
+            int32_t vi = (int32_t)(v*PGM_MAXVAL + 0.5);
+            assert((vi >= 0) && (vi <= PGM_MAXVAL));
+            fprintf(wr, "%d", vi); 
           }
         fprintf(wr, "\n");  
       }
     else if (ofmt == OFM_ASCII)
-      {
-        int k;
-        for (k = 0; k < fr->ne; k++)
-          { double v = (fr->e[k] - vmin)/(vmax - vmin);
+      { for (int32_t k = 0; k < nfrq; k++)
+          { double v = (pwr[k] - vmin)/(vmax - vmin);
             fprintf(wr, "%24.16e %24.16e %24.16e\n", t, k*fstep, v);
           }
         fprintf(wr, "\n");
@@ -373,33 +374,31 @@ void write_output_trailer(FILE *wr, Output_Fmt_t ofmt)
   }
   
 void compute_frame
-  ( sound_t *s, 
-    int skip, 
+  ( sound_t *si, 
+    int32_t skip, 
     Window_Type_t wtype,
-    int nw,
+    int32_t nw,
     fftw_complex *in, 
     fftw_complex *out, 
     fftw_plan *plan,
-    double_vec_t *fr
+    double pwr[]
   )
   {
-    int ne = fr->ne; /* Number of frequencies in power spectrum. */
-    assert(ne == nw/2 + 1);
+    int32_t nfrq = nw/2 + 1; /* Number of distinct frequencies. */
 
     /* Power spectrum normalization factor: */
     double norm = 1.0/nw;
 
     /* Extract samples {0..nw-1} of frame: */
-    assert(skip + nw <= s->ns); 
-    int k;
-    for (k = 0; k < nw; k++) { in[k][0] = s->sv[0][skip+k]; in[k][1] = 0.0; }
+    assert(skip + nw <= si->ns); 
+    for (int32_t k = 0; k < nw; k++) { in[k][0] = si->sv[0][skip+k]; in[k][1] = 0.0; }
     
     /* Apply window function: */
     if (wtype == WIN_RECT) 
       { /* Nothing to do. */ }
     else if (wtype == WIN_HANN)
       { /* Multiply {tr} by the Hann window: */
-        for (k = 0; k < nw; k++) 
+        for (int32_t k = 0; k < nw; k++) 
           { double x = M_PI*(2*((double)k)/((double)nw) - 1.0);
             double w = 0.5*(1.0 + cos(x)); 
             in[k][0] *= w; in[k][1] *= w;
@@ -409,27 +408,25 @@ void compute_frame
     /* Compute discrete transform: */
     fftw_execute(*plan);
     
-    /* Save power spectrum in {fr}: */
-    int f;
-    for (f = 0; f < ne; f++)
+    /* Save power spectrum in {pwr}: */
+    for (int32_t f = 0; f < nfrq; f++)
       { double rep = out[f][0], imp = out[f][1];
         double sum = rep*rep + imp*imp;
         if ((f > 0) && (f < nw - f))
           { /* Term with frequency {-f}: */
-            int g = nw - f;
+            int32_t g = nw - f;
             double rem = out[g][0], imm = out[g][1];
             sum += rem*rem + imm*imm;
           }
-        fr->e[f] = sum * norm;          
+        pwr[f] = sum * norm;          
       } 
   }
 
-void update_egram_range(double_vec_t *fr, double *emin, double *emax)
+void update_egram_range(int32_t nfrq, double pwr[], double *emin, double *emax)
   {
-    int ne = fr->ne;
-    int f;
-    for (f = 0; f < ne; f++)
-      { double v = fr->e[f]; 
+    int32_t f;
+    for (f = 0; f < nfrq; f++)
+      { double v = pwr[f]; 
         if (v < (*emin)) { (*emin) = v; }
         if (v > (*emax)) { (*emax) = v; }
       }
@@ -437,7 +434,7 @@ void update_egram_range(double_vec_t *fr, double *emin, double *emax)
 
 #define MAX_WSIZE 9192
 
-options_t* get_options(int argc, char **argv)
+options_t* get_options(int32_t argc, char **argv)
   {
     argparser_t *pp = argparser_new(stderr, argc, argv);
     argparser_set_help(pp, PROG_NAME " version " PROG_VERS ", usage:\n" PROG_HELP);
@@ -461,10 +458,10 @@ options_t* get_options(int argc, char **argv)
       { o->wtype = WIN_RECT; }
     else
       { argparser_error(pp, "missing or invalid window function"); }
-    o->wsize = (int)argparser_get_next_int(pp, 1, MAX_WSIZE);
+    o->wsize = (int32_t)argparser_get_next_int(pp, 1, MAX_WSIZE);
     
     if (argparser_keyword_present(pp, "-stride"))
-      { o->stride = (int)argparser_get_next_int(pp, 0, MAXINT); }
+      { o->stride = (int32_t)argparser_get_next_int(pp, 0, MAXINT); }
     else 
       { o->stride = o->wsize/8; }
 
