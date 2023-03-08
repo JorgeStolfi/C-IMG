@@ -1,0 +1,41 @@
+# Last edited on 2008-09-25 14:47:24 by stolfi
+# Radial spectrum of an image
+
+  gnuplot
+  
+  set term x11
+  
+  # Area of circle of radius {r}:
+  area1(r) = pi*r*r
+  
+  # Area of Maltese cross with radius {r}: 
+  area2(r) = (r < 0.5 ? 0 : (r > sqrt(0.5) ? 1 : 2*sqrt(r**2 - 0.25)))
+  
+  #  Area of circular wedges betwen arms of Maltese cross: 
+  area3(r) = (r < 0.5 ? pi*r*r : (r > sqrt(0.5) ? 0 : r**2*(pi - 4*acos(1/(2*r)))))
+  
+  # Area of circle with radiur {r} intersected with square of side 1:
+  area(r) = area2(r) + area3(r)
+  
+  set xrange [0:1]
+  plot area(x),area2(x),area3(x) with lines
+  pause 30 
+  
+  # Numerical derivative:
+  darea(r) = (area(r + 0.001) - area(r))/0.001
+  
+  # Approximage inverse - given area, compute {r}:
+  
+  # Inverse for area < pi/4:
+  radius1(a) = (a > pi/4 ? 0 : sqrt(a/pi)) 
+  
+  # Approximate inverse for area in {[pi/4 _ 1]}:
+  radius2(a) = (a < pi/4 ? 0 : (a > 1 ? sqrt(0.5) : sqrt(0.5) - (sqrt(0.5) - 0.5)*sqrt((1 - a)/(1 - pi/4))))
+  
+  # Approximage inverse for are {a} in {[0 _ 1]}:
+  radius(a) = (a < pi/4 ? radius1(a) : radius2(a))
+  
+  set xrange [0:1]; plot  radius(x),area(radius(x)), radius(area(x)) with lines
+  
+  EOF
+  
