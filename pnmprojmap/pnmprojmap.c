@@ -2,7 +2,7 @@
 #define PROG_DESC "applies a projective map to a pbm/ppm/pgm file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-03-03 03:31:56 by stolfi */
+/* Last edited on 2023-03-18 11:39:02 by stolfi */
 
 /* Copyright © 2002 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
@@ -147,7 +147,7 @@
   "  ago/2010 Added the \"-interpolate\" option.  J. Stolfi, IC-UNICAMP.\n" \
   "  ago/2010 Added the \"-isMask\" option.  J. Stolfi, IC-UNICAMP.\n" \
   "  mar/2017 Moved matrix help and parsing to {argparser_geo.h}  J. Stolfi, IC-UNICAMP.\n" \
-  "  mar/2023 Converted {it} to {int32_t}.  J. Stolfi, IC-UNICAMP.\n" \
+  "  mar/2023 Converted {int} to {int32_t}.  J. Stolfi, IC-UNICAMP.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \
