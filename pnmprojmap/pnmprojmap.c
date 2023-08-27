@@ -2,7 +2,7 @@
 #define PROG_DESC "applies a projective map to a pbm/ppm/pgm file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-03-18 11:39:02 by stolfi */
+/* Last edited on 2023-08-26 23:52:06 by stolfi */
 
 /* Copyright © 2002 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
@@ -17,6 +17,9 @@
   "    [ -undef {DEFVAL} | -extend ] \\\n" \
   "    " imgc_parse_output_size_HELP " \\\n" \
   "    " imgc_parse_output_center_org_HELP " \\\n" \
+  "    [ -scale {SCALE} ] \\\n" \
+  "    [ { -map {TAG} {XIP} {YIP} }.. ] \\\n" \
+  "    [ { -unmap {TAG} {XOP} {YOP} }.. ] \\\n" \
   "    [ -maxval {MV_OUT} ] \\\n" \
   "    [ -isMask {ISMASK} ] \\\n" \
   "    [ -verbose ] \\\n" \
@@ -82,6 +85,19 @@
   imgc_parse_output_size_HELP_INFO "  If omitted, the output image" \
   " will have the same size as the input one.\n" \
   "\n" \
+  "  -scale {SCALE}\n" \
+  "    If this paramter is present, it applies the scaling" \
+  " factor {SCALE} to the output image, including the the" \
+  " size of the output image, the  pixel colum and row of" \
+  " its coordinate system origin, and the projective" \
+  " map.  If omitted, no extra scaling is applied (same as \"-scale 1\").\n" \
+  "\n" \
+  "  -map {TAG} {XIP} {YIP}\n" \
+  "    If this parameter is present, it prints to standard error the coordinates of the point on the output image that corresponds to point {(XIP,YIP)} of the input image. The {TAG} is an arbitrary alphanumeric string that identifies the point, and is printed as given.  All coordinate axis and origin parameters are taken into account.  This parameter can be repeated any number of times.\n" \
+  "\n" \
+  "  -unmap {TAG} {XOP} {YOP}\n" \
+  "    Analogous to \"-map\", but prnts the point on the input image that corresponds to point {(XOP,YOP)} of the output image.  This parameter can be repeated any number of times.\n" \
+  "\n" \
   "  -maxval {MV_OUT}\n" \
   "    Specifies {MV_OUT} as the maximum sample value for the" \
   " output image.  It must be an integer between 255 and 65535," \
@@ -103,8 +119,9 @@
   "  -debug {XD_OUT} {YD_OUT}\n" \
   "    If this option is present, the program prints out" \
   " debugging information about the computation of the" \
-  " pixel in column {Xdo} (counting from 0, left to right) and" \
-  " row {YD_OUT} (counting from 0, top to bottom) of the output image."
+  " pixel in column {XD_OUT} (counting from 0, left to right) and" \
+  " row {YD_OUT} (counting from 0, top to bottom) of the" \
+  " output image (after scaling, if \"-scale\" was specified)."
 
 #define PROG_INFO \
   "NAME\n" \
@@ -137,17 +154,21 @@
   "  Created aug/2002 by Jorge Stolfi, IC-UNICAMP as \"pnmgtran\".\n" \
   "\n" \
   "MODIFICATION HISTORY\n" \
-  "  nov/2006 Rewritten to use sane PNM, argparser, etc. by J. Stolfi, IC-UNICAMP.\n" \
-  "  jun/2007 Added \"-points\" option.  J. Stolfi, IC-UNICAMP.\n" \
-  "  jul/2007 Added \"-xAxis\", \"-yAxis\" options.  J. Stolfi, IC-UNICAMP.\n" \
-  "  aug/2007 Rearranged the points in \"-points\".  J. Stolfi, IC-UNICAMP.\n" \
-  "  jan/2008 Moved radial distortion to \"pnmradist\".  J. Stolfi, IC-UNICAMP.\n" \
-  "  jan/2008 Renamed from \"pnmgtran\" to \"pnmprojmap\".  J. Stolfi, IC-UNICAMP.\n" \
-  "  jan/2008 Added the \"-extend\" option.  J. Stolfi, IC-UNICAMP.\n" \
-  "  ago/2010 Added the \"-interpolate\" option.  J. Stolfi, IC-UNICAMP.\n" \
-  "  ago/2010 Added the \"-isMask\" option.  J. Stolfi, IC-UNICAMP.\n" \
-  "  mar/2017 Moved matrix help and parsing to {argparser_geo.h}  J. Stolfi, IC-UNICAMP.\n" \
-  "  mar/2023 Converted {int} to {int32_t}.  J. Stolfi, IC-UNICAMP.\n" \
+  "  All changes by J. Stolfi, IC-UNICAMP unless otherwise noted.\n" \
+  "\n" \
+  "  nov/2006 Rewritten to use sane PNM, argparser, etc.\n" \
+  "  jun/2007 Added \"-points\" option.\n" \
+  "  jul/2007 Added \"-xAxis\", \"-yAxis\" options.\n" \
+  "  aug/2007 Rearranged the points in \"-points\".\n" \
+  "  jan/2008 Moved radial distortion to \"pnmradist\".\n" \
+  "  jan/2008 Renamed from \"pnmgtran\" to \"pnmprojmap\".\n" \
+  "  jan/2008 Added the \"-extend\" option.\n" \
+  "  ago/2010 Added the \"-interpolate\" option.\n" \
+  "  ago/2010 Added the \"-isMask\" option.\n" \
+  "  mar/2017 Moved matrix help and parsing to {argparser_geo.h}\n" \
+  "  mar/2023 Converted {int} to {int32_t}.\n" \
+  "  aug/2023 Added the \"-scale\" option.\n" \
+  "  aug/2023 Added the \"-map\" and \"-unmap\" options.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \
@@ -165,12 +186,14 @@
 #include <stdint.h>
 #include <math.h>
 
+#include <bool.h>
 #include <i2.h>
 #include <r2.h>
 #include <r2_extra.h>
 #include <r2x2.h>
 #include <r3x3.h>
 #include <hr2.h>
+#include <vec.h>
 
 #include <jspnm.h>
 #include <interval.h>
@@ -188,30 +211,43 @@
 #include <argparser.h>
 #include <argparser_geo.h>
 
+typedef struct mpoint_t 
+  { char *tag;   /* Point tag. */
+    r2_t p;      /* Given point coordinates. */
+    bool_t inv;  /* False maps input to output, true the inverse. */
+  } mpoint_t;
+  /* Data about an image point given to "-map" or "-unmap". */
+  
+vec_typedef(mpoint_vec_t,mpoint_vec,mpoint_t);
+  /* An expandable vector of {mpoint_t}. */
+
 typedef struct options_t 
-  { char *fname;         /* Input file name. */
+  { char *fname;           /* Input file name. */
     /* Global coordinate system and encoding options: */
-    bool_t yDown;        /* TRUE if the vertical axis points down, FALSE otherwise. */
-    bool_t xLeft;        /* TRUE if the horizontal axis points left, FALSE otherwise. */
+    bool_t yDown;          /* TRUE if the vertical axis points down, FALSE otherwise. */
+    bool_t xLeft;          /* TRUE if the horizontal axis points left, FALSE otherwise. */
     /* Image-specific coordinate system options: */
-    bool_t iCenter;      /* If TRUE, input origin is center; if FALSE, use {iOrg}. */
-    r2_t iOrg;           /* Input origin relative to default origin, if {!iCenter}. */
-    bool_t oCenter;      /* If TRUE, output origin is center; if FALSE, use {oOrg}. */ 
-    r2_t oOrg;           /* Output origin relative to default origin, if {!oCenter}. */
+    bool_t iCenter;        /* If TRUE, input origin is center; if FALSE, use {iOrg}. */
+    r2_t iOrg;             /* Input origin relative to default origin, if {!iCenter}. */
+    bool_t oCenter;        /* If TRUE, output origin is center; if FALSE, use {oOrg}. */ 
+    r2_t oOrg;             /* Output origin relative to default origin, if {!oCenter}. */
     /* Output image attributes: */
-    int32_t oCols;       /* X size of output image, or -1 if not given. */
-    int32_t oRows;       /* Y size of output image, or -1 if not given. */
-    uint16_t maxval;     /* Output maxval requested by user, or 0 if not given. */
+    int32_t oCols;         /* X size of output image, or -1 if not given. */
+    int32_t oRows;         /* Y size of output image, or -1 if not given. */
+    uint16_t maxval;       /* Output maxval requested by user, or 0 if not given. */
     /* Geometry transformation options: */
-    hr2_pmap_t M;        /* The geometric transformation. */
+    hr2_pmap_t M;          /* The geometric transformation. */
+    double scale;          /* Extra output scaling factor. */
     /* Input image encoding and interpolation options: */
-    bool_t isMask;       /* TRUE to interpret samples as in masks. */
-    bool_t extend;       /* TRUE extends the the image by row/col replication. */
-    float undef;         /* Input image epadding value, if {extend} is false. */
-    int32_t interpolate; /* Interpolation order. */
+    bool_t isMask;         /* TRUE to interpret samples as in masks. */
+    bool_t extend;         /* TRUE extends the the image by row/col replication. */
+    float undef;           /* Input image epadding value, if {extend} is false. */
+    int32_t interpolate;   /* Interpolation order. */
+    /* Point mapping/unmapping options: */
+    mpoint_vec_t mum;     /* Points to be mapped or unmapped. */
     /* Debugging options: */
-    bool_t verbose;      /* TRUE to print global statistics. */
-    i2_t debug;          /* PBM indices of output pixel to debug; or (-1,-1). */
+    bool_t verbose;        /* TRUE to print global statistics. */
+    i2_t debug;            /* PBM indices of output pixel to debug; or (-1,-1). */
   } options_t;
   /* The transformation conceptually consists of moving the color from
     each point {ip} of the input image's domain (in the user's input
@@ -284,16 +320,30 @@ int32_t main(int32_t argc, char **argv)
     FILE *rd = open_read(o->fname, o->verbose);
     float_image_t *im_in = read_image(rd, &iCols, &iRows, &chns, &maxval_in, o->isMask, o->verbose);
     
+    /* Compute US to FS coord system map {isys} for input image: */
+    hr2_pmap_t isys = imgc_coord_sys_map(o->xLeft, o->yDown, o->iCenter, &(o->iOrg), iCols, iRows);
+    if (o->verbose) { print_pmap(stderr, "input coord system", &(isys)); }
+    
     /* Provide default size of output image: */
     int32_t oCols = (o->oCols < 0 ? iCols : o->oCols);
     int32_t oRows = (o->oRows < 0 ? iRows : o->oRows);
 
-    /* Adjust coordinate transformation to account for coord system options: */
-    hr2_pmap_t isys = imgc_coord_sys_map(o->xLeft, o->yDown, o->iCenter, &(o->iOrg), iCols, iRows);
-    if (o->verbose) { print_pmap(stderr, "input coord system", &(isys)); }
+    /* Compute US to FS coord system map {osys} for the output image: */
     hr2_pmap_t osys = imgc_coord_sys_map(o->xLeft, o->yDown, o->oCenter, &(o->oOrg), oCols, oRows);
     if (o->verbose) { print_pmap(stderr, "output coord system", &(osys)); }
     
+    if (o->scale != 1)
+      { /* Apply the scale factor to the output US to FS map and to the image size: */
+        for (int32_t i = 1; i < 3; i++)
+          { for (int32_t j = 0; j < 3; j++)
+              { osys.dir.c[i][j] /= o->scale;
+                osys.inv.c[j][i] *= o->scale;
+              }
+          }
+        oCols = (int32_t)floor(oCols*o->scale);
+        oRows = (int32_t)floor(oRows*o->scale);
+      }
+
     /* Build a modified projective map {N} acting on {float_image} coords: */
     hr2_pmap_t N = o->M;
     change_coord_systems(&N, &isys, &osys);
@@ -301,6 +351,16 @@ int32_t main(int32_t argc, char **argv)
    
     /* Check whether projective map is the identity: */
     bool_t ident_proj = hr2_pmap_is_identity(&N);
+    
+    /* Map/unmap given points: */
+    for (int32_t k = 0; k < o->mum.ne; k++)
+      { mpoint_t *mumk = &(o->mum.e[k]);
+        char *which = (mumk->inv ? "input" : "output");    /* Destination image. */
+        r3x3_t *U = (mumk->inv ? &(N.inv) : &(N.dir)); /* Proj map to use. */
+        r2_t q = mumk->p;
+        r2_map_projective(&(q), U, NULL);
+        fprintf(stderr, "%s point %s = %.1f %.1f\n", which, mumk->tag, q.c[0], q.c[1]);
+      }
     
     /* Allocate output image: */
     float_image_t *im_ot = float_image_new(chns, oCols, oRows);
@@ -415,6 +475,29 @@ options_t *get_options(int32_t argc, char **argv)
     
     o->M = argparser_get_proj_map(pp);
     
+    if (argparser_keyword_present(pp, "-scale"))
+      { o->scale = argparser_get_next_double(pp, 0.001, 100.0); }
+    else
+      { o->scale = 1; }
+      
+    o->mum = mpoint_vec_new(0);
+    int32_t mum_n = 0; /* Number of "-map" and "-unmap" seen. */
+    while (TRUE)
+      { bool_t inv;
+        if (argparser_keyword_present(pp, "-map"))
+          { inv = FALSE; }
+        else if (argparser_keyword_present(pp, "-unmap"))
+          { inv = TRUE; }
+        else
+          { break; }
+        char *tag = argparser_get_next_non_keyword(pp);
+        r2_t p = argparser_get_next_r2(pp, -1e6, +1e6);
+        mpoint_vec_expand(&(o->mum), mum_n);
+        o->mum.e[mum_n] = (mpoint_t){ tag: tag, p: p, inv: inv };
+        mum_n++;
+      }
+    mpoint_vec_trim(&(o->mum), mum_n);
+
     if (argparser_keyword_present(pp, "-interpolate"))
       { o->interpolate = (int32_t)argparser_get_next_int(pp, 0, 1); }
     else
@@ -526,3 +609,4 @@ void print_pmap(FILE *wr, char *name, hr2_pmap_t *M)
     print_matrix(wr, name, "P^-1", &(M->inv));
   }
  
+vec_typeimpl(mpoint_vec_t,mpoint_vec,mpoint_t);

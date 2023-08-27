@@ -1,5 +1,5 @@
 # Tests of the pnmprojmap tool
-# Last edited on 2023-03-03 05:46:37 by stolfi
+# Last edited on 2023-08-26 23:57:43 by stolfi
 
 PROG := pnmprojmap
 PROGDIR := ..
@@ -8,41 +8,46 @@ include ${STOLFIHOME}/programs/c/GENERIC-PROGS-TEST.make
 
 DEBUG := -verbose -debug 140 195
 
-TESTS := \
-  ptpts:abi-1:ppm \
-  ident:abi-1:ppm \
-  rot90:flo-1:ppm \
-  shr45:flo-1:ppm \
-  rot45:flo-1:ppm \
-  shf05:flo-1:ppm
+TESTS_BASIC := \
+  ptpts:abi-1:ppm:1.000 \
+  ident:abi-1:ppm:1.000 \
+  rot90:flo-1:ppm:1.000 \
+  shr45:flo-1:ppm:1.000 \
+  rot45:flo-1:ppm:1.000 \
+  shf05:flo-1:ppm:1.000
   
-TESTS_LATER_2 :=  \
-  kmnpt:kmn-7:ppm \
-  kmnpt:kmn-8:ppm \
-  kmnpt:kmn-9:ppm  
- 
-TESTS_LATER := \
-  ptpts:abi-1:ppm \
-  ident:abi-1:ppm \
-  persp:abi-1:ppm \
-  rot90:flo-1:ppm \
-  shr45:flo-1:ppm \
-  rot45:flo-1:ppm \
-  shf05:flo-1:ppm \
+TEST_BASIC_SCALE := \
+  ptpts:abi-1:ppm:0.250 \
+  ident:abi-1:ppm:0.250 \
+  rot90:flo-1:ppm:0.250 \
+  shr45:flo-1:ppm:0.250 \
+  rot45:flo-1:ppm:0.250 \
+  shf05:flo-1:ppm:0.250 
+  
+TESTS_KMNPT := \
+  kmnpt:kmn-7:ppm:1.000 \
+  kmnpt:kmn-8:ppm:1.000 \
+  kmnpt:kmn-9:ppm:1.000 \
+   \
+  kmnpt:kmn-7:ppm:1.500 \
 
 NONTESTS_GRAY := \
-  ident:flo-1:pgm \
-  shf05:flo-1:pgm \
-  cubic:flo-1:pgm
+  ident:flo-1:pgm:1.000 \
+  shf05:flo-1:pgm:1.000 \
+  cubic:flo-1:pgm:1.000
 
 NONTESTS_COLOR := \
-  ptpts:abi-1:ppm \
-  ident:abi-1:ppm \
-  persp:abi-1:ppm \
-  rot90:flo-1:ppm \
-  shr45:flo-1:ppm \
-  rot45:flo-1:ppm \
-  shf05:flo-1:ppm
+  ptpts:abi-1:ppm:1.000 \
+  ident:abi-1:ppm:1.000 \
+  persp:abi-1:ppm:1.000 \
+  rot90:flo-1:ppm:1.000 \
+  shr45:flo-1:ppm:1.000 \
+  rot45:flo-1:ppm:1.000 \
+  shf05:flo-1:ppm:1.000
+
+# TESTS := ${TESTS_BASIC} ${TESTS_BASIC_SCALE} ${TESTS_KMNPT}
+TESTS := ${TESTS_BASIC} ${TESTS_BASIC_SCALE}
+# TESTS := ${TESTS_KMNPT}
 
 MAKEFILE := Makefile
 
@@ -68,33 +73,45 @@ SHOWIMG := display
 ifneq "/${SPECS}" "/"
 
 SPECFIELDS := ${subst :, ,${SPECS}}
-TST := ${word 1,${SPECFIELDS}}
-IMG := ${word 2,${SPECFIELDS}}
-EXT := ${word 3,${SPECFIELDS}}
+TST :=   ${word 1,${SPECFIELDS}}
+IMG :=   ${word 2,${SPECFIELDS}}
+EXT :=   ${word 3,${SPECFIELDS}}
+SCALE := ${word 4,${SPECFIELDS}}
 
+SCALETAG := ${subst .,,${SCALE}}
 INFILE := data/${IMG}.${EXT}
-OTFILE := out/${IMG}-${TST}-out.${EXT}
-RFFILE := out/${IMG}-${TST}-ref.${EXT}
-DFFILE := out/${IMG}-${TST}-dif.${EXT}
+OTFILE := out/${IMG}-${TST}-${SCALETAG}-out.${EXT}
+RFFILE := out/${IMG}-${TST}-${SCALETAG}-ref.${EXT}
+DFFILE := out/${IMG}-${TST}-${SCALETAG}-dif.${EXT}
 
 single-test: ${OTFILE} ${RFFILE} ${DFFILE} ${INFILE}
 	${SHOWIMG} ${OTFILE} ${RFFILE} ${DFFILE} ${INFILE}
 
 ${DFFILE}: ${OTFILE} ${RFFILE}
 	pnmxarith -subtract -offset 0.5 ${OTFILE} ${RFFILE} > ${DFFILE}
+        
+MAP_UNMAP := \
+  -map P1 10 10 \
+  -unmap Q1 10 10 \
+  -map P2 20 20 \
+  -unmap Q2 20 20 
 
 #----------------------------------------------------------------------
 # The identity map.
 
-out/${IMG}-ident-ref.${EXT}: ${INFILE}
-	cp -av ${INFILE} ${RFFILE}
+out/${IMG}-ident-${SCALETAG}-ref.${EXT}: ${INFILE}
+	cat ${INFILE} \
+          | pnmscale ${SCALE} \
+          > ${RFFILE}
 
-out/${IMG}-ident-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
+out/${IMG}-ident-${SCALETAG}-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
 	${PROGDIR}/${PROG} \
             -matrix \
               +1.000000000 00.000000000 00.000000000 \
               00.000000000 +1.000000000 00.000000000 \
               00.000000000 00.000000000 +1.000000000 \
+            -scale ${SCALE} \
+            ${MAP_UNMAP} \
             ${DEBUG} \
             ${INFILE} \
           > ${OTFILE}
@@ -102,7 +119,7 @@ out/${IMG}-ident-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
 #----------------------------------------------------------------------
 # Shift by half a pixel.
 
-out/${IMG}-shf05-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
+out/${IMG}-shf05-${SCALETAG}-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
 	${PROGDIR}/${PROG} \
             -iCenter \
             -yAxis up \
@@ -111,18 +128,21 @@ out/${IMG}-shf05-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
               00.000000000 +1.000000000 00.000000000 \
               00.000000000 00.000000000 +1.000000000 \
             -oCenter \
+            -scale ${SCALE} \
+            ${MAP_UNMAP} \
             ${DEBUG} \
             ${INFILE} \
           > ${OTFILE}
 
-out/${IMG}-shf05-ref.${EXT}: ${INFILE} ${MAKEFILE}
+out/${IMG}-shf05-${SCALETAG}-ref.${EXT}: ${INFILE} ${MAKEFILE}
 	cat ${INFILE} \
+          | pnmscale ${SCALE} \
           > ${RFFILE}
 
 #----------------------------------------------------------------------
 # Shift by half a pixel, with bicubic interpolation.
 
-out/${IMG}-cubic-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
+out/${IMG}-cubic-${SCALETAG}-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
 	${PROGDIR}/${PROG} \
             -iCenter \
             -yAxis up \
@@ -131,19 +151,22 @@ out/${IMG}-cubic-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
               00.000000000 +1.000000000 00.000000000 \
               00.000000000 00.000000000 +1.000000000 \
             -oCenter \
+            -scale ${SCALE} \
+            ${MAP_UNMAP} \
             -interpolate 1 \
             ${DEBUG} \
             ${INFILE} \
           > ${OTFILE}
 
-out/${IMG}-cubic-ref.${EXT}: ${INFILE} ${MAKEFILE}
+out/${IMG}-cubic-${SCALETAG}-ref.${EXT}: ${INFILE} ${MAKEFILE}
 	cat ${INFILE} \
+          | pnmscale ${SCALE} \
           > ${RFFILE}
 
 #----------------------------------------------------------------------
 # Rotation by 45 degrees.
 
-out/${IMG}-rot45-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
+out/${IMG}-rot45-${SCALETAG}-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
 	${PROGDIR}/${PROG} \
             -iCenter \
             -yAxis up \
@@ -152,21 +175,24 @@ out/${IMG}-rot45-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
               00.000000000 +0.707106781 +0.707106781 \
               00.000000000 -0.707106781 +0.707106781 \
             -oCenter \
+            -scale ${SCALE} \
+            ${MAP_UNMAP} \
             ${DEBUG} \
             ${INFILE} \
           > ${OTFILE}
 
-out/${IMG}-rot45-ref.${EXT}: ${INFILE} ${MAKEFILE}
+out/${IMG}-rot45-${SCALETAG}-ref.${EXT}: ${INFILE} ${MAKEFILE}
 	cat ${INFILE} \
           | pnmcut 1 1 399 399 \
           | pnmrotate 45 \
           | pnmcut 83 83 400 400 \
+          | pnmscale ${SCALE} \
           > ${RFFILE}
 
 #----------------------------------------------------------------------
 # Rotation by 90 degrees.
 
-out/${IMG}-rot90-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
+out/${IMG}-rot90-${SCALETAG}-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
 	${PROGDIR}/${PROG} \
             -iCenter \
             -matrix \
@@ -174,19 +200,22 @@ out/${IMG}-rot90-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
               00.000000000 00.000000000 -1.000000000 \
               00.000000000 +1.000000000 00.000000000 \
             -oCenter \
+            -scale ${SCALE} \
+            ${MAP_UNMAP} \
             ${DEBUG} \
             ${INFILE} \
           > ${OTFILE}
 
-out/${IMG}-rot90-ref.${EXT}: ${INFILE}
+out/${IMG}-rot90-${SCALETAG}-ref.${EXT}: ${INFILE}
 	cat ${INFILE} \
           | pamflip -r90 \
+          | pnmscale ${SCALE} \
           > ${RFFILE}
 
 #----------------------------------------------------------------------
 # Shearing by 45 degrees.
 
-out/${IMG}-shr45-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG} Makefile
+out/${IMG}-shr45-${SCALETAG}-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG} Makefile
 	${PROGDIR}/${PROG} \
             -yAxis up \
             -iCenter \
@@ -195,23 +224,23 @@ out/${IMG}-shr45-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG} Makefile
               00.000000000   +1.000000000   00.000000000 \
               00.000000000   +1.000000000   +1.000000000 \
             -oCenter \
+            -scale ${SCALE} \
+            ${MAP_UNMAP} \
             ${DEBUG} \
             ${INFILE} \
           > ${OTFILE}
 
-out/${IMG}-shr45-ref.${EXT}: ${INFILE}
+out/${IMG}-shr45-${SCALETAG}-ref.${EXT}: ${INFILE}
 	cat ${INFILE} \
           | pnmshear -45 \
           | pnmcut 200 0 400 400 \
+          | pnmscale ${SCALE} \
           > ${RFFILE}
 
 #----------------------------------------------------------------------
 # Perspective view given by matrix.
 
-out/${IMG}-persp-ref.${EXT}: ${INFILE}
-	cp -av ${INFILE} ${RFFILE}
-
-out/${IMG}-persp-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
+out/${IMG}-persp-${SCALETAG}-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
 	${PROGDIR}/${PROG} \
             -iCenter \
             -matrix \
@@ -219,17 +248,21 @@ out/${IMG}-persp-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
               00.000000000   +0.900000000   00.000000000 \
               +0.002777777   00.000000000   +0.900000000 \
             -oCenter \
+            -scale ${SCALE} \
+            ${MAP_UNMAP} \
             ${DEBUG} \
             ${INFILE} \
           > ${OTFILE}
 
+out/${IMG}-persp-${SCALETAG}-ref.${EXT}: ${INFILE}
+	cat ${INFILE} \
+          | pnmscale ${SCALE} \
+          > ${RFFILE}
+
 #----------------------------------------------------------------------
 # Perspective view given by 4 point pairs. 
 
-out/${IMG}-ptpts-ref.${EXT}: ${INFILE}
-	cp -av ${INFILE} ${RFFILE}
-
-out/${IMG}-ptpts-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
+out/${IMG}-ptpts-${SCALETAG}-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
 	${PROGDIR}/${PROG} \
             -points \
               010 010 \
@@ -241,29 +274,43 @@ out/${IMG}-ptpts-out.${EXT}: ${INFILE} ${PROGDIR}/${PROG}
               260 280 \
               020 020 \
               020 300 \
+            -scale ${SCALE} \
+            ${MAP_UNMAP} \
             ${DEBUG} \
             ${INFILE} \
           > ${OTFILE}
 
+out/${IMG}-ptpts-${SCALETAG}-ref.${EXT}: ${INFILE}
+	cat ${INFILE} \
+          | pnmscale ${SCALE} \
+          > ${RFFILE}
+
 #----------------------------------------------------------------------
 
 # Perspective view by 4 point pairs, from data/${IMG}.pts --> data/${IMG}-ref.pts. 
+# Assumes that the ref image is "kmn-9.ppm" no matter what the input image.
 
 PTFILE := data/${IMG}.pts
 PRFILE := data/${IMG}-ref.pts
 
-out/${IMG}-kmnpt-ref.${EXT}: ${INFILE}
-	cp -av ${INFILE} ${RFFILE}
-
-out/${IMG}-kmnpt-out.${EXT}: ${INFILE} ${PTFILE} ${PRFILE} ${PROGDIR}/${PROG}
+out/${IMG}-kmnpt-${SCALETAG}-out.${EXT}: ${INFILE} ${PTFILE} ${PRFILE} ${PROGDIR}/${PROG}
 	${PROGDIR}/${PROG} \
             -yAxis down \
             -points \
               `cat ${PTFILE} | head -n 4 | sed -e 's:[\#].*$$::'` \
               `cat ${PRFILE} | head -n 4 | sed -e 's:[\#].*$$::'` \
+            -scale ${SCALE} \
+            ${MAP_UNMAP} \
             ${DEBUG} \
             ${INFILE} \
           > ${OTFILE}
+
+IRFILE := data/kmn-9.ppm
+
+out/${IMG}-kmnpt-${SCALETAG}-ref.${EXT}: ${IRFILE}
+	cat ${IRFILE} \
+          | pnmscale ${SCALE} \
+          > ${RFFILE}
 
 endif
 # End  ${SPECS} section.
