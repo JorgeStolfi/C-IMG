@@ -1,0 +1,6 @@
+# Last edited on 2012-01-02 06:51:49 by stolfi
+# matches A C: translate C by (0 200)
+
+(   0 200 ) = (   0    0 )
+(  10 200 ) = (  10    0 )
+(  10 210 ) = (  10   10 )

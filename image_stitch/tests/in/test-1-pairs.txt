@@ -1,0 +1,7 @@
+# Last edited on 2011-12-30 17:55:33 by stolfilocal
+# A simple scaling 
+
+(   0       0 ) = (     0     0 )
+(   1       0 ) = (    10     0 )
+(   0       1 ) = (     0    20 )
+

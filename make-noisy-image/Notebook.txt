@@ -1,0 +1,42 @@
+# Last edited on 2010-07-02 16:56:10 by stolfi
+# Creating a noisy version of Lula's picture
+
+The original Lula picture was 238x320.  Cropping to a nicer size:
+
+  convert data/ula-1.ppm -crop '224x320+7+0' out/ula-a.ppm
+  
+Creating reduced versions out/ula-{a,b,c,d,e,f}:
+
+  convert out/ula-a.ppm -resize '112x160' out/ula-b.ppm
+  convert out/ula-b.ppm -resize '56x80'   out/ula-c.ppm
+  convert out/ula-c.ppm -resize '28x40'   out/ula-d.ppm
+  convert out/ula-d.ppm -resize '14x20'   out/ula-e.ppm
+  convert out/ula-e.ppm -resize '7x10'    out/ula-f.ppm
+  
+Creating noise fields out/rnd-{a,b,c,d,e,f}.ppm with the same sizes:
+
+  foreach z ( a b c d e f )
+    seed=`cat out/ula-${z}.ppm | wc -c`
+    pnmwiggle -seed ${seed} 1.00 out/ula-${z}.ppm \
+      | convert PPM:- -resize '224x320' out/rnd-${z}.ppm
+  end
+
+Creating a fractal noise field:
+
+  cp -p out/rnd-f.ppm out/frn-f.ppm
+  cp -p out/frn-f.ppm out/tmp.ppm
+  foreach z ( e d c b a )
+    pnmxarith -mix 0.50 0.50 out/tmp.ppm out/rnd-${z}.ppm > out/frn-${z}.ppm
+    cp -p out/frn-${z}.ppm out/tmp.ppm
+  end
+  display -title '%f' -filter box -resize '224x320^' out/frn*.ppm
+
+Mixing the fractal noise with the original image:
+
+  pnmxarith -mix 0.70 0.30 out/ula-a.ppm out/frn-a.ppm > out/ula-m.ppm
+  display -title '%f' out/ula-m.ppm
+
+Export to parent's data diretory:
+
+  cp -p out/ula-m.ppm ../data
+  

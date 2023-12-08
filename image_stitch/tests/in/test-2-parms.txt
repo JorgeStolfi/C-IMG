@@ -1,0 +1,6 @@
+# Last edited on 2012-01-23 19:03:02 by stolfilocal
+
+  -image1 -1 -1 2 2
+  -image2 4 3  12 15 
+  -verbose
+  

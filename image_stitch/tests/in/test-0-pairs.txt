@@ -1,0 +1,6 @@
+# Last edited on 2011-12-30 17:53:14 by stolfilocal
+# A simple translation
+
+( 0 0 ) = ( 30 50 )
+( 1 0 ) = ( 31 50 )
+( 0 1 ) = ( 30 51 )

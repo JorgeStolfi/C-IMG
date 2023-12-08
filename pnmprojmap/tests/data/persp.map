@@ -1,0 +1,6 @@
+# Last edited on 2023-10-13 19:12:31 by stolfi
+# A perspective distortion map that keeps the origin fixed.
+
++1.500000000   00.000000000   00.000000000 \
+00.000000000   +0.900000000   00.000000000 \
++0.002777777   00.000000000   +0.900000000

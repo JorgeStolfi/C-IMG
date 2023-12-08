@@ -1,0 +1,6 @@
+# Last edited on 2012-01-23 19:05:32 by stolfilocal
+
+  -image1 50 150 350 350
+  -image2 50 150 350 350
+  -verbose
+  

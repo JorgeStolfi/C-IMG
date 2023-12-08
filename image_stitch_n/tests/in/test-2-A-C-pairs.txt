@@ -1,0 +1,6 @@
+# Last edited on 2012-01-02 22:42:39 by stolfi
+# matches A C: rotate C by -alpha
+
+( 100   100 ) = (  100   100 )
+( 150   100 ) = (  140   130 )
+( 100   150 ) = (   70   140 )

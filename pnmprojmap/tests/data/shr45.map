@@ -1,0 +1,6 @@
+# Last edited on 2023-10-13 19:11:43 by stolfi
+# Shearing in the X direction with ratio +1 (45 degrees clockwise).
+
++1.000000000   00.000000000   00.000000000
+00.000000000   +1.000000000   00.000000000
+00.000000000   +1.000000000   +1.000000000

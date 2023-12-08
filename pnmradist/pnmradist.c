@@ -2,22 +2,18 @@
 #define PROG_DESC "applies radial distortion to a pbm/ppm/pgm file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-03-03 05:52:55 by stolfi */
+/* Last edited on 2023-10-10 18:19:47 by stolfi */
 
 /* Copyright © 2002 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
-  "    " imgc_parse_x_axis_HELP " \\\n" \
-  "    " imgc_parse_y_axis_HELP " \\\n" \
-  "    " imgc_parse_input_center_org_HELP " \\\n" \
+  imgc_input_output_coords_HELP " \\\n" \
   "    -kappa {KAPPA} \\\n" \
   "    -pixelSize {HX} {HY} \\\n" \
   "    [ -interpolate {INT_ORDER} ] \\\n" \
   "    [ -extend ] \\\n" \
-  "    " imgc_parse_output_size_HELP " \\\n" \
-  "    " imgc_parse_output_center_org_HELP " \\\n" \
   "    [ -maxval {MV_OUT} ] \\\n" \
   "    [ -verbose ] \\\n" \
   "    [ -debug {XD_OUT} {YD_OUT} ] \\\n" \
@@ -30,29 +26,22 @@
   "  The radial correction is applied" \
   " relative to the specified origin of the input image.\n" \
   "\n" \
-  "  " imgc_axes_INFO "" \
-  "  " imgc_pixel_centers_INFO "" \
-  "  " imgc_input_origin_INFO "" \
-  "  " imgc_output_origin_INFO "\n" \
+  imgc_input_output_coords_intro_INFO("the input image","the output image") "\n" \
   "\n" \
   "  If the argument {PNMFILE_IN} is omitted or is \"-\", the" \
   " program reads the input image from {stdin}.  The output" \
   " image is always written to {stdout}."
 
 #define PROG_INFO_OPTS \
-  imgc_parse_x_axis_HELP_INFO "" \
-  "  This parameter affects the" \
-  " interpretation of the X coordinates of the center of" \
-  " the input image ({CX_IN}) and of the output image ({CX_OUT})." \
-  "  " imgc_parse_x_axis_pbm_default_INFO "\n" \
-  "\n" \
-  imgc_parse_y_axis_HELP_INFO "" \
-  "  This parameter affects the interpretation of" \
-  " the Y coordinates of the center of" \
-  " the input image ({CY_IN}) and of the output image ({CY_OUT})." \
-  "  " imgc_parse_y_axis_pbm_default_INFO "\n" \
-  "\n" \
-  imgc_parse_input_center_org_HELP_INFO "\n" \
+  imgc_parse_input_output_coords_INFO_OPTS( \
+    imgc_parse_x_axis_INFO_OPTS_default_pbm, \
+    imgc_parse_y_axis_INFO_OPTS_default_pbm, \
+    "the input image", \
+    imgc_parse_center_org_INFO_OPTS_default_center("-iCenter"), \
+    "the output image", \
+    imgc_parse_center_org_INFO_OPTS_default_center("-oCenter"), \
+    imgc_parse_size_INFO_OPTS_default_input("-oSize","the input image","the output image") \
+  ) "\n" \
   "\n" \
   "  -kappa {KAPPA}\n" \
   "    This argument specifies the amount of radial" \
@@ -78,11 +67,6 @@
   " being subjected to the map, by replicating the pixels" \
   " along its borders.  If this option is omitted, pixels" \
   " outside the input image's domain are assumed to be undefined." \
-  "\n" \
-  imgc_parse_output_center_org_HELP_INFO "\n" \
-  "\n" \
-  imgc_parse_output_size_HELP_INFO "  If omitted, the output image" \
-  " will have the same size as the input one.\n" \
   "\n" \
   "  -maxval {MV_OUT}\n" \
   "    Specifies {MV_OUT} as the maximum sample value for the" \
@@ -133,8 +117,11 @@
   "  Created jan/2009 by Jorge Stolfi, IC-UNICAMP, from {pnmtran.c}.\n" \
   "\n" \
   "MODIFICATION HISTORY\n" \
-  "  jan/2008 Added the \"-extend\" option.  J. Stolfi, IC-UNICAMP.\n" \
-  "  ago/2010 Added the \"-interpolate\" option.  J. Stolfi, IC-UNICAMP.\n" \
+  "  All changes by J. Stolfi, IC-UNICAMP unless otherwise noted.\n" \
+  "\n" \
+  "  jan/2008 Added the \"-extend\" option.\n" \
+  "  ago/2010 Added the \"-interpolate\" option.\n" \
+  "  ago/2023 Updated for changes in {image_input_output_coords.h}.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \
@@ -173,25 +160,32 @@
 #include <float_image_to_uint16_image.h>
 #include <argparser.h>
 
+#define MAX_SIZE (32*1024)
+  /* A limit on image size, to avoid humongous mallocs. */
+
 typedef struct options_t 
   { char *fname;         /* Input file name. */
     /* Global coordinate system options: */
-    bool_t yDown;        /* TRUE if the vertical axis points down, FALSE otherwise. */
+    bool_t yUp;          /* TRUE if the vertical axis points up, FALSE otherwise. */
     bool_t xLeft;        /* TRUE if the horizontal axis points left, FALSE otherwise. */
-    /* Image-specific coordinate system options: */
+    /* User coordinates for input image: */
+    double iUnit;          /* Unit, in pixels. */
     bool_t iCenter;      /* If TRUE, input origin is center; if FALSE, use {iOrg}. */
     r2_t iOrg;           /* Input origin relative to default origin, if {!iCenter}. */
+    /* User coordinates for output image: */
+    double oUnit;          /* Unit, in pixels. */
     bool_t oCenter;      /* If TRUE, output origin is center; if FALSE, use {oOrg}. */ 
     r2_t oOrg;           /* Output origin relative to default origin, if {!oCenter}. */
     /* Output image attributes: */
-    int32_t oCols;       /* X size of output image, or -1 if not given. */
-    int32_t oRows;       /* Y size of output image, or -1 if not given. */
-    uint16_t maxval;     /* Output maxval requested by user, or 0 if not given. */
+    double oCols;        /* X size of output image, in user units, or -1 if not given. */
+    double oRows;        /* Y size of output image, in user units, or -1 if not given. */
     /* Geometry transformation options: */
     double kappa;        /* Radial deformation parameter (0 = none). */
     r2_t pixelSize;      /* Pixel dimensions in {mm}. */
     bool_t extend;       /* TRUE extends the the image by row/col replication. */
     int32_t interpolate;     /* Interpolation order. */
+    /* Output image encoding: */
+    uint16_t maxval;       /* Output maxval requested by user, or 0 if not given. */
     /* Debugging options: */
     bool_t verbose;      /* TRUE to print global statistics. */
     i2_t debug;          /* PBM indices of output pixel to debug; or (-1,-1). */
@@ -226,14 +220,6 @@ void write_image
     image data. If {verbose} is true, prints image statistics to
     {stderr}. */
 
-void print_matrix(FILE *wr, char *name1, char *name2, r3x3_t *M);
-  /* Prints the projective matrix {M} to file {wr}, labeled with 
-    {name1} and {name2}. */
-
-void print_pmap(FILE *wr, char *name, hr2_pmap_t *M);
-  /* Prints the projective map {M} (direct and inverse matrices)
-    to file {wr}, labeled with {name}. */
-
 /* IMPLEMENTATIONS */
 
 int32_t main(int32_t argc, char **argv)
@@ -246,16 +232,19 @@ int32_t main(int32_t argc, char **argv)
     uint16_t maxval_in;
     FILE *rd = open_read(o->fname, o->verbose);
     float_image_t *im_in = read_image(rd, &iCols, &iRows, &chns, &maxval_in, o->verbose);
-    
-    /* Provide default size of output image: */
-    int32_t oCols = (o->oCols < 0 ? iCols : o->oCols);
-    int32_t oRows = (o->oRows < 0 ? iRows : o->oRows);
+     
+    /* Compute output image size in pixels: */
+    int32_t oCols, oRows;
+    imgc_compute_output_size_in_pixels(iCols, iRows, o->iUnit, o->oCols, o->oRows, o->oUnit, &oCols, &oRows, MAX_SIZE);
+    if (o->verbose) { fprintf(stderr, "output image size (pixels) = %d %d\n", oCols, oRows); }
 
-    /* Adjust coordinate transformation to account for coord system options: */
-    hr2_pmap_t isys = imgc_coord_sys_map(o->xLeft, o->yDown, o->iCenter, &(o->iOrg), iCols, iRows);
-    if (o->verbose) { print_pmap(stderr, "input coord system", &(isys)); }
-    hr2_pmap_t osys = imgc_coord_sys_map(o->xLeft, o->yDown, o->oCenter, &(o->oOrg), oCols, oRows);
-    if (o->verbose) { print_pmap(stderr, "output coord system", &(osys)); }
+    /* Compute pixel to user coord system map {isys} for input image: */
+    hr2_pmap_t isys = imgc_coord_sys_map(o->xLeft, o->yUp, o->iUnit, o->iCenter, &(o->iOrg), iCols, iRows);
+    if (o->verbose) { imgc_print_pmap(stderr, "input pixel", "input user", "isys", &(isys)); }
+
+    /* Compute pixel to user coord system map {osys} for the output image: */
+    hr2_pmap_t osys = imgc_coord_sys_map(o->xLeft, o->yUp, o->oUnit, o->oCenter, &(o->oOrg), oCols, oRows);
+    if (o->verbose) { imgc_print_pmap(stderr, "output pixel", "output user", "osys", &(osys)); }
 
     /* Allocate output image: */
     float_image_t *im_ot = float_image_new(chns, oCols, oRows);
@@ -270,8 +259,8 @@ int32_t main(int32_t argc, char **argv)
     else
       { dbp.c[0] = o->debug.c[0];
         dbp.c[1] = oRows - o->debug.c[1];
-        r2_t odbp = dbp;
-        r2_map_projective(&odbp, &(osys.dir), NULL);
+        r2_t odbp;
+        r2_map_projective(&dbp, &(osys.dir), &odbp, NULL);
         dbp_defined = TRUE;
         if (o->verbose) 
           { fprintf(stderr, "watching output point with coordinates:\n");
@@ -293,6 +282,7 @@ int32_t main(int32_t argc, char **argv)
     auto bool_t debug_point(r2_t *pP);
       /* True if {*pP} is the watched pixel. */
       
+    if (o->verbose) { fprintf(stderr, "transforming the image ...\n"); }
     ix_reduction_t red = ix_reduction_SINGLE;
     float_image_transform_all(im_in, red, &map_point, 0.5, TRUE, o->interpolate, &debug_point, im_ot);
     
@@ -302,7 +292,7 @@ int32_t main(int32_t argc, char **argv)
 
     write_image(stdout, im_ot, maxval_ot, o->verbose);
 
-    if (o->verbose) { fprintf(stderr, "done."); }
+    if (o->verbose) { fprintf(stderr, "done.\n"); }
     return 0;
     
     bool_t debug_point(r2_t *pP)
@@ -316,7 +306,7 @@ int32_t main(int32_t argc, char **argv)
         bool_t debug = debug_point(pP);
         
         /* Map native output image coords to user coords: */
-        r2_map_projective(pP, &(osys.dir), JP);
+        r2_map_projective(pP, &(osys.dir), pP, JP);
         if (debug) { r2_debug_point_jac("po", pP, JP, "\n"); }
         
         /* Apply the inverse radial correction: */
@@ -327,7 +317,7 @@ int32_t main(int32_t argc, char **argv)
           }
         
         /* Map user coords to native input image coords: */
-        r2_map_projective(pP, &(isys.inv), JP);
+        r2_map_projective(pP, &(isys.inv), pP, JP);
         if (debug) { r2_debug_point_jac("pi", pP, JP, "\n"); }
         
         if (! o->extend)
@@ -343,9 +333,6 @@ int32_t main(int32_t argc, char **argv)
 #define BIG  (1.0e+100)
   /* A very large value, but still far from overflow. */
 
-#define MAX_SIZE (32*1024)
-  /* A limit on image size, to avoid humongous mallocs. */
-
 options_t *get_options(int32_t argc, char **argv)
   {
     argparser_t *pp = argparser_new(stderr, argc, argv);
@@ -355,17 +342,26 @@ options_t *get_options(int32_t argc, char **argv)
     argparser_process_help_info_options(pp);
      
     options_t *o = (options_t *)notnull(malloc(sizeof(options_t)), "no mem");
-    
+     
+    /* Set defaults for input and output coord systems: */
     o->xLeft = FALSE;
-    imgc_parse_x_axis(pp, &(o->xLeft));
+    o->yUp = FALSE;
+    o->iCenter = TRUE;
+    o->iOrg = (r2_t){{ 0.0, 0.0 }};
+    o->oCenter = TRUE;
+    o->oOrg = (r2_t){{ 0.0, 0.0 }};
     
-    o->yDown = TRUE;
-    imgc_parse_y_axis(pp, &(o->yDown));
-    
-    o->iCenter = FALSE;
-    o->iOrg.c[0] = 0.0;
-    o->iOrg.c[1] = 0.0;
-    imgc_parse_input_center_org(pp, &(o->iCenter), &(o->iOrg));
+    /* The default output size depends on the input image size, so leave {-1}: */
+    o->oCols = -1.0; 
+    o->oRows = -1.0;
+ 
+    /* Parse input and output coord systems, and output size: */
+    imgc_parse_input_output_coords_args
+      ( pp, &(o->xLeft), &(o->yUp), 
+        &(o->iUnit), &(o->iCenter), &(o->iOrg), 
+        &(o->oUnit), &(o->oCenter), &(o->oOrg), 
+        &(o->oCols), &(o->oRows)
+      );
     
     argparser_get_keyword(pp, "-kappa");
     o->kappa = argparser_get_next_double(pp, -BIG, +BIG);
@@ -382,16 +378,6 @@ options_t *get_options(int32_t argc, char **argv)
       }
     
     o->extend = argparser_keyword_present(pp, "-extend");
-    
-    /* The default output size depends on the input image: */
-    o->oCols = -1;
-    o->oRows = -1;
-    imgc_parse_output_size(pp, &(o->oCols), &(o->oRows), MAX_SIZE);
-
-    o->oCenter = FALSE;
-    o->oOrg.c[0] = 0.0;
-    o->oOrg.c[1] = 0.0;
-    imgc_parse_output_center_org(pp, &(o->oCenter), &(o->oOrg));
     
     if (argparser_keyword_present(pp, "-maxval"))
       { o->maxval = (uint16_t)argparser_get_next_int(pp, 1, PNM_MAX_SAMPLE); }
@@ -457,21 +443,3 @@ void write_image
     uint16_image_free(pim);
   }
 
-void print_matrix(FILE *wr, char *name1, char *name2, r3x3_t *M)
-  { 
-    fprintf(stderr, "  %s %s =\n", name1, name2);
-    r3x3_gen_print
-      ( wr, M, 
-        "%10.4f",
-        "", "", "",
-        "    [ ", " ", " ]\n" 
-      );
-    fprintf(stderr, "\n");
-  }
-
-void print_pmap(FILE *wr, char *name, hr2_pmap_t *M)
-  { fprintf(wr, "\n");
-    print_matrix(wr, name, "P", &(M->dir)); 
-    print_matrix(wr, name, "P^-1", &(M->inv));
-  }
- 

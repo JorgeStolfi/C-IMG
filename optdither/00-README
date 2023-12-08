@@ -1,0 +1,5 @@
+# Last edited on 2007-08-16 00:38:40 by stolfi
+
+# A program that generates ordered dither matrices by spectrum optimization.
+# Derived from code written by Konstantin (Kostia) Glasov, during his
+# stay at IC-UNICAMP as an exchange student.

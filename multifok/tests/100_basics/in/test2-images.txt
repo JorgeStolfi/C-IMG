@@ -1,0 +1,9 @@
+# Last edited on 2017-06-11 21:28:46 by stolfilocal
+
+-imageFormat PNG
+-image 0.250 in/flower_01/frame_00000.png
+-image 0.500 in/flower_01/frame_00006.png
+-image 0.750 in/flower_01/frame_00012.png
+-image 1.000 in/flower_01/frame_00018.png
+-image 1.250 in/flower_01/frame_00024.png
+

@@ -1,182 +1,19 @@
 #define PROG_NAME "pnmprojmap"
-#define PROG_DESC "applies a projective map to a pbm/ppm/pgm file"
-#define PROG_VERS "1.0"
+#define PROG_DESC "applies a projective map to one or more pbm/ppm/pgm files"
+#define PROG_VERS "2.0"
 
-/* Last edited on 2023-08-26 23:52:06 by stolfi */
+/* Last edited on 2023-10-15 17:07:49 by stolfi */
 
 /* Copyright © 2002 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
 
-#define PROG_HELP \
-  "  " PROG_NAME " \\\n" \
-  "    " imgc_parse_x_axis_HELP " \\\n" \
-  "    " imgc_parse_y_axis_HELP " \\\n" \
-  "    " imgc_parse_input_center_org_HELP " \\\n" \
-  "    " argparser_proj_map_HELP " \\\n" \
-  "    [ -interpolate {INT_ORDER} ] \\\n" \
-  "    [ -undef {DEFVAL} | -extend ] \\\n" \
-  "    " imgc_parse_output_size_HELP " \\\n" \
-  "    " imgc_parse_output_center_org_HELP " \\\n" \
-  "    [ -scale {SCALE} ] \\\n" \
-  "    [ { -map {TAG} {XIP} {YIP} }.. ] \\\n" \
-  "    [ { -unmap {TAG} {XOP} {YOP} }.. ] \\\n" \
-  "    [ -maxval {MV_OUT} ] \\\n" \
-  "    [ -isMask {ISMASK} ] \\\n" \
-  "    [ -verbose ] \\\n" \
-  "    [ -debug {XD_OUT} {YD_OUT} ] \\\n" \
-  "    [ {PNMFILE_IN} ]"
-
-#define PROG_INFO_DESC \
-  "  The program reads the PNM image {PNMFILE_IN} and applies to" \
-  " it a specified  projective transformation {M}; so that the" \
-  " pixel value at a point {p} of the input image is copied to" \
-  " point {M(p)} the output image.\n" \
-  "\n" \
-  "  " argparser_proj_map_INFO ".\n" \
-  "\n" \
-  "  "  "\n" \
-  "\n" \
-  "  " imgc_axes_INFO "" \
-  "  " imgc_pixel_centers_INFO "" \
-  "  " imgc_input_origin_INFO "" \
-  "  " imgc_output_origin_INFO "\n" \
-  "\n" \
-  "  If the argument {PNMFILE_IN} is omitted or is \"-\", the" \
-  " program reads the input image from {stdin}.  The output" \
-  " image is always written to {stdout}."
-
-#define PROG_INFO_OPTS \
-  imgc_parse_x_axis_HELP_INFO "" \
-  "  This parameter affects the" \
-  " interpretation of all X coordinates in the arguments, including" \
-  " {CX_IN}, {CX_OUT}, {X_IN[i]}, {X_OUT[i]}, and the matrix" \
-  " coefficients." \
-  "  " imgc_parse_x_axis_pbm_default_INFO "\n" \
-  "\n" \
-  imgc_parse_y_axis_HELP_INFO "" \
-  "  This parameter affects the interpretation of all Y" \
-  " coordinates in the arguments, including" \
-  " {CY_IN}, {CY_OUT}, {Y_IN[i]}, {Y_OUT[i]}, and the matrix" \
-  " coefficients." \
-  "  " imgc_parse_y_axis_pbm_default_INFO "\n" \
-  "\n" \
-  imgc_parse_input_center_org_HELP_INFO "\n" \
-  "\n" \
-  imgc_parse_output_center_org_HELP_INFO "\n" \
-  "\n" \
-  argparser_proj_map_HELP_INFO "\n" \
-  "\n" \
-  "  -interpolate {INT_ORDER} \n" \
-  "    This optional argument specifies the way inpt pixels are" \
-  " interpolated.  " float_image_transform_interpolation_HELP_INFO "  The default" \
-  " is \"-interpolate 0\" (C0 bilinear interpolation).\n" \
-  "\n" \
-  "  -undef {DEFVAL}\n" \
-  "  -extend \n" \
-  "    These mutually exclusive optional flags specify the handling" \
-  " of source pixels that fall outside the input image's" \
-  " domain.  If \"-undef\" is used, any such pixel is assumed to" \
-  " have value {DEFVAL}, in a scale from 0 to 1.  If \"-extend\" is used, the input image" \
-  " will be implicitly extended to an infinite image, before" \
-  " being transformed, by replicating the pixels" \
-  " along its borders.  If neither option is specified," \
-  " the program assumes \"-undef 0.5\".\n" \
-  "\n" \
-  imgc_parse_output_size_HELP_INFO "  If omitted, the output image" \
-  " will have the same size as the input one.\n" \
-  "\n" \
-  "  -scale {SCALE}\n" \
-  "    If this paramter is present, it applies the scaling" \
-  " factor {SCALE} to the output image, including the the" \
-  " size of the output image, the  pixel colum and row of" \
-  " its coordinate system origin, and the projective" \
-  " map.  If omitted, no extra scaling is applied (same as \"-scale 1\").\n" \
-  "\n" \
-  "  -map {TAG} {XIP} {YIP}\n" \
-  "    If this parameter is present, it prints to standard error the coordinates of the point on the output image that corresponds to point {(XIP,YIP)} of the input image. The {TAG} is an arbitrary alphanumeric string that identifies the point, and is printed as given.  All coordinate axis and origin parameters are taken into account.  This parameter can be repeated any number of times.\n" \
-  "\n" \
-  "  -unmap {TAG} {XOP} {YOP}\n" \
-  "    Analogous to \"-map\", but prnts the point on the input image that corresponds to point {(XOP,YOP)} of the output image.  This parameter can be repeated any number of times.\n" \
-  "\n" \
-  "  -maxval {MV_OUT}\n" \
-  "    Specifies {MV_OUT} as the maximum sample value for the" \
-  " output image.  It must be an integer between 255 and 65535," \
-  " inclusive. If not specified, it is set to 255 or to the" \
-  " input image's {maxval}, whichever is larger.\n" \
-  "\n" \
-  "  -isMask {ISMASK}\n" \
-  "    This optional Boolean argument modifies the interpretation" \
-  " of integer sample values, especially 0 and {MAXVAL}, in the" \
-  " input and output files (see {sample_conv.h}).  If {ISMASK} is true (\"T\" or 1)," \
-  " " sample_conv_0_1_isMask_true_INFO "  If {ISMASK} is false (\"F\" or 0)," \
-  " " sample_conv_0_1_isMask_false_INFO "  The default is \"-isMask F\".\n" \
-  "\n" \
-  "  -verbose\n" \
-  "    If this option is present, the program prints out" \
-  " global debugging information, such as input and output" \
-  " image statistics.\n" \
-  "\n" \
-  "  -debug {XD_OUT} {YD_OUT}\n" \
-  "    If this option is present, the program prints out" \
-  " debugging information about the computation of the" \
-  " pixel in column {XD_OUT} (counting from 0, left to right) and" \
-  " row {YD_OUT} (counting from 0, top to bottom) of the" \
-  " output image (after scaling, if \"-scale\" was specified)."
-
-#define PROG_INFO \
-  "NAME\n" \
-  "  " PROG_NAME " - " PROG_DESC "\n" \
-  "\n" \
-  "SYNOPSIS\n" \
-  PROG_HELP "\n" \
-  "\n" \
-  "DESCRIPTION\n" \
-  PROG_INFO_DESC "\n" \
-  "\n" \
-  "OPTIONS\n" \
-  PROG_INFO_OPTS "\n" \
-  "\n" \
-  "DOCUMENTATION OPTIONS\n" \
-  argparser_help_info_HELP_INFO "\n" \
-  "\n" \
-  "BUGS\n" \
-  "  Sampling is not very scientific; it may blur more" \
-  " than necessary, and may not work properly if the map is too warped.\n" \
-  "\n" \
-  "  The code of ths program is very similar to that of" \
-  " \"pnmradist\" and other programs.  That code" \
-  " should be shared somehow.\n" \
-  "\n" \
-  "SEE ALSO\n" \
-  "  pnmscale(1), pnmradist(1).\n" \
-  "\n" \
-  "AUTHOR\n" \
-  "  Created aug/2002 by Jorge Stolfi, IC-UNICAMP as \"pnmgtran\".\n" \
-  "\n" \
-  "MODIFICATION HISTORY\n" \
-  "  All changes by J. Stolfi, IC-UNICAMP unless otherwise noted.\n" \
-  "\n" \
-  "  nov/2006 Rewritten to use sane PNM, argparser, etc.\n" \
-  "  jun/2007 Added \"-points\" option.\n" \
-  "  jul/2007 Added \"-xAxis\", \"-yAxis\" options.\n" \
-  "  aug/2007 Rearranged the points in \"-points\".\n" \
-  "  jan/2008 Moved radial distortion to \"pnmradist\".\n" \
-  "  jan/2008 Renamed from \"pnmgtran\" to \"pnmprojmap\".\n" \
-  "  jan/2008 Added the \"-extend\" option.\n" \
-  "  ago/2010 Added the \"-interpolate\" option.\n" \
-  "  ago/2010 Added the \"-isMask\" option.\n" \
-  "  mar/2017 Moved matrix help and parsing to {argparser_geo.h}\n" \
-  "  mar/2023 Converted {int} to {int32_t}.\n" \
-  "  aug/2023 Added the \"-scale\" option.\n" \
-  "  aug/2023 Added the \"-map\" and \"-unmap\" options.\n" \
-  "\n" \
-  "WARRANTY\n" \
-  argparser_help_info_NO_WARRANTY "\n" \
-  "\n" \
-  "RIGHTS\n" \
-  "  Copyright © 2002 by the State University of Campinas (UNICAMP).\n" \
-  "\n" \
-  argparser_help_info_STANDARD_RIGHTS
+#include <pnmprojmap_info.h>
+     
+    /* !!! Add weights to features. !!! */
+    /* !!! Add "-mapType" option !!! */
+    /* !!! Add "-midway" option !!! */
+    /* !!! Write out map matrix !!! */
+    /* !!! Write out adjusted feature points !!! */
 
 /* We need to set these in order to get {isnan}. What a crock... */
 #undef __STRICT_ANSI__
@@ -184,7 +21,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <math.h>
+#include <assert.h>
 
 #include <bool.h>
 #include <i2.h>
@@ -194,8 +33,10 @@
 #include <r3x3.h>
 #include <hr2.h>
 #include <vec.h>
+#include <fget.h>
 
 #include <jspnm.h>
+#include <jsstring.h>
 #include <interval.h>
 #include <ix.h>
 #include <jsfile.h>
@@ -209,224 +50,316 @@
 #include <float_image_from_uint16_image.h>
 #include <float_image_to_uint16_image.h>
 #include <argparser.h>
+#include <argparser_extra.h>
 #include <argparser_geo.h>
 
-typedef struct mpoint_t 
-  { char *tag;   /* Point tag. */
-    r2_t p;      /* Given point coordinates. */
-    bool_t inv;  /* False maps input to output, true the inverse. */
-  } mpoint_t;
-  /* Data about an image point given to "-map" or "-unmap". */
-  
-vec_typedef(mpoint_vec_t,mpoint_vec,mpoint_t);
-  /* An expandable vector of {mpoint_t}. */
+#define USER_UNIT_MIN  (1.0e-100)
+  /* A very small value, but still far from underflow. */
+   
+#define USER_UNIT_MAX  (1.0e+21)
+  /* A very large value, but still far from overflow. */
+ 
+#define USER_COORD_MAX  (1.0e+21)
+  /* A very large value, but still far from overflow. */
 
-typedef struct options_t 
-  { char *fname;           /* Input file name. */
-    /* Global coordinate system and encoding options: */
-    bool_t yDown;          /* TRUE if the vertical axis points down, FALSE otherwise. */
-    bool_t xLeft;          /* TRUE if the horizontal axis points left, FALSE otherwise. */
-    /* Image-specific coordinate system options: */
-    bool_t iCenter;        /* If TRUE, input origin is center; if FALSE, use {iOrg}. */
-    r2_t iOrg;             /* Input origin relative to default origin, if {!iCenter}. */
-    bool_t oCenter;        /* If TRUE, output origin is center; if FALSE, use {oOrg}. */ 
-    r2_t oOrg;             /* Output origin relative to default origin, if {!oCenter}. */
-    /* Output image attributes: */
-    int32_t oCols;         /* X size of output image, or -1 if not given. */
-    int32_t oRows;         /* Y size of output image, or -1 if not given. */
-    uint16_t maxval;       /* Output maxval requested by user, or 0 if not given. */
-    /* Geometry transformation options: */
-    hr2_pmap_t M;          /* The geometric transformation. */
-    double scale;          /* Extra output scaling factor. */
+#define IMG_SIZE_MAX (32*1024)
+  /* A limit on image size, to avoid humongous mallocs. */
+
+typedef struct feature_t
+  { char *tag;   /* Key point tag. */
+    r2_t pos;    /* Key point coordinates, in the image's input user coordinate system. */
+    char *cmt;   /* The comment string for this point, or {NULL}. */
+  } feature_t;
+  /* Data about a key feature reaad from a ".pts" file. */
+
+vec_typedef(feature_vec_t,feature_vec,feature_t);
+  /* An expandable vector of {feature_t}. */
+
+typedef struct image_options_t
+  { char *name;           /* Input (and output) file name, minus prefix and extensions. */
+    char *ext;            /* Input (and output) file extension. */
+    char *matrix;         /* Name specified with the "map" attribute, or {NULL}. */
+    char *points;         /* Name specified with the "points" attribute, or {NULL}. */
+    /* User coordinates for input image: */
+    double unit;          /* Input user coords unit, in pixels. */
+    bool_t center;        /* If true, input origin is center; if false, use {org}. */
+    r2_t org;             /* Input origin relative to default origin, if {!center}. */
+  } image_options_t;
+
+vec_typedef(image_options_vec_t,image_options_vec,image_options_t);
+
+typedef struct options_t
+  { /* User coordinate system axis directions: */
+    bool_t yUp;                /* true' if the vertical axis points up, false otherwise. */
+    bool_t xLeft;              /* true if the horizontal axis points left, false otherwise. */
+    /* Input image data: */
+    char *inPrefix;            /* Common prefix for all input file names. */
+    image_options_vec_t image; /* The input image specs. */
+    /* Map specification method: */
+    bool_t fromPoints;         /* If true, the map is computed from matching points, else as matrix. */
+    /* Output user coord system: */
+    double oUnit;              /* Output user coords unit, in pixels. */
+    bool_t oCenter;            /* If true, output origin is center; if false, use {oOrg}. */
+    r2_t oOrg;                 /* Output origin relative to default origin, if {!oCenter}. */
+    /* Output image size: */
+    double oCols;              /* X size of output images (out user units), or -1 if not given. */
+    double oRows;              /* Y size of output images (out user units), or -1 if not given. */
     /* Input image encoding and interpolation options: */
-    bool_t isMask;         /* TRUE to interpret samples as in masks. */
-    bool_t extend;         /* TRUE extends the the image by row/col replication. */
-    float undef;           /* Input image epadding value, if {extend} is false. */
-    int32_t interpolate;   /* Interpolation order. */
-    /* Point mapping/unmapping options: */
-    mpoint_vec_t mum;     /* Points to be mapped or unmapped. */
+    bool_t isMask;              /* true to interpret samples as in masks. */
+    bool_t extend;              /* True extends the the image by row/col replication. */
+    float undef;                /* Input image epadding value, if {extend} is false. */
+    int32_t interpolate;        /* Interpolation order. */
+    /* Output image encoding: */
+    bool_t noImages;            /* If true, skips computing and writing the output image. */
+    char *outPrefix;            /* Common prefix for all output file names. */
+    uint16_t maxval;            /* Output maxval (max int sample value) requested by user, or 0 if not given. */
     /* Debugging options: */
-    bool_t verbose;        /* TRUE to print global statistics. */
-    i2_t debug;            /* PBM indices of output pixel to debug; or (-1,-1). */
+    bool_t verbose;             /* True to print global statistics. */
+    i2_t debug;                 /* PBM indices of output pixel to debug; or (-1,-1). */
   } options_t;
   /* The transformation conceptually consists of moving the color from
     each point {ip} of the input image's domain (in the user's input
     coordinate system) to the point {op = M.dir(ip)} (in the user's
     output coordinate system). (In practice, we scan each output pixel
-    {op} and set it to the input image's value at point {ip =
-    M.inv(op)}.  */
+    {op} and set it to the input image's value in the neighborhood of
+    point {ip = M.inv(op)}. */
 
 /* INTERNAL PROTOTYPES */
 
 int32_t main(int32_t argc, char **argv);
-options_t *get_options(int32_t argc, char **argv);
+options_t *parse_options(int32_t argc, char **argv);
+image_options_vec_t parse_image_options(argparser_t *pp);
+void parse_image_center_org_unit_attributes(argparser_t *pp, image_options_t *im);
+
+hr2_pmap_t compute_map_from_features(feature_vec_t *fta, feature_vec_t *ftb); 
+  /* Finds all pairs of features {fa} in {fta} and {fb} in {ftb} that have
+    the same tag. Then computes a projective map {M} that takes 
+    {fa.pos} as close as possible to {fb.pos}, for every such pair. */
+
+hr2_pmap_t best_map(feature_vec_t *fta, int32_vec_t *ixa, feature_vec_t *ftb, int32_vec_t *ixb);
+  /* The index lists {ixa} and {ixb} must have the same length {nf} 
+    and must contain the indices of features in {fta} and {ftb} with matching tags.
+    The length {nf} should be more than the minimum number of points needed to determine
+    the map. The procedure computes a map {N} such that the mean squared distance
+    between {N(fta.e[ixa.e[k]])} and {N^{-1}(ftb.e[ixb.e[k]])} is as small as possible.
+    Then returns the map {N^2}. */
+
+void check_pmap(hr2_pmap_t *M, feature_vec_t *fta, int32_vec_t *ixa, feature_vec_t *ftb, int32_vec_t *ixb, double tol);
+  /* The index lists {ixa} and {ixb} must be as in {best_map}. Checks
+    the distances between {M(pa)} an {pb} for positions {pa,pb} of all pairs of features
+    with matching tags. */
+
+float_image_t *process_image
+  ( options_t *o,
+    image_options_t *oi,
+    float_image_t *img,
+    hr2_pmap_t *M_user
+  );
+  /* Applies the projective map {M} to the image {img}. */
+
+void check_defines(void);
+  /* Calls all the defined macros that are used in the {PROG_HELP} and {PROG_INFO} string,
+    in bottom-up order, so that any bugs in them are easier to debug. */
 
 void change_coord_systems
   ( hr2_pmap_t *P,    /* (IN/OUT) The projective transformation map. */
-    hr2_pmap_t *isys, /* The map from native input to user input coordinates. */
-    hr2_pmap_t *osys  /* The map from native output to user output coordinates. */
+    hr2_pmap_t *isys, /* The map from pixel input to user input coordinates. */
+    hr2_pmap_t *osys  /* The map from pixel output to user output coordinates. */
   );
   /* Assumes that {P} is a projective map from the input domain to the
     output domain, described in terms of the user-defined input and
     output coordinate systems. Modifies the map {P} so that it takes
-    and returns points expressed in the native {float_image}
+    and returns points expressed in the pixel {float_image}
     coordinate systems, according to the given coordinate system options. */
 
+feature_vec_t read_features(char *prefix, char *name);
+  /* Reads the key points of one image from the file "{prefix}{name}.pts". */
+
+hr2_pmap_t read_map_matrix(char *prefix, char *name);
+  /* Reads a projective map as a 3x3 matrix (input user cooords to outout user coords)
+     from the file "{prefix}{name}.mat". */
+
 float_image_t *read_image
-  ( FILE *rd, 
-    int32_t *colsP, 
-    int32_t *rowsP, 
-    int32_t *chnsP, 
+  ( char *prefix, 
+    char *name,
+    char *ext,
+    int32_t *colsP,
+    int32_t *rowsP,
+    int32_t *chnsP,
     uint16_t *maxvalP,
     bool_t isMask,
     bool_t verbose
   );
-  /* Reads a PBM/PGM/PPM image file from {rd}, converts it to a float
-    image with samples in the range [0_1]. Returns the relevant image
-    data. If {verbose} is true, prints image statistics to
-    {stderr}. */
+  /* Reads a PBM/PGM/PPM image file from file "{prefix}{name}.{ext}", 
+    converts it to a float image with samples in the range [0_1] and Y axis down. Returns the
+    relevant image data. If {verbose} is true, prints image statistics
+    to {stderr}. */
+    
+feature_vec_t read_features(char *prefix, char *name);
+  /* Reads a list of feature points from file "{prefix}{name}.pts". */
+        
+int32_vec_t index_sort_features(feature_vec_t *ft);
+  /* Let {nf} be {ft.ne}. Returns a vector of {nf} indices {ix} such
+    that {ix.e[0..nf-1]} is a permutation of {0..nf-1]}, and the tags
+    {ft.e[ix.e[0..nf-1]].tag} are in increasing lexical order. Fails
+    with error if two distinct elements of {ft} have the same tag. */
+    
+void index_match_features(feature_vec_t *fta, int32_vec_t *ixa, feature_vec_t *ftb, int32_vec_t *ixb);
+  /* Assumes that {ixa} and {ixb} are permutations of the indices of {fta} and {ftb}
+    that indicate the order of their increasing tags, as returned by {index_sort_features}.
+    Finds the {nf} elements of {fta} and {ftb} that have matching tags, and reduces
+    both {ixa} and {ixb} to list only those elements, in the same order.  That is,
+    after this call, {ixa.ne == ixb.ne == nf}, and {fta.e[ixa.e[k]].tag} and {ftb.e[ixb.e[k]].tag} are equal strings,
+    for all {k} in {0..nf-1}. */
+    
+hr2_pmap_t read_map_matrix(char *prefix, char *name);
+  /* Reads a projective map matrix from file "{prefix}{name}.map". */
 
 void write_image
-  ( FILE *wr, 
-    float_image_t *fim, 
+  ( char *prefix, 
+    char *name,
+    char *ext,
+    float_image_t *fim,
     uint16_t maxval,
     bool_t isMask,
     bool_t verbose
   );
-  /* Writes the float image {fim} to {wr} as a PBM/PGM/PPM image file.
-    Samples are converted fron the range [0_1]. Returns the relevant
-    image data. If {verbose} is true, prints image statistics to
-    {stderr}. */
-
-void print_matrix(FILE *wr, char *name1, char *name2, r3x3_t *M);
-  /* Prints the projective matrix {M} to file {wr}, labeled with 
-    {name1} and {name2}. */
-
-void print_pmap(FILE *wr, char *name, hr2_pmap_t *M);
-  /* Prints the projective map {M} (direct and inverse matrices)
-    to file {wr}, labeled with {name}. */
+  /* Writes the float image {fim} to file "{prefix}{name}.{ext}" 
+    as a PBM/PGM/PPM image file.
+    Samples are converted fron the range [0_1]. Assumes Y axis down.
+    Returns the relevant image data. If {verbose} is true, prints image
+    statistics to {stderr}. */
+    
+char *make_filename(char *prefix, char *name, char *ext);
+  /* Returns the string "{prefix}{name}.{ext}". */
 
 /* IMPLEMENTATIONS */
+    
+void check_defines(void)
+  { /* This procedure had better come before {main} so that #define bugs are caught upfront. */
 
-int32_t main(int32_t argc, char **argv)
+    auto void ptc(char *name, char *t);
+    
+    char *tm1 = img_ops_HELP; ptc("tm1", tm1);
+    char *t00 = imgc_parse_unit_HELP("-oUnit","_OUT"); ptc("t00", t00);
+    char *t01 = imgc_parse_size_HELP("-oSize","_OUT"); ptc("t01", t01);
+    char *t02 = PROG_HELP; ptc("t02", t02);
+    char *t03 = PROG_INFO_COORDS_INTRO; ptc("t03", t03);
+    char *t04 = PROG_INFO_DESC; ptc("t04", t04);
+    char *t05 = xaxis_def; ptc("t05", t05);
+    char *t06 = yaxis_def; ptc("t06", t06);
+    char *t07 = yaxis_def; ptc("t07", t07);
+    char *t08 = osize_def; ptc("t08", t08);
+    char *t09 = PROG_INFO_MAP_FILES; ptc("t09", t09);
+    char *t10 = PROG_INFO_POINTS_FILES; ptc("t10", t10);
+    char *t11 = imgc_parse_x_axis_INFO_OPTS(xaxis_def); ptc("t11", t11);
+    char *t12 = imgc_parse_y_axis_INFO_OPTS(yaxis_def); ptc("t12", t12);
+    char *t13 = imgc_parse_unit_INFO_OPTS("unit","_IN[k]","each input image"); ptc("t13", t13);
+    char *t14 = imgc_parse_center_org_INFO_OPTS("center","org","_IN[k]",org_def); ptc("t14", t14);
+    char *t15 = imgc_unit_affects_org_INFO_OPTS("unit","org","the corresponding image"); ptc("t15", t15);
+    char *t16 = imgc_parse_unit_INFO_OPTS("-oUnit","_OUT","every output image"); ptc("t16", t16);
+    char *t17 = imgc_unit_affects_org_INFO_OPTS("-oUnit","org","the corresponding image"); ptc("t17", t17);
+    char *t18 = imgc_unit_affects_org_INFO_OPTS("-oUnit","org","the corresponding image"); ptc("t18", t18);
+    char *t19 = imgc_parse_size_INFO_OPTS("-oSize","_OUT","all output images",osize_def); ptc("t19", t19);
+    char *t20 = PROG_INFO_OPTS; ptc("t20", t20);
+    char *t21 = PROG_INFO; ptc("t21", t21);
+    
+    void ptc(char *name, char *text)
+      { fprintf(stderr, "--- %s ----------------------------------------------------------------\n", name);
+        argparser_print_text(stderr, text, 72);
+        fprintf(stderr, "------------------------------------------------------------------------\n");
+      }
+  }
+    
+float_image_t *process_image
+  ( options_t *o,
+    image_options_t *oi,
+    float_image_t *img_in,
+    hr2_pmap_t *M_user
+  )
   {
-    /* Parse command line options: */
-    options_t *o = get_options(argc, argv);
-    if (o->verbose) { print_pmap(stderr, "user's", &(o->M)); }
-
-    /* Read input image, get dimensions: */
+    /* Get input image channels and size (in pixels): */
     int32_t chns, iCols, iRows;
-    uint16_t maxval_in;
-    FILE *rd = open_read(o->fname, o->verbose);
-    float_image_t *im_in = read_image(rd, &iCols, &iRows, &chns, &maxval_in, o->isMask, o->verbose);
-    
-    /* Compute US to FS coord system map {isys} for input image: */
-    hr2_pmap_t isys = imgc_coord_sys_map(o->xLeft, o->yDown, o->iCenter, &(o->iOrg), iCols, iRows);
-    if (o->verbose) { print_pmap(stderr, "input coord system", &(isys)); }
-    
-    /* Provide default size of output image: */
-    int32_t oCols = (o->oCols < 0 ? iCols : o->oCols);
-    int32_t oRows = (o->oRows < 0 ? iRows : o->oRows);
+    float_image_get_size(img_in, &chns, &iCols, &iRows);
 
-    /* Compute US to FS coord system map {osys} for the output image: */
-    hr2_pmap_t osys = imgc_coord_sys_map(o->xLeft, o->yDown, o->oCenter, &(o->oOrg), oCols, oRows);
-    if (o->verbose) { print_pmap(stderr, "output coord system", &(osys)); }
-    
-    if (o->scale != 1)
-      { /* Apply the scale factor to the output US to FS map and to the image size: */
-        for (int32_t i = 1; i < 3; i++)
-          { for (int32_t j = 0; j < 3; j++)
-              { osys.dir.c[i][j] /= o->scale;
-                osys.inv.c[j][i] *= o->scale;
-              }
-          }
-        oCols = (int32_t)floor(oCols*o->scale);
-        oRows = (int32_t)floor(oRows*o->scale);
+    /* Compute output image size in pixels: */
+    int32_t oCols, oRows;
+    imgc_compute_output_size_in_pixels(iCols, iRows, oi->unit, o->oCols, o->oRows, o->oUnit, &oCols, &oRows, IMG_SIZE_MAX);
+    if (o->verbose) { fprintf(stderr, "output image size (pixels) = %d %d\n", oCols, oRows); }
+
+    /* Compute pixel-to-user coord system map {isys} for input image: */
+    hr2_pmap_t isys = imgc_coord_sys_map(o->xLeft, o->yUp, oi->unit, oi->center, &(oi->org), iCols, iRows);
+    if (o->verbose) { imgc_print_pmap(stderr, "input pixel", "input user", "isys", &(isys)); }
+
+    /* Compute pixel-to-user coord system map {osys} for the output image: */
+    hr2_pmap_t osys = imgc_coord_sys_map(o->xLeft, o->yUp, o->oUnit, o->oCenter, &(o->oOrg), oCols, oRows);
+    if (o->verbose) { imgc_print_pmap(stderr, "output pixel", "output user", "osys", &(osys)); }
+
+    /* Build the pixel-to-pixel projective map {M_pix}: */
+    hr2_pmap_t M_pix = (*M_user);
+    change_coord_systems(&M_pix, &isys, &osys);
+    if (o->verbose) { imgc_print_pmap(stderr, "input pixel", "output pixel", "M_pix", &M_pix); }
+    /* Check whether tha projective map is the identity: */
+    bool_t ident_proj = hr2_pmap_is_identity(&M_pix);
+ 
+    bool_t debugging = ((o->debug.c[0] >= 0) && (o->debug.c[1] >= 0));
+    if (debugging && o->verbose)
+      { /* Map center of debugging pixel from pixel coords to pixel output coords {odb_pix}: */
+        r2_t odb_pix, odb_usr;
+        odb_pix.c[0] = o->debug.c[0] + 0.5;
+        odb_pix.c[1] = o->debug.c[1] + 0.5;
+        r2_map_projective(&odb_pix, &(osys.dir), &odb_usr, NULL);
+        /* Map center of debugging pixel from pixel coords to pixel input coords {idb_pix}: */
+        r2_t idb_usr, idb_pix;
+        r2_map_projective(&odb_usr, &(M_user->inv), &idb_usr, NULL);
+        r2_map_projective(&idb_usr, &(isys.inv), &idb_pix, NULL);
+        i2_t idb_pix_ix = (i2_t){{ (int32_t)floor(idb_pix.c[0]), (int32_t)floor(idb_pix.c[1]) }};
+        fprintf(stderr, "watching output pixel col = %d row = %d whose center is\n", o->debug.c[0], o->debug.c[1]);
+        fprintf(stderr, "  = (%7.1f,%7.1f) pixel in output pixel coords\n", odb_pix.c[0], odb_pix.c[1]);
+        fprintf(stderr, "  = (%7.1f,%7.1f) pixel in output user coords\n", odb_usr.c[0], odb_usr.c[1]);
+        fprintf(stderr, "  = (%7.1f,%7.1f) pixel in input user coords\n", idb_usr.c[0], idb_usr.c[1]);
+        fprintf(stderr, "  = (%7.1f,%7.1f) pixel in input pixel coords\n", idb_pix.c[0], idb_pix.c[1]);
+        fprintf(stderr, "  inside input pixel col = %d row = %d\n", idb_pix_ix.c[0], idb_pix_ix.c[1]);
       }
 
-    /* Build a modified projective map {N} acting on {float_image} coords: */
-    hr2_pmap_t N = o->M;
-    change_coord_systems(&N, &isys, &osys);
-    if (o->verbose) { print_pmap(stderr, "image's", &N); }
-   
-    /* Check whether projective map is the identity: */
-    bool_t ident_proj = hr2_pmap_is_identity(&N);
-    
-    /* Map/unmap given points: */
-    for (int32_t k = 0; k < o->mum.ne; k++)
-      { mpoint_t *mumk = &(o->mum.e[k]);
-        char *which = (mumk->inv ? "input" : "output");    /* Destination image. */
-        r3x3_t *U = (mumk->inv ? &(N.inv) : &(N.dir)); /* Proj map to use. */
-        r2_t q = mumk->p;
-        r2_map_projective(&(q), U, NULL);
-        fprintf(stderr, "%s point %s = %.1f %.1f\n", which, mumk->tag, q.c[0], q.c[1]);
-      }
-    
     /* Allocate output image: */
-    float_image_t *im_ot = float_image_new(chns, oCols, oRows);
-    
-    /* Map center of debugging pixel from PBM to native output coords {dbp}: */
-    r2_t dbp;
-    bool_t dbp_defined;
-    if ((o->debug.c[0] < 0) || (o->debug.c[1] < 0))
-      { dbp = (r2_t){{ NAN, NAN }};
-        dbp_defined = FALSE;
-      }
-    else
-      { dbp.c[0] = o->debug.c[0];
-        dbp.c[1] = oRows - o->debug.c[1];
-        r2_t odbp = dbp;
-        r2_map_projective(&odbp, &(osys.dir), NULL);
-        dbp_defined = TRUE;
-        if (o->verbose) 
-          { fprintf(stderr, "watching output point with coordinates:\n");
-            fprintf(stderr, " (%7d,%7d) PBM (Y down)\n", o->debug.c[0], o->debug.c[1]);
-            fprintf(stderr, " (%7.1f,%7.1f) libimg (Y up)\n", dbp.c[0], dbp.c[1]);
-            fprintf(stderr, " (%7.1f,%7.1f) user\n", odbp.c[0], odbp.c[1]);
-          }
-      }
-    
-    /* Compute output image from input image: */
+    float_image_t *img_ot = float_image_new(chns, oCols, oRows);
+
+    /* Apply the transformation from input image to output image: */
+
     auto void map_point(r2_t *pP, r2x2_t *JP);
       /* Maps a point {*p} of the OUTPUT image (in the {float_image}
-        native coordinates, with (0,0) at bottom left) to the
+        pixel coordinates, with (0,0) at bottom left) to the
         corresponding point of the INPUT image and stores that into {*p}. If the point
         falls outside the input image's domain, and {o->extend} is
-        false, sets {*p} to {(NAN,NAN)}.  Also multiplies {*J} by the 
+        false, sets {*p} to {(NAN,NAN)}.  Also multiplies {*J} by the
         Jacobian od the map. */
-      
+
     auto bool_t debug_point(r2_t *pP);
       /* True if {*pP} is the watched pixel. */
       
-    /* !!! Should take {red} from command line !!! */
+    if (o->verbose) { fprintf(stderr, "transforming the image ...\n"); }
     ix_reduction_t red = ix_reduction_SINGLE;
-    float_image_transform_all(im_in, red, &map_point, o->undef, TRUE, o->interpolate, &debug_point, im_ot);
-    
-    /* Choose output maxval: */
-    uint16_t maxval_ot = (o->maxval > 0 ? o->maxval : maxval_in);
-    if (maxval_ot < 255) { maxval_ot = 255; }
+    float_image_transform_all(img_in, red, &map_point, o->undef, TRUE, o->interpolate, &debug_point, img_ot);
 
-    write_image(stdout, im_ot, maxval_ot, o->isMask, o->verbose);
+    return img_ot;
 
-    if (o->verbose) { fprintf(stderr, "done."); }
-    return 0;
-    
     bool_t debug_point(r2_t *pP)
-      { return dbp_defined &&
-          (fabs(pP->c[0] - dbp.c[0]) <= 0.501) && 
-          (fabs(pP->c[1] - dbp.c[1]) <= 0.501);
+      { return debugging &&
+          (fabs(pP->c[0] + 0.5 - o->debug.c[0]) <= 0.499) &&
+          (fabs(pP->c[1] + 0.5 - o->debug.c[1]) <= 0.499);
       }
-    
+
     void map_point(r2_t *pP, r2x2_t *JP)
       {
         bool_t debug = debug_point(pP);
-        
+
         /* Apply the inverse projective map to the ouput image point: */
-        if (! ident_proj) 
-          { r2_map_projective(pP, &(N.inv), JP);
+        if (! ident_proj)
+          { r2_map_projective(pP, &(M_pix.inv), pP, JP);
             if (debug) { r2_debug_point_jac("pp", pP, JP, "\n"); }
           }
-          
+
         if (! o->extend)
           { /* Check domain: */
             bool_t invalid = FALSE;
@@ -437,10 +370,67 @@ int32_t main(int32_t argc, char **argv)
       }
   }
 
+int32_t main(int32_t argc, char **argv)
+  {
+    /* check_defines(); */
+
+    /* Parse command line options: */
+    options_t *o = parse_options(argc, argv);
+    
+    feature_vec_t ft_ref = feature_vec_new(0); /* Reference point set, if any. */
+    int32_t ni = o->image.ne; /* Number of input images. */
+    for (int32_t ki = 0; ki < ni; ki++)
+      { image_options_t *oik = &(o->image.e[ki]);
+        hr2_pmap_t Mk_user;
+        if (o->fromPoints)
+          { char *pts_name = (oik->points != NULL ? oik->points : oik->name);
+            feature_vec_t ftk = read_features(o->inPrefix, pts_name); 
+            if (ki == 0)
+              { ft_ref = ftk; Mk_user = hr2_pmap_identity(); }
+            else
+              { Mk_user = compute_map_from_features(&ftk, &ft_ref); }
+          }
+        else
+          { char *map_name = (oik->matrix != NULL ? oik->matrix : oik->name);
+            Mk_user = read_map_matrix(o->inPrefix, map_name);
+          }
+        if (o->verbose) { imgc_print_pmap(stderr, "input user", "output user", "M", &(Mk_user)); }
+
+        if (! o->noImages)
+          { int32_t iCols, iRows, chns;
+            uint16_t maxval_in;
+            float_image_t *fim_in = read_image
+              ( o->inPrefix, oik->name, oik->ext, 
+                &iCols, &iRows, &chns, &maxval_in, 
+                o->isMask, o->verbose
+              );
+            uint16_t maxval_out = o->maxval;
+            if (maxval_out == 0)
+              { uint16_t mvmin = (chns == 3 ? 255 : PNM_MAX_SAMPLE); 
+                maxval_out = (maxval_in < mvmin ? mvmin : maxval_in);
+              }
+            float_image_t *fim_out = process_image(o, oik, fim_in, &Mk_user);
+            write_image
+              ( o->outPrefix, oik->name, oik->ext,
+                fim_out, maxval_out, o->isMask, o->verbose
+              ); 
+          }
+      }
+ 
+    if (o->verbose) { fprintf(stderr, "done.\n"); }
+    return 0;
+  }
+ 
+char *make_filename(char *prefix, char *name, char *ext)
+  { char *fname = NULL;
+    asprintf(&fname, "%s%s.%s", prefix, name, ext);
+    return fname;
+  }
+
 void change_coord_systems
   ( hr2_pmap_t *P,
-    hr2_pmap_t *isys, /* The map from native input to user input coordinates. */
-    hr2_pmap_t *osys  /* The map from native output to user output coordinates. */
+    hr2_pmap_t *isys, /* The map from pixel input to user input coordinates. */
+    hr2_pmap_t *osys  /* The map from pixel output to user output coordinates. */
   )
   {
     /* Replace {P} by {(isys)*P*(osys^-1): */
@@ -449,60 +439,559 @@ void change_coord_systems
     (*P) = hr2_pmap_compose(P, &syso);
   }
 
-#define MAX_SIZE (32*1024)
-  /* A limit on image size, to avoid humongous mallocs. */
+float_image_t *read_image
+  ( char *prefix,
+    char *name, 
+    char *ext,
+    int32_t *colsP,
+    int32_t *rowsP,
+    int32_t *chnsP,
+    uint16_t *maxvalP,
+    bool_t isMask,
+    bool_t verbose
+  )
+  { char *fname = make_filename(prefix, name, ext);
+    FILE *rd = open_read(fname, verbose);
+    free(fname);
+    uint16_image_t *pim = uint16_image_read_pnm_file(rd);
+    fclose(rd);
+    bool_t yup = FALSE; /* Use the traditional image system to reduce confusion. */
+    float_image_t *fim = float_image_from_uint16_image(pim, isMask, NULL, NULL, yup, verbose);
+    (*colsP) = pim->cols;
+    (*rowsP) = pim->rows;
+    (*chnsP) = pim->chns;
+    (*maxvalP) = pim->maxval;
+    uint16_image_free(pim);
+    return fim;
+  }
 
-options_t *get_options(int32_t argc, char **argv)
+feature_vec_t read_features(char *prefix, char *name)
+  { char *fname = make_filename(prefix, name, "pts");
+    FILE *rd = open_read(fname, TRUE);
+    feature_vec_t ft = feature_vec_new(0);
+    int32_t nf = 0; /* Number of points read. */
+    int32_t line_num = 0; /* Number of lines found. */
+
+    auto void mp_error(char *tag, char *msg);
+    auto r2_t read_r2(char *tag);
+    
+    while (TRUE)
+      { fget_skip_spaces(rd);
+        if (fget_test_eof(rd)) { break; }
+        line_num++; 
+        if (fget_test_comment_or_eol(rd, '#', NULL)) { continue; }
+        char *tag = fget_string(rd);
+        uint8_t ch = (uint8_t)tag[0];
+        if (((ch < 'a') || (ch > 'z')) && ((ch < 'A') || (ch > 'Z')))
+          { mp_error(tag, " tag should start with letter"); }
+        r2_t pos = read_r2(tag);
+        fget_skip_spaces(rd);
+        if (fget_test_char(rd, 'C'))
+          { /* Skip feature radius and angle: */
+            /* double rad = */ (void)fget_double(rd);
+            /* double ang = */ (void)fget_double(rd);
+          }
+        else if (fget_test_char(rd, 'E'))
+          { /* Skip conjugated vectors of feature ellipsoid: */
+            /* r2_t u = */ (void)read_r2(tag);
+            /* r2_t v = */ (void)read_r2(tag);
+          }
+        else if (fget_test_char(rd, 'P'))
+          { /* No more data */
+          }
+        else 
+          { /* Should not happen: */
+            mp_error(tag, " no feature type letter");
+          }
+        fget_skip_spaces(rd);
+        char *cmt = NULL;
+        fget_comment_or_eol(rd, '#', &cmt);
+        if (cmt != NULL)
+          { char *t = trim_spaces(cmt, TRUE, TRUE);
+            free(cmt); 
+            cmt = t;
+          }
+        if ((cmt != NULL) && (strlen(cmt) == 0)) { cmt = NULL; }
+            
+        feature_vec_expand(&ft, nf);
+        feature_t *ftk = &(ft.e[nf]);
+        (*ftk) = (feature_t){ .tag = tag, .pos = pos, .cmt = cmt };
+        nf++;
+      }
+    feature_vec_trim(&ft, nf);
+    free(fname);
+    fclose(rd);
+    return ft;
+    
+    void mp_error(char *tag, char *msg)
+      { fprintf(stderr, "%s:%d: **", fname, line_num);
+        if (tag != NULL) { fprintf(stderr, " \"%s\":", tag); }
+        fprintf(stderr, " %s\n", msg);
+        affirm(FALSE, "aborted");
+      }
+
+    r2_t read_r2(char *tag)
+      { r2_t p;
+        for (int32_t j = 0; j < 2; j++)
+          { p.c[j] = fget_double(rd);
+             if (fabs(p.c[j]) > USER_COORD_MAX) { mp_error(tag, " coord too big"); }
+          }
+        return p;
+      }
+  }
+       
+hr2_pmap_t read_map_matrix(char *prefix, char *name)
+  { char *fname = make_filename(prefix, name, "map");
+    FILE *rd = open_read(fname, TRUE);
+    free(fname);
+    hr2_pmap_t M;
+    int32_t line_num = 0;
+    /* Skip blank and comment lines: */
+    while (TRUE)
+      { fget_skip_spaces(rd);
+        if (fget_test_eof(rd)) { break; }
+        line_num++; 
+        fprintf(stderr, "  (a) %d\n", line_num);
+        if (! fget_test_comment_or_eol(rd, '#', NULL)) { break; }
+      }
+    /* Read the direct matrix in three lines: */
+    for (int32_t i = 0; i < 3; i++)
+      { fprintf(stderr, "  (b) %d\n", line_num);
+        for (int32_t j = 0; j < 3; j++)
+          { M.dir.c[i][j] = fget_double(rd); }
+        demand(fget_test_comment_or_eol(rd, '#', NULL), "spurious data at end of line");
+        line_num++;
+      }
+    r3x3_inv(&(M.dir), &(M.inv));
+    return M;
+  }
+
+void write_image
+  ( char *prefix,
+    char *name, 
+    char *ext,
+    float_image_t *fim,
+    uint16_t maxval,
+    bool_t isMask,
+    bool_t verbose
+  )
+  { int32_t chns = (int32_t)fim->sz[0];
+    bool_t yup = FALSE; /* Use the traditional image system to for consistency with {read_image}. */
+    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, chns, NULL, NULL, NULL, maxval, yup, verbose);
+    bool_t forceplain = FALSE;
+    char *fname = make_filename(prefix, name, ext);
+    FILE *wr = open_write(fname, verbose);
+    free(fname);
+    uint16_image_write_pnm_file(wr, pim, forceplain, verbose); 
+    fclose(wr);
+    uint16_image_free(pim);
+  }
+
+hr2_pmap_t compute_map_from_features(feature_vec_t *fta, feature_vec_t *ftb)
+  { 
+    int32_vec_t ixa = index_sort_features(fta);
+    int32_vec_t ixb = index_sort_features(ftb);
+    index_match_features(fta, &ixa, ftb, &ixb);
+    assert(ixa.ne == ixb.ne);
+    int32_t nf = ixa.ne; /* Number of matched features. */
+    
+    /* Extract the coordinate of the matched features: */
+    r2_t *pa = talloc(nf, r2_t);
+    r2_t *pb = talloc(nf, r2_t);
+    for (int32_t kf = 0; kf < nf; kf++)
+      { pa[kf] = fta->e[ixa.e[kf]].pos;
+        pb[kf] = ftb->e[ixb.e[kf]].pos;
+      }
+        from many points
+        
+    int32_t nf_min = 4; /* Min points for "exact" map computation. */
+    hr2_pmap_t M;
+    if (nf > nf_min)
+      { /* Too many features for simple formula, must use optimization: */
+        M = best_map(fta, &ixa, ftb, &ixb);
+      }
+    else if (nf == 0)
+      { M = hr2_pmap_identity(); }
+    else if (nf == 1)
+      { /* Translation */ 
+        r2_t pa = fta->e[ixa.e[0]].pos;
+        r2_t pb = ftb->e[ixb.e[0]].pos;
+        r2_t d; r2_sub(&pb, &pa, &d);
+        M = hr2_pmap_translation(&d);
+      }
+    else
+      { hr2_pmap_t MA, MB; /* The two halves of the map. */
+        if (nf == 2)
+          { /* Similarity */
+            r2_t pa = fta->e[ixa.e[0]].pos;
+            r2_t qa = fta->e[ixa.e[1]].pos;
+            MA = hr2_pmap_similarity_from_two_points(&pa, &qa, FALSE);
+
+            r2_t pb = ftb->e[ixb.e[0]].pos;
+            r2_t qb = ftb->e[ixb.e[1]].pos;
+            MB = hr2_pmap_similarity_from_two_points(&pb, &qb, FALSE);
+          }
+        else if (nf == 3)
+          { /* Affine */
+            r2_t pa = fta->e[ixa.e[0]].pos;
+            r2_t qa = fta->e[ixa.e[1]].pos;
+            r2_t ra = fta->e[ixa.e[2]].pos;
+            MA = hr2_pmap_aff_from_three_points(&pa, &qa, &ra);
+
+            r2_t pb = ftb->e[ixb.e[0]].pos;
+            r2_t qb = ftb->e[ixb.e[1]].pos;
+            r2_t rb = ftb->e[ixb.e[2]].pos;
+            MB = hr2_pmap_aff_from_three_points(&pb, &qb, &rb);
+          }
+        else if (nf == 4)
+          { /* General projective. */
+            hr2_point_t pa = hr2_from_r2(&(fta->e[ixa.e[0]].pos));
+            hr2_point_t qa = hr2_from_r2(&(fta->e[ixa.e[1]].pos));
+            hr2_point_t ra = hr2_from_r2(&(fta->e[ixa.e[2]].pos));
+            hr2_point_t sa = hr2_from_r2(&(fta->e[ixa.e[3]].pos));
+            MA = hr2_pmap_from_four_points(&pa, &qa, &ra, &sa);
+
+            hr2_point_t pb = hr2_from_r2(&(ftb->e[ixb.e[0]].pos));
+            hr2_point_t qb = hr2_from_r2(&(ftb->e[ixb.e[1]].pos));
+            hr2_point_t rb = hr2_from_r2(&(ftb->e[ixb.e[2]].pos));
+            hr2_point_t sb = hr2_from_r2(&(ftb->e[ixb.e[3]].pos));
+            MB = hr2_pmap_from_four_points(&pb, &qb, &rb, &sb);
+          }
+        else
+          { assert(FALSE); }
+        M = hr2_pmap_inv_compose(&MA, &MB);
+      }
+    
+    /* !!! The tolerance {tol} should be a user parameter. */
+    check_pmap(&M, fta, &ixa, ftb, &ixb, 1.0);
+    return M;
+  }
+
+hr2_pmap_t best_map(feature_vec_t *fta, int32_vec_t *ixa, feature_vec_t *ftb, int32_vec_t *ixb)
+  { demand(ixa->ne == ixb->ne, "counts of matched points differ");
+    int32_t nf = ixa->ne; /* Number of matched features. */
+    demand(nf <= fta->ne, "bad {fta.ne}");
+    demand(nf <= ftb->ne, "bad {ftb.ne}");
+    
+    hr2_pmap_t M = initial_map(fta, ixa, ftb, ixb);
+    
+    demand(FALSE, "NOT IMPLEMENTED");
+    return hr2_pmap_identity();
+  }
+    
+hr2_pmap_t initial_map(feature_vec_t *fta, int32_vec_t *ixa, feature_vec_t *ftb, int32_vec_t *ixb)
+  { demand(ixa->ne == ixb->ne, "counts of matched points differ");
+    int32_t nf = ixa->ne; /* Number of matched features. */
+    demand(nf <= fta->ne, "bad {fta.ne}");
+    demand(nf <= ftb->ne, "bad {ftb.ne}");
+    
+    /* Pick a minimum subset of key points, trying to get them as spread out as possible: */
+    int32_t nf_min = 4; /* Min number of points for driect solution. */
+    demand(nf >= nf_min, "{nf} too small");
+    r2_t *pa[nf_min], *pb[nf_min]; /* Selected points for initial map. */
+    select_some_features(fta, ixa, ftb, ixb, nf_min, pa, pb);
+    /* Compute the map from those points: */
+    assert(nf_min == 4);
+    hr2_pmap_t Ma = hr2_pmap_from_four_points(pa[0], pa[1], pa[2], pa[3]);
+    hr2_pmap_t Mb = hr2_pmap_from_four_points(pb[0], pb[1], pb[2], pb[3]);
+    hr2_pmap_t M = hr2_pmap_inv_compose(&Ma, &Mb);
+    return M;
+  }
+    
+void select_some_features
+  ( int32_t nf,
+    r2_t pa[],
+    r2_t pb[],
+    int32_t ns,
+    int32_t kf_sel[]
+  )
+  { demand(ns >= 0, "invalid {ns}");
+    demand(ns <= nf, "not enough matched features");
+    
+    if (ns == 0) 
+      { return; }
+    else if (ns == nf) 
+      { /* Must take all of them: */
+        for (int32_t ks = 0; ks < ns; ks++)
+          { pa[ks] = &(fta.e[ixa.e[ks]].pos);
+            pb[ks] = &(fta.e[ixb.e[ks]].pos);
+          }
+      }
+    else 
+      { r2_t ca, cb; /* Barycenters of the two feature sets. */
+        double sza, szb; /* Estimated scale lengths of the two sets. */
+        compute_feature_center_scale(fta, ixa, &ca, &sza);
+        compute_feature_center_scale(ftb, ixb, &cb, &szb);
+        if (ns == 1)
+          { /* Pick the feature that on both sets seems to be closer to the center: */
+            int32_t k0 = select_extremal_feature(fta, ixa, &ca, sza, ftb, ixb, &cb, szb, -1);
+            pa[0] = &(fta.e[ixa.e[k0]].pos);
+            pb[0] = &(fta.e[ixb.e[k0]].pos);
+          }
+        else
+          { /* Start with the most outlying feature: */ 
+            int32_t k0 = select_extremal_feature(fta, ixa, &ca, sza, ftb, ixb, &cb, szb, +1);
+            pa[0] = &(fta.e[ixa.e[k0]].pos);
+            pb[0] = &(fta.e[ixb.e[k0]].pos);
+            /* Pick additional features that are as far as possible from each other: */
+            for (int32_t js = 1; js < ns; js++)
+              { int32_t kj = select_most_isolated_feature(js, fta, ixa, pa, sza, ftb, ixb, pb, szb);
+                pa[js] = &(fta.e[ixa.e[kj]].pos);
+                pb[js] = &(ftb.e[ixb.e[kj]].pos);
+              }
+          }
+      }
+  }
+        
+void compute_feature_center_scale(int32_t nf, r2_t p[], r2_t *c_P, double *sz_P)
+  { 
+    demand(nf >= 2, "needs at least two points");
+    
+    r2_t sum_p = (r2_t){{ 0, 0 }}; /* Sum of all matched feature positions. */
+    double sum_d2 = 0; /* Sum of squares of distances of pairs of matched freatures. */
+    double
+    for (int32_t kf = 0; kf < nf; kf++)
+      { r2_t *pk = &(p[kf]);
+        r2_add(pk, &sum_p, &sum_p);
+        for (int32_t jf = 0; jf < kf; jf++)
+          { r2_t *pj = &(p[jf]);
+            double d2 = r2_dist_sqr(pk, pj);
+            sum_d2 += d2;
+          }
+      }
+    /* Compute barycenter: */
+    r2_scale(1.0/nf, &sum_pos, c_P);
+    /* Compute estimated scale: */
+    (*sz_P) = sqrt(sum_d2/(nf*(nf-1)));
+
+  }
+  
+int32_t select_extremal_feature
+  ( int32_t nf,
+    r2_t pa[],
+    r2_t *ca,
+    double sza,
+    r2_t pb[],
+    r2_t *cb,
+    double szb,
+    sign_t dir
+  )
+  { demand(nf >= 1, "needs at least one feature");
+    
+    if (nf == 2)
+      { /* Either one is the centermost one. */
+        return 0;
+      }
+    else
+      { double rdmax = -INF; /* Min relative distance from center, times {sgn}. */
+        int32_t kfmax = -1;
+        for (int32_t kf = 0; kf < nf; kf++)
+          { double rda = r2_dist(&(pa[kf]), ca)/sza;
+            double rdb = r2_dist(&(pb[kf]), cb)/szb;
+            doubel rd = sgn*(rda + rdb)/2;
+            if (rd > rdmax) { kfmax = kf; rdmax = rd; }
+          }
+        assert(kfmax >= 0);
+        return kfmax;
+      }
+  }
+  
+int32_t select_most_isolated_feature
+  ( int32_t ns,
+    int32_t kf_sel[],
+    int32_t nf
+    r2_t pta[],
+    double sza,
+    r2_t ptb[],
+    double szb
+  )
+  { demand(ns >= 1, "furthest from what?");
+    demand(ns < nf, "No more features");
+    
+    auto void double min_rel_dist(int32_t kf, r2_t pt[], double double sz);
+      /* Returns the min distance between the matched feature {pt[kf]]} and each of
+        the already selected matched features {pt[jf]} where {jf} is any of {kf_sel[0..ns-1]},
+        scaled by {1/sz}.  In particular, returns 0 if {kf} is one of those already selected features. */ 
+    
+    double rdmax = -INF; /* Max relative mean distance from previus ones. */
+    int32_t kfmax = -1;
+    for (int32_t kf = 0; kf < nf; kf++)
+      { double rda = min_rel_dist(kf, pta, sza);
+        double rdb = min_rel_dist(kf, ptb, szb);
+        double rd = rda + rdb)/2;
+        if (rd > rdmax) { kfmax = kf; rdmax = rd; }
+      }
+    demand(kfmax >= 0, "can't find another distinct point");
+    return kfmax;
+
+    double min_rel_dist(int32_t kf, r2_t pt[], double double sz)
+      { double rdmin = +INF;
+        for (int32_t js = 0; js < ns; js++)
+          { int32_t jf = kf_sel[js];
+            if (jf == kf) { /* Feature {kf} aready selected: */ return 0.0; }
+            double rd = r2_dist(&(pt[kf]), &(pt[jf]))/sz;
+            if (rd == 0) { return 0; }
+            if (rd < rdmin) { rdmin = rd; }
+          }
+        return rdmin;
+      }
+  }
+
+void check_pmap(hr2_pmap_t *M, feature_vec_t *fta, int32_vec_t *ixa, feature_vec_t *ftb, int32_vec_t *ixb, double tol)
+  { demand(ixa->ne == ixb->ne, "mismatched lengths {ixa,ixb}"); /* Paranoia. */
+    int32_t nf = ixa->ne;
+    
+    auto void prbug(char *name0, r2_t *p0, char *dir, r2_t *q0, char *name1, r2_t *p1, double d);
+      /* Prints to {stderr} the data for a pair whose mapping error exceeds the tolerance. */
+      
+    auto void prtp(r2_t *p);
+      /* Prints  to {stderr} the point {p} in a fixed-width format. */
+    
+    for (int32_t k = 0; k < nf; k++)
+      { int32_t ka = ixa->e[k];
+        demand((ka >= 0) && (ka < fta->ne), "bad {ixa} index vector"); /* Paranoia. */
+        char *taga = fta->e[ka].tag;
+        r2_t *pa = &(fta->e[ka].pos);
+        
+        int32_t kb = ixb->e[k];
+        demand((kb >= 0) && (kb < ftb->ne), "bad {ixb} index vector"); /* Paranoia. */
+        char *tagb = ftb->e[kb].tag;
+        r2_t *pb = &(ftb->e[kb].pos);
+      
+        demand(strcmp(taga, tagb) == 0, "mismatched tags");  /* Paranoia. */
+        
+        /* !!! Should use midway distance !!! */
+        
+        r2_t qa = hr2_pmap_r2_point(pa, M);
+        double d_dir = r2_dist(&qa, pb);
+
+        r2_t qb = hr2_pmap_inv_r2_point(pb, M);
+        double d_inv = r2_dist(&qb, pa);
+        
+        if ((d_dir > tol) || (d_inv > tol))
+          { fprintf(stderr, "!!  mapping error too large for points \"%s\"\n", taga);
+            prbug("a", pa, "dir", &qa, "b", pb, d_dir);
+            prbug("p", pb, "inv", &qb, "a", pa, d_inv);
+          }
+      }
+
+    return;
+          
+    void prbug(char *name0, r2_t *p0, char *dir, r2_t *q0, char *name1, r2_t *p1, double d)
+      { fprintf(stderr, "    p%s = ", name0); prtp(p0); 
+        fprintf(stderr, " -%s-> ", dir); prtp(q0); 
+        fprintf(stderr, " p%s = ", name1); prtp(p1);
+        fprintf(stderr, " dist = %.2f\n", d);
+      }
+      
+    void prtp(r2_t *p)
+      { r2_gen_print(stderr, p, "%7.2f", "( ", " ", " )"); }
+        
+  }
+        
+
+int32_vec_t index_sort_features(feature_vec_t *ft)
+  { 
+    int32_vec_t ix = int32_vec_new(ft->ne);
+    for (int32_t i = 0; i < ft->ne; i++) { ix.e[i] = i; }
+    
+    auto int32_t cmptag(const void *p, const void *q);
+    
+    qsort((void *)ix.e, (size_t)ix.ne, sizeof(int32_t), &cmptag);
+    return ix;
+    
+    int32_t cmptag(const void *p, const void *q)
+      { int32_t ip = *((int32_t*)p); char *tagp = ft->e[ip].tag;
+        int32_t iq = *((int32_t*)q); char *tagq = ft->e[iq].tag;
+        int32_t cmp = strcmp(tagp, tagq);
+        demand(cmp != 0, "duplicated feature tag");
+        return cmp;
+      }
+  }
+
+void index_match_features(feature_vec_t *fta, int32_vec_t *ixa, feature_vec_t *ftb, int32_vec_t *ixb)
+  { int32_t nfa = fta->ne; demand(ixa->ne == nfa, "wrong index vector size");
+    int32_t nfb = ftb->ne; demand(ixb->ne == nfb, "wrong index vector size");
+    int32_t nf = 0; /* Number of matched features. */
+    int32_t ka = 0;
+    int32_t kb = 0;
+    while ((ka < nfa) || (kb < nfb))
+      { int32_t cmp;
+        if (ka > nfa)
+          { cmp = +1; }
+        else if (kb > nfb) 
+          { cmp = -1; }
+        else
+          { assert((ka < nfa) && (kb < nfb));
+            char *taga = fta->e[ixa->e[ka]].tag;
+            char *tagb = fta->e[ixa->e[ka]].tag;
+            cmp = strcmp(taga, tagb);
+          }
+        if (cmp < 0)
+          { /* Discard unmatched feature from {fta}: */ assert(ka < nfa); ka++; }
+        else if (cmp > 0)
+          { /* Discard unmatched feature from {ftb}: */ assert(kb < nfb); kb++; }
+        else
+          { /* Keep matched feature: */ 
+            assert((nf <= ka) && (ka < nfa));
+            assert((nf <= kb) && (kb < nfb));
+            ixa->e[nf] = ixa->e[ka]; ka++; 
+            ixb->e[nf] = ixb->e[kb]; kb++; 
+            nf++;
+          }
+      }
+    int32_vec_trim(ixa, nf);
+    int32_vec_trim(ixb, nf);
+  }
+
+options_t *parse_options(int32_t argc, char **argv)
   {
     argparser_t *pp = argparser_new(stderr, argc, argv);
-    
+
     argparser_set_help(pp, PROG_NAME " version " PROG_VERS ", usage:\n" PROG_HELP);
     argparser_set_info(pp, PROG_INFO);
     argparser_process_help_info_options(pp);
-     
+
     options_t *o = (options_t *)notnull(malloc(sizeof(options_t)), "no mem");
-    
+
+    /* Set defaults for input and output coord systems: */
     o->xLeft = FALSE;
     imgc_parse_x_axis(pp, &(o->xLeft));
     
-    o->yDown = TRUE;
-    imgc_parse_y_axis(pp, &(o->yDown));
+    o->yUp = FALSE;
+    imgc_parse_y_axis(pp, &(o->yUp));
+   
+    argparser_get_keyword(pp, "-inPrefix");
+    o->inPrefix = argparser_get_next_non_keyword(pp);
+
+    o->image = parse_image_options(pp);
     
-    o->iCenter = FALSE;
-    o->iOrg.c[0] = 0.0;
-    o->iOrg.c[1] = 0.0;
-    imgc_parse_input_center_org(pp, &(o->iCenter), &(o->iOrg));
-    
-    o->M = argparser_get_proj_map(pp);
-    
-    if (argparser_keyword_present(pp, "-scale"))
-      { o->scale = argparser_get_next_double(pp, 0.001, 100.0); }
+    /* Parse output user coord system specs: */
+    imgc_parse_unit(pp, "-oUnit", &(o->oUnit));
+    imgc_parse_center_org(pp, "-oCenter", &(o->oCenter), "-oOrg", &(o->oOrg));
+
+    /* The default output size depends on the input image size, so leave {-1}: */
+    o->oCols = -1.0;
+    o->oRows = -1.0;
+    imgc_parse_size(pp, "-oSize", &(o->oCols), &(o->oRows));
+
+    if (argparser_keyword_present(pp, "-fromMatrix"))
+      { o->fromPoints = FALSE; }
+    else if (argparser_keyword_present(pp, "-fromPoints"))
+      { o->fromPoints = TRUE; }
     else
-      { o->scale = 1; }
+      { argparser_error(pp, "must specify \"-fromMatrix\" or \"-fromPoints\""); }
       
-    o->mum = mpoint_vec_new(0);
-    int32_t mum_n = 0; /* Number of "-map" and "-unmap" seen. */
-    while (TRUE)
-      { bool_t inv;
-        if (argparser_keyword_present(pp, "-map"))
-          { inv = FALSE; }
-        else if (argparser_keyword_present(pp, "-unmap"))
-          { inv = TRUE; }
-        else
-          { break; }
-        char *tag = argparser_get_next_non_keyword(pp);
-        r2_t p = argparser_get_next_r2(pp, -1e6, +1e6);
-        mpoint_vec_expand(&(o->mum), mum_n);
-        o->mum.e[mum_n] = (mpoint_t){ tag: tag, p: p, inv: inv };
-        mum_n++;
-      }
-    mpoint_vec_trim(&(o->mum), mum_n);
+    o->noImages = argparser_keyword_present(pp, "-noImages");
+   
+    argparser_get_keyword(pp, "-outPrefix");
+    o->outPrefix = argparser_get_next_non_keyword(pp);
 
     if (argparser_keyword_present(pp, "-interpolate"))
       { o->interpolate = (int32_t)argparser_get_next_int(pp, 0, 1); }
     else
       { o->interpolate = 0; }
-    
+
     if (argparser_keyword_present(pp, "-extend"))
       { o->extend = TRUE; o->undef = 0.5f; }
     else if (argparser_keyword_present(pp, "-undef"))
@@ -512,16 +1001,6 @@ options_t *get_options(int32_t argc, char **argv)
     else
       { o->extend = FALSE; o->undef = 0.5f; }
 
-    /* The default output size depends on the input image: */
-    o->oCols = -1;
-    o->oRows = -1;
-    imgc_parse_output_size(pp, &(o->oCols), &(o->oRows), MAX_SIZE);
-
-    o->oCenter = FALSE;
-    o->oOrg.c[0] = 0.0;
-    o->oOrg.c[1] = 0.0;
-    imgc_parse_output_center_org(pp, &(o->oCenter), &(o->oOrg));
-    
     if (argparser_keyword_present(pp, "-maxval"))
       { o->maxval = (uint16_t)argparser_get_next_int(pp, 1, PNM_MAX_SAMPLE); }
     else
@@ -537,20 +1016,11 @@ options_t *get_options(int32_t argc, char **argv)
     o->verbose = argparser_keyword_present(pp, "-verbose");
 
     if (argparser_keyword_present(pp, "-debug"))
-      { o->debug.c[0] = (int32_t)argparser_get_next_int(pp, -1, MAX_SIZE);
-        o->debug.c[1] = (int32_t)argparser_get_next_int(pp, -1, MAX_SIZE);
+      { o->debug.c[0] = (int32_t)argparser_get_next_int(pp, -1, IMG_SIZE_MAX);
+        o->debug.c[1] = (int32_t)argparser_get_next_int(pp, -1, IMG_SIZE_MAX);
       }
-    else 
-      { /* The defaults depend on the input image: */
-        o->debug = (i2_t){{ -1, -1 }};
-      }
-    
-    /* Parse optional input file name: */
-    argparser_skip_parsed(pp);
-    if (argparser_next(pp) != NULL) 
-      { o->fname = argparser_get_next(pp); }
     else
-      { o->fname = "-"; }
+      { o->debug = (i2_t){{ -1, -1 }}; }
 
     /* Check for spurious args: */
     argparser_finish(pp);
@@ -558,55 +1028,63 @@ options_t *get_options(int32_t argc, char **argv)
     return o;
   }
 
-float_image_t *read_image
-  ( FILE *rd, 
-    int32_t *colsP, 
-    int32_t *rowsP, 
-    int32_t *chnsP, 
-    uint16_t *maxvalP,
-    bool_t isMask,
-    bool_t verbose
-  )
-  { uint16_image_t *pim = uint16_image_read_pnm_file(rd);
-    float_image_t *fim = float_image_from_uint16_image(pim, isMask, NULL, NULL, TRUE, verbose);
-    (*colsP) = pim->cols;
-    (*rowsP) = pim->rows;
-    (*chnsP) = pim->chns;
-    (*maxvalP) = pim->maxval;
-    uint16_image_free(pim);
-    return fim;
-  }
-
-void write_image
-  ( FILE *wr, 
-    float_image_t *fim, 
-    uint16_t maxval,
-    bool_t isMask,
-    bool_t verbose
-  )
-  { int32_t chns = (int32_t)fim->sz[0];
-    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, chns, NULL, NULL, NULL, maxval, TRUE, verbose);
-    bool_t forceplain = FALSE;
-    uint16_image_write_pnm_file(wr, pim, forceplain, verbose);
-    uint16_image_free(pim);
-  }
-
-void print_matrix(FILE *wr, char *name1, char *name2, r3x3_t *M)
+image_options_vec_t parse_image_options(argparser_t *pp)
   { 
-    fprintf(stderr, "  %s %s =\n", name1, name2);
-    r3x3_gen_print
-      ( wr, M, 
-        "%10.4f",
-        "", "", "",
-        "    [ ", " ", " ]\n" 
-      );
-    fprintf(stderr, "\n");
+    image_options_vec_t image = image_options_vec_new(10);
+    
+    int32_t ni = 0; /* Number of "-image" options given. */
+    while (argparser_keyword_present(pp, "-image"))
+      { image_options_vec_expand((&image), ni);
+        image_options_t *oi = &(image.e[ni]);
+        oi->name = argparser_get_next_non_keyword(pp);
+        oi->ext = argparser_get_next_non_keyword(pp);
+        parse_image_center_org_unit_attributes(pp, oi);
+        ni++;
+      }
+    image_options_vec_trim((&image), ni);
+    return image;
   }
 
-void print_pmap(FILE *wr, char *name, hr2_pmap_t *M)
-  { fprintf(wr, "\n");
-    print_matrix(wr, name, "P", &(M->dir)); 
-    print_matrix(wr, name, "P^-1", &(M->inv));
+void parse_image_center_org_unit_attributes(argparser_t *pp, image_options_t *oi)
+  { oi->center = FALSE;
+    oi->org = (r2_t){{ 0.0, 0.0 }};
+    oi->unit = 1.0;
+    oi->matrix = NULL;
+    oi->points = NULL;
+    bool_t center_org_given = FALSE; /* "center" or "org" specified for this image. */
+    bool_t unit_given = FALSE; /* "unit" specified for this image. */
+    while (argparser_next_is_non_keyword(pp))
+      { char *subop = argparser_get_next_non_keyword(pp);
+        if (strcmp(subop, "center") == 0)
+          { if (center_org_given) 
+              { argparser_error(pp, "repeated or contradictory \"center\"/\"org\" attributes"); }
+            oi->center = TRUE;
+            center_org_given = TRUE;
+          }
+        else if (strcmp(subop, "org") == 0)
+          { if (center_org_given) 
+              { argparser_error(pp, "repeated or contradictory \"center\"/\"org\" attributes"); }
+            oi->org.c[0] = argparser_get_next_double(pp, -USER_COORD_MAX, +USER_COORD_MAX);
+            oi->org.c[1] = argparser_get_next_double(pp, -USER_COORD_MAX, +USER_COORD_MAX);
+            center_org_given = TRUE;
+          }
+        else if (strcmp(subop, "unit") == 0)
+          { if (unit_given) { argparser_error(pp, "repeated \"unit\" attribute"); }
+            oi->unit = argparser_get_next_double(pp, USER_UNIT_MIN, USER_UNIT_MAX);
+            unit_given = TRUE;
+          }
+        else if (strcmp(subop, "matrix") == 0)
+          { if (oi->matrix != NULL) { argparser_error(pp, "repeated \"matrix\" attribute"); }
+            oi->matrix = argparser_get_next_non_keyword(pp);
+          }
+        else if (strcmp(subop, "points") == 0)
+          { if (oi->points != NULL) { argparser_error(pp, "repeated \"points\" attribute"); }
+            oi->points = argparser_get_next_non_keyword(pp);
+          }
+        else
+          { argparser_error(pp, "invalid image attribute"); }
+      }
   }
- 
-vec_typeimpl(mpoint_vec_t,mpoint_vec,mpoint_t);
+
+vec_typeimpl(feature_vec_t,feature_vec,feature_t);
+vec_typeimpl(image_options_vec_t,image_options_vec,image_options_t);

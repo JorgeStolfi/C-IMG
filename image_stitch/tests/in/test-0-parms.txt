@@ -1,0 +1,6 @@
+# Last edited on 2012-01-01 00:45:55 by stolfi
+
+  -image1 -1 -1 2 2 
+  -image2 20 20 40 60
+  -verbose
+  

@@ -1,0 +1,6 @@
+# Last edited on 2012-01-02 22:42:20 by stolfi
+# matches A B: rotate B by alpha
+
+( 100   100 ) = (  100   100 )
+( 150   100 ) = (  140    70 )
+( 100   150 ) = (  130   140 )

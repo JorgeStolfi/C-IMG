@@ -1,7 +1,7 @@
- 133  226 # Bright spot above rightmost pencil cusp.
- 191  395 # Left lobe of bright spot NE of pencil tip
- 369  371 # Bright spot S of NE pill.
- 342  283 # Bright dot E of N pill. 
-
- 256  260 # Bright spot just above N pill.
- 301  458 # Bright dot S of lowest pill.
+P01  133  226 P # Bright spot above rightmost pencil cusp.
+P02  191  395 P # Left lobe of bright spot NE of pencil tip
+P03  369  371 P # Bright spot S of NE pill.
+P04  342  283 P # Bright dot E of N pill. 
+               
+P05  256  260 P # Bright spot just above N pill.
+P06  301  458 P # Bright dot S of lowest pill.

@@ -1,3 +1,4 @@
-#
+# Last edited on 2023-10-12 16:56:35 by stolfi
 
-Geometric transformation of a pnm image
+Computing, optimizing, and applying projective mappings
+between two or more PBM/PGM/PPM images.

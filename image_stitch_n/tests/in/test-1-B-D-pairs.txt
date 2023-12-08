@@ -1,0 +1,6 @@
+# Last edited on 2012-01-02 06:54:13 by stolfi
+# matches B D: translate D by (5 205)
+
+(   5 205 ) = (   0    0 )
+(  15 205 ) = (  10    0 )
+(  15 215 ) = (  10   10 )

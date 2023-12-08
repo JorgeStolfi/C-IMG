@@ -1,0 +1,6 @@
+# Last edited on 2012-01-02 06:53:42 by stolfi
+# matches C D: translate D by (105 5)
+
+( 105   5 ) = (   0    0 )
+( 115   5 ) = (  10    0 )
+( 115  15 ) = (  10   10 )

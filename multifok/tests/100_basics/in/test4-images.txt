@@ -1,0 +1,52 @@
+# Last edited on 2017-06-12 02:11:21 by stolfilocal
+
+-imageFormat PNG
+-image 0.000 in/brasil_00/frame_00000.png
+-image 0.250 in/brasil_00/frame_00001.png
+-image 0.500 in/brasil_00/frame_00002.png
+-image 0.750 in/brasil_00/frame_00003.png
+-image 1.000 in/brasil_00/frame_00004.png
+-image 1.250 in/brasil_00/frame_00005.png
+-image 1.500 in/brasil_00/frame_00006.png
+-image 1.750 in/brasil_00/frame_00007.png
+-image 2.000 in/brasil_00/frame_00008.png
+-image 2.250 in/brasil_00/frame_00009.png
+-image 2.500 in/brasil_00/frame_00010.png
+-image 2.750 in/brasil_00/frame_00011.png
+-image 3.000 in/brasil_00/frame_00012.png
+-image 3.250 in/brasil_00/frame_00013.png
+-image 3.500 in/brasil_00/frame_00014.png
+-image 3.750 in/brasil_00/frame_00015.png
+-image 4.000 in/brasil_00/frame_00016.png
+-image 4.250 in/brasil_00/frame_00017.png
+-image 4.500 in/brasil_00/frame_00018.png
+-image 4.750 in/brasil_00/frame_00019.png
+-image 5.000 in/brasil_00/frame_00020.png
+-image 5.250 in/brasil_00/frame_00021.png
+-image 5.500 in/brasil_00/frame_00022.png
+-image 5.750 in/brasil_00/frame_00023.png
+-image 6.000 in/brasil_00/frame_00024.png
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

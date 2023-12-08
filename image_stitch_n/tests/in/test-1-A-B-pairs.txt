@@ -1,0 +1,6 @@
+# Last edited on 2012-01-02 06:49:06 by stolfi
+# matches A B: translate B by (100 0)
+
+( 100   0 ) = (   0    0 )
+( 110   0 ) = (  10    0 )
+( 110  10 ) = (  10   10 )

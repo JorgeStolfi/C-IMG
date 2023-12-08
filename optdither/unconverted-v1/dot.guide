@@ -1,0 +1,22 @@
+ATTENTION
+In TOTAL.c pgmer is not completed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+               Main tasks.
+1. Program for analising dithering mistake.
+2. Find the mistake in iterating program.
+3. Try other ways of iterating
+ a) other filters;
+ b) other ways for iterating.
+4. Try constr dith matrix without LiveAgua *not now.
+ a) simple restoring high waves
+ b) iterating and using y.obj *** URGENT justifier.
+5. Try other methods for LA   *** plr.r
+
+               For yourself.
+1. Lingua
+2. FFT,LOG,POLAR of stolfi's pictures.
+ 
+               Files.
+reprint - working SaveCT                       /litter/
+comparator.c - function for comparing steps
+diritr.c     - working version with os         /litter/
+oss.c - simple vercion of os for tracing.

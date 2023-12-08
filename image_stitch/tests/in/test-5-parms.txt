@@ -1,0 +1,6 @@
+# Last edited on 2012-01-01 00:46:28 by stolfi
+
+  -image1 0 0 1500 1500
+  -image2 0 0 1000 1000
+  -verbose
+

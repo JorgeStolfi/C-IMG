@@ -1,0 +1,12 @@
+# Last edited on 2008-02-04 20:07:54 by stolfi
+
+Copia de /home/ec2001/ra007998/public_html/PIBIC/pnmhough
+feita em 2003-08-12
+
+  pnmhough		rotinas para manipular ppm (main)
+  listas		rotinas para manipular listas
+  linhas		rotinas para encontrar linhas numa imagem
+  linhas_static	adendo a linhas - rotinas que independem da imagem
+  makefile
+
+pnmhough.c era chamado imagem.c

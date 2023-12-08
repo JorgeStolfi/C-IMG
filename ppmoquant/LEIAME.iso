@@ -1,0 +1,8 @@
+TO DO
+
+  fix and finish ppmoquant.c
+  
+  add option to pgmmedcut.c, ppmmedcut.c to 
+  restrict the representative to be one of the sample colors
+  
+  

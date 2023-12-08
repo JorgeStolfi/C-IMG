@@ -1,0 +1,6 @@
+# Last edited on 2012-01-02 22:31:09 by stolfi
+# matches C D: rotate D by 90 + alpha
+
+( 100   100 ) = (  100   100 )
+( 150   100 ) = (   70    60 )
+( 100   150 ) = (  140    70 )
