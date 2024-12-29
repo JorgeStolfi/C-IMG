@@ -2,7 +2,7 @@
 #define PROG_DESC "Multi-focus stereo microscopy"
 #define PROG_VERS "1.0"
 
-// Last edited on 2023-11-25 18:28:47 by stolfi
+// Last edited on 2024-12-21 13:59:45 by stolfi
 
 #define multifok_C_COPYRIGHT \
     "© 2017 by the State University of Campinas (UNICAMP)"
@@ -109,7 +109,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -304,7 +303,7 @@ int main(int argc, char **argv)
     /* Compute the raw focus score images: */
     if (o->verbose) { fprintf(stderr, "computing focus score images...\n"); }
     float_image_t **foc = notnull(malloc(NI*sizeof(float_image_t*)), "no mem");
-    for (int32_t k = 0; k < NI; k++)
+    for (uint32_t k = 0;  k < NI; k++)
       { foc[k] = multifok_compute_focus_map(img[k], NW, phi, w, o->noise, o->verbose); }
       
     /* Write the raw focus score images: */
@@ -313,7 +312,7 @@ int main(int argc, char **argv)
     
     /* Spread focus information laterally: */
     if (o->verbose) { fprintf(stderr, "spreading focus scores...\n"); }
-    for (int32_t k = 0; k < NI; k++)
+    for (uint32_t k = 0;  k < NI; k++)
       { multifok_blur_focus_map(foc[k], o->spread, o->verbose); }
 
     /* Merge images and compute the height map: */
@@ -359,11 +358,11 @@ void multifok_merge_images
     float *fxy = notnull(malloc(NI*sizeof(float)), "no mem"); /* Focus scores of 1 pixel. */
     float pix[NC]; /* Input image pixel. */
     float pox[NC]; /* Output image pixel. */
-    for (int32_t iy = 0; iy < NY; iy++)
-      { for (int32_t ix = 0; ix < NX; ix++)
+    for (uint32_t iy = 0;  iy < NY; iy++)
+      { for (uint32_t ix = 0;  ix < NX; ix++)
           { /* Extract focus scores for this pixel, compute total score: */
             double sum = 1.0e-200; /* Fudge factor in case all scores are zero. */
-            for (int32_t k = 0; k < NI; k++)
+            for (uint32_t k = 0;  k < NI; k++)
               { fxy[k] = float_image_get_sample(foc[k], 0, ix, iy);
                 assert(! isnan(fxy[k]));
                 assert(fxy[k] >= 0.0);
@@ -371,18 +370,18 @@ void multifok_merge_images
               }
 
             /* Convert {fxy[0..NI-1]} to partition of unity: */
-            for (int32_t k = 0; k < NI; k++) 
+            for (uint32_t k = 0;  k < NI; k++) 
               { fxy[k] = (float)(((double)fxy[k])/sum); }
 
             /* Store back into the images: */
-            for (int32_t k = 0; k < NI; k++) 
+            for (uint32_t k = 0;  k < NI; k++) 
               { float_image_set_sample(foc[k], 0, ix, iy, fxy[k]); }
             
             /* Merge the images with those weights: */
-            for (int32_t ic = 0; ic < NC; ic++) { pox[ic] = 0.0; }
-            for (int32_t k = 0; k < NI; k++)
+            for (uint32_t ic = 0;  ic < NC; ic++) { pox[ic] = 0.0; }
+            for (uint32_t k = 0;  k < NI; k++)
               { float_image_get_pixel(img[k], ix, iy, pix);
-                for (int32_t ic = 0; ic < NC; ic++) 
+                for (uint32_t ic = 0;  ic < NC; ic++) 
                   { pox[ic] += (float)(fxy[k]*((double)pix[ic])); }
               }
             float_image_set_pixel(mrg, ix, iy, pox);
@@ -417,10 +416,10 @@ float_image_t *multifok_compute_focus_map
     /* Compute focus scores: */
     /* Data for one sample: */
     float va[NW*NW]; /* Sample values in window for one channel. */
-    for (int32_t iy = 0; iy < NY; iy++)
-      { for (int32_t ix = 0; ix < NX; ix++)
+    for (uint32_t iy = 0;  iy < NY; iy++)
+      { for (uint32_t ix = 0;  ix < NX; ix++)
           { double sumsc = 0.0;
-            for (int32_t ic = 0; ic < NC; ic++)
+            for (uint32_t ic = 0;  ic < NC; ic++)
               { bool_t rep = TRUE; /* Set out-of-bounds samples to rearest sample. */
                 float_image_get_window_samples(img, ic, ix, iy, NW, NW, rep, va);
                 double fxy = multifok_focus_op_score_simple(NW, va, phi, w, noise);
@@ -467,7 +466,7 @@ float_image_t **multifok_read_images
     int32_t NI = iname->ne;
     float_image_t **img = notnull(malloc(NI*sizeof(float_image_t*)), "no mem");
     
-    for (int32_t k = 0; k < NI; k++)
+    for (uint32_t k = 0;  k < NI; k++)
       { char *fname = iname->e[k];
         float v0 = 0.0;
         float vM = 1.0;
@@ -521,8 +520,7 @@ void multifok_write_merged_image
     bool_t verbose
   )
   { 
-    char *fname = NULL;
-    asprintf(&fname, "%s-final.png", prefix);
+    char *fname = jsprintf("%s-final.png", prefix);
     double vmax = 1.0;
     if (verbose) { fprintf(stderr, "writing %s ...\n", fname); }
     float v0 = 0.0;
@@ -546,7 +544,7 @@ void multifok_write_all_mask_images
     /* Choose a common scale {vmax} for the mixing coefs images: */
     if (verbose) { fprintf(stderr, "choosing scale for mixing coefs images...\n"); }
     double vmax = 1.0e-100;
-    for (int32_t k = 0; k < NI; k++)
+    for (uint32_t k = 0;  k < NI; k++)
       { double avg, dev;
         float_image_compute_sample_avg_dev(foc[k], 0, &avg, &dev);
         double tmax = avg + spr*dev;
@@ -554,7 +552,7 @@ void multifok_write_all_mask_images
       }
 
     if (verbose) { fprintf(stderr, "writing the '%s' images (vmax = %11.8f)...\n", tag, vmax); }
-    for (int32_t k = 0; k < NI; k++)
+    for (uint32_t k = 0;  k < NI; k++)
       { multifok_write_mask_image(foc[k], vmax, prefix, k, tag, verbose); }
   }
 
@@ -568,9 +566,7 @@ void multifok_write_mask_image
   )
   { 
     int32_t NC = (int32_t)fimg->sz[0];
-    char *fname = NULL;
-
-    asprintf(&fname, "%s-%03d-%s.png", prefix, k, tag);
+    char *fname = jsprintf("%s-%03d-%s.png", prefix, k, tag);
     if (isnan(vmax))
       { /* Adjust range for this image only: */
         float sMin = 0.0f, sMax = 1.0e-35f; /* Sample range (to be computed). */
@@ -596,8 +592,7 @@ void multifok_write_height_map
   )
   { 
     /* Write the FNI version: */
-    char *fname = NULL;
-    asprintf(&fname, "%s-height.fni", prefix);
+    char *fname = jsprintf("%s-height.fni", prefix);
     if (verbose) { fprintf(stderr, "writing %s ...\n", fname); }
     FILE *wr = open_write(fname, verbose);
     float_image_write(wr, fimg);
@@ -605,7 +600,7 @@ void multifok_write_height_map
     free(fname);
 
     /* Write the PNG version: */
-    asprintf(&fname, "%s-height.png", prefix);
+    char *fname = jsprintf("%s-height.png", prefix);
     if (verbose) { fprintf(stderr, "writing %s ...\n", fname); }
     float v0 = zmin;
     float vM = zmax;

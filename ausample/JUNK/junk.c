@@ -1,4 +1,4 @@
-/* Last edited on 2006-10-29 01:33:23 by stolfi */
+/* Last edited on 2024-12-20 21:01:53 by stolfi */
 
 /* ---------------------------------------------------------------------- */
 
@@ -25,3 +25,25 @@ sound_t read_signal(FILE *rd)
 
 /* ---------------------------------------------------------------------- */
 
+        
+        
+          }
+        else
+          { /* This chunk overlaps the previous one. */
+            assert(nchunk_old >= 0);
+            assert(ichunk_old >= 0);
+            assert(ichunk >= nread - nchunk_old);
+            /* Shift down the overlapped portion in {si}: */
+            uint32_t nover = nread - ichunk;
+            uint32_t nskip = nchunk_old - nover;
+            fprintf(stderr, "reusing %d samples [%d..%d]\n", nover, nread - nover, nread - 1);
+            for (uint32_t k = 0; k < nover; k++)
+              { for (uint32_t c = 0; c < nc; c++)
+                  { si.sv[c][k] = si.sv[c][nskip + k]; }
+              }
+            /* Read the new portion: */
+            uint32_t nrest = nchunk - nover;
+            fprintf(stderr, "reading %d samples [%d..%d]\n", nrest, nread, nread + nrest - 1);
+            jsa_read_au_file_samples(stdin, &h, &si, nover, nrest);
+            nread += nrest;
+          }

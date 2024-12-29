@@ -4,7 +4,7 @@
 
 #define pnmfield_C_COPYRIGHT "Copyright © 2003 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2017-06-24 23:20:40 by stolfilocal */
+/* Last edited on 2024-12-20 18:05:28 by stolfi */
 
 /* TO DO: !!! Unify the documentation with that of {pnmadjust.c} !!! */
 
@@ -78,13 +78,13 @@
   " encoding.\n" \
   "\n" \
   "  -inGamma {TRIPLET}\n" \
-  "    Specifies the exponent {gamma} to be assumed when" \
+  "    Specifies the exponent {expo} to be assumed when" \
   " interpreting user-given color values. Namely, each" \
   " component of the color is converted to a number {y}" \
   " between 0 and 1, and then mapped through" \
-  " {sample_conv_gamma(y,gamma,bias)} where {gamma}" \
+  " {sample_conv_gamma(y,expo,bias)} where {expo}" \
   " is the corresponding component of the {TRIPLET} and {bias} is" \
-  " {sample_conv_BT709_BIAS}.  (For typical monitors, {gamma}" \
+  " {sample_conv_BT709_BIAS}.  (For typical monitors, {expo}" \
   " usually ranges between 1.8 and 2.2.)  The default is 1.0.\n" \
   "\n" \
   "  -field {FIELDSPECS}\n" \
@@ -195,18 +195,18 @@
 
 #define BT_BIAS (sample_conv_BT709_BIAS) 
 /* A {bias} parameter that approximates BT.709 when
-  used with gamma {0.45} or {1/0.45}. */
+  used with expo {0.45} or {1/0.45}. */
 
 
 /* COMMAND LINE ARGUMENTS */
 
 typedef struct options_t 
-  { frgb_t inGamma;      /* Gamma of given color values, per channel. */
+  { frgb_t inGamma_expo;      /* Gamma of given color values, per channel. */
     int cols, rows;      /* Dimensions of output image. */
     cfld_args_t *fld;    /* Raw user specs for the color field. */
     bool_t logarithmic;  /* TRUE to compute the field in log scale. */
     bool_t gray;         /* Write a grayscale image. */
-    frgb_t outGamma;     /* Gamma of output image, per channel. */
+    frgb_t outGamma_expo;     /* Gamma of output image, per channel. */
     uint16_t maxval; /* Max pixel value on output. */
   } options_t;
 
@@ -240,16 +240,16 @@ void write_pixels(FILE *f, options_t *o)
     pnm_choose_output_format(o->maxval, chns, FALSE, &format, &raw, &bits);
     pnm_write_header(f, cols, rows, maxval, format);
 
-    int needs_inGamma = ! frgb_fequal(o->inGamma.c, frgb_Ones.c, chns);
-    frgb_t *inGamma = (needs_inGamma ? &(o->inGamma) : NULL);
+    int needs_inGamma = ! frgb_fequal(o->inGamma_expo.c, frgb_Ones.c, chns);
+    frgb_t *inGamma_expo = (needs_inGamma ? &(o->inGamma_expo) : NULL);
 
-    int needs_outGamma = ! frgb_fequal(o->outGamma.c, frgb_Ones.c, chns);
-    frgb_t *outGamma = (needs_outGamma ? &(o->outGamma) : NULL);
+    int needs_outGamma = ! frgb_fequal(o->outGamma_expo.c, frgb_Ones.c, chns);
+    frgb_t *outGamma_expo = (needs_outGamma ? &(o->outGamma_expo) : NULL);
 
     auto frgb_t adjust_arg(frgb_t *v, int col, int row);
     
     frgb_t adjust_arg(frgb_t *v, int col, int row)
-      { return frgb_correct_arg(v, inGamma, o->gray); }
+      { return frgb_correct_arg(v, inGamma_expo, o->gray); }
     
     cfld_params_t *fld = cfld_compute_params(o->fld, adjust_arg, o->logarithmic);
 
@@ -272,9 +272,9 @@ void write_pixels(FILE *f, options_t *o)
             else
               { fv.c[0] = frgb_clip_gray(fv.c[0]); }
             frgb_debug("fv", x, y, &fv, chns, "\n");
-            if (outGamma != NULL)
+            if (outGamma_expo != NULL)
               { for (c = 0; c < chns; c++)
-                  { fv.c[c] = sample_conv_gamma(fv.c[c], 1/outGamma->c[c], BT_BIAS); }
+                  { fv.c[c] = sample_conv_gamma(fv.c[c], 1/outGamma_expo->c[c], BT_BIAS); }
               }
             frgb_debug("op", x, y, &fv, chns, "\n");
             for (c = 0; c < chns; c++) 
@@ -301,9 +301,9 @@ options_t *parse_options(int argc, char **argv)
     
     /* Parse keyword arguments: */
     if (argparser_keyword_present(pp, "-inGamma"))
-      { o->inGamma = frgb_parse(pp, 0.1, 10.0); }
+      { o->inGamma_expo = frgb_parse(pp, 0.1, 10.0); }
     else 
-      { o->inGamma = (frgb_t){{1.0, 1.0, 1.0}}; }
+      { o->inGamma_expo = (frgb_t){{1.0, 1.0, 1.0}}; }
    
    if (argparser_keyword_present(pp, "-field"))
       { o->fld = cfld_parse(pp); }
@@ -321,9 +321,9 @@ options_t *parse_options(int argc, char **argv)
     o->logarithmic = argparser_keyword_present(pp, "-logarithmic");
     
     if (argparser_keyword_present(pp, "-outGamma"))
-      { o->outGamma = frgb_parse(pp, 0.1, 10.0); } 
+      { o->outGamma_expo = frgb_parse(pp, 0.1, 10.0); } 
     else 
-      { o->outGamma = (frgb_t){{1.0, 1.0, 1.0}}; } 
+      { o->outGamma_expo = (frgb_t){{1.0, 1.0, 1.0}}; } 
 
     /* Parse X and Y sizes: */
     argparser_skip_parsed(pp);

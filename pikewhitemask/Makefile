@@ -1,9 +1,10 @@
-# Last edited on 2010-06-20 10:44:35 by stolfi
+# Last edited on 2024-08-30 23:26:21 by stolfi
 
 PROG := pikewhitemask
 
 JS_LIBS := \
   libimg.a \
+  libgeo.a \
   libjs.a
 
 include ${STOLFIHOME}/programs/c/GENERIC-PROGS.make

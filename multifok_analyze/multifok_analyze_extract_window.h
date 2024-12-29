@@ -1,8 +1,7 @@
 #ifndef multifok_analyze_extract_window_H
 #define multifok_analyze_extract_window_H
-/* Last edited on 2017-12-27 16:24:31 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:25 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdint.h>
 
 #include <float_image.h>

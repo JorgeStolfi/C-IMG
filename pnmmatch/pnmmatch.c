@@ -2,9 +2,10 @@
 #define PROG_DESC "deform a pixmap to match another pixmap"
 #define PROG_VERS "1.0"
 
+/* Last edited on 2024-12-25 09:28:41 by stolfi */
+
 /* Copyright © 2000 by the State University of Campinas (UNICAMP).
 ** See the copyright, authorship, and warranty notice at end of file.
-** Last edited on 2017-06-22 18:00:41 by stolfilocal
 */
 
 #define PROG_HELP \
@@ -13,6 +14,105 @@
   "  -outName XXX \\\n" \
   "  [-scale NN] [ -offset NN ] \\\n" \
   "  pnmfileA pnmfileB"
+  
+// .TH pgmmatch 1 "11 mar 2000"
+// .IX pgmmatch
+// .SH NAME
+// pgmmatch - compute the displacement map that best matches two images
+// .SH SYNOPSIS
+// .B pnmmatch
+// .RB -bumpspacing
+// .IR float
+// .RB -maxdisp
+// .IR float
+// .RB [ -scale
+// .IR float ]
+// .RB [ -offset
+// .IR float ]
+// .RB [ -depth
+// .IR int ]
+// .RB [ -name 
+// .IR string ] 
+// .I pnmfile1 pnmfile2
+// .SH DESCRIPTION
+// Reads two portable anymaps  
+// .IR A, B
+// from
+// .IR pnmfile1, pnmfile2.
+// Finds displacement functions
+// .IR DX[x,y]
+// and
+// .IR DY[x,y]
+// such that 
+// .IR A[x+DX[x,y]
+// ,
+// .IR y+DY[x,y]
+// ] approximates 
+// .IR B[x,y]
+// for all pixels 
+// .IR x,y.
+// Note that the displacements are geenrally fractional,
+// and imply interpolation of neighboring pixels.
+// .PP
+// Each of the maps 
+// .IR DX,DY
+// is the sum of Gaussian bumps centered 
+// at the corners of a quincux grid 
+// whose edge length is specified by the
+// .B -bumpspacing
+// option (no default).
+// The maximum magnitude of the displacement (in pixels), along any direction is 
+// specified by the
+// .B -maxdisp
+// parameter (no default).
+// .I B
+// The magnitude of each displacement is the one that maximizes the
+// correlation between the displaced 
+// .I A
+// image 
+// and the 
+// .I B
+// image, in a neighborhood of the bump center.
+// .PP
+// The two images must have the same width and height.
+// The displacement functions will be written to disk as
+// two images, called 
+// .I name
+// .B-dx.
+// .Iext
+// and 
+// .I name
+// .B-dy.
+// .I ext
+// , where 
+// .I name 
+// is the value of the 
+// .B -name
+// parameter (defaulting to 
+// .B out
+// ).
+// The extension 
+// .I ext
+// is 
+// .B ppm
+// if the input images are in color, and
+// .B pgm
+// otherwise.
+// The output images will have pixels ranging from 
+// 0 to 
+// .IR depth
+// (default 255).
+// The displacement values will be multiplied by the 
+// .B -scale
+// parameter (default 10), and added to the 
+// .B -offset
+// parameter (default 0), before being rounded to the nearest integer.
+// .PP
+// All flags can be abbreviated to their shortest unique prefix.
+// .SH "SEE ALSO"
+// pnmbend(1), pnm(5)
+// .SH AUTHOR
+// Copyright (C) 2000 by Jorge Stolfi <stolfi@dcc.unicamp.br>.
 
 #include <jspnm.h>
 #include <uint16_image.h>

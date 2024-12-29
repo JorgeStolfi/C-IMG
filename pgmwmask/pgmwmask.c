@@ -174,7 +174,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

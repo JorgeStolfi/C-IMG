@@ -4,13 +4,14 @@
 
 /* Copyright © 2006 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2023-03-07 17:37:43 by stolfi */
+/* Last edited on 2024-12-21 12:00:53 by stolfi */
 
 #define MAX_UNSIGNED_STYLE 0
 #define MAX_SIGNED_STYLE 2
 #define MAX_CYCLES 1000000
 #define OUTPUT_MAXVAL PNM_FILE_MAX_MAXVAL
-#define BIAS (sample_conv_BT709_BIAS)
+
+#define BT_BIAS (sample_conv_gamma_BT709_BIAS)
 
 #define PROG_HELP \
   PROG_NAME "\\\n" \
@@ -117,7 +118,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-#define _GNU_SOURCE
 #include <values.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -152,8 +152,8 @@ typedef struct pnm_header_t
 
 typedef struct options_t 
   { char *filename_in;   /* Input filename, or "-" for stdin. */
-    double inGamma;      /* Nonlinearity exponent (gamma) of input file. */
-    double outGamma;     /* Nonlinearity exponent (gamma) of output file. */
+    double inGamma_expo;      /* Nonlinearity exponent (gamma) of input file. */
+    double outGamma_expo;     /* Nonlinearity exponent (gamma) of output file. */
     double zero;         /* Input value that corresponds to zero level. */
     int32_t style;           /* Style of color map to use. */
     int32_t cycles;          /* How many cycles through the spectrum. */
@@ -172,8 +172,8 @@ void select_colors
     double zero, 
     int32_t style, 
     int32_t cycles, 
-    double inGamma, 
-    double outGamma,
+    double inGamma_expo, 
+    double outGamma_expo,
     bool_t showMap
   );
   /* Stores in {map[0..nmap-1]} a suitable palette of RGB colors
@@ -199,7 +199,7 @@ void select_colors
     lie along a straight line in RGB space.
     
     The input values and the output RGB coordinates are adjusted
-    according to the given {inGamma} and {outGamma}, respectively. If
+    according to the given {inGamma_expo} and {outGamma_expo}, respectively. If
     {zero > 0}, the input values are gamma-adjusted *after* mapping to
     the range [-1_+1]. */
 
@@ -216,11 +216,11 @@ void process_pixels(FILE *f, pnm_header_t *hd_in, options_t *o, ppm_pixel_t *map
     stdout.  Adjust for input and output gamma. */
 
 double gamma_decode(double y, double gammaDec);
-  /* Returns {sample_conv(y,gammaDec,BIAS)}, which is 
+  /* Returns {sample_conv(y,gammaDec,BT_BIAS)}, which is 
     roughly {sign(y)*abs(y)^gammaDec}. */
   
 double gamma_encode(double y, double gammaDec);
-  /* Returns {sample_conv(y,1/gammaDec,BIAS)}, which is 
+  /* Returns {sample_conv(y,1/gammaDec,BT_BIAS)}, which is 
     roughly {sign(y)*abs(y)^(1/gammaDec)}. */
 
 /* IMPLEMENTATIONS */
@@ -247,7 +247,7 @@ int32_t main(int32_t argc, char **argv)
     select_colors
       ( map, hd_in.maxval, 
         o->zero, o->style, o->cycles, 
-        o->inGamma, o->outGamma, 
+        o->inGamma_expo, o->outGamma_expo, 
         o->showMap
       );
     
@@ -335,8 +335,8 @@ void select_colors
     double zero,
     int32_t style, 
     int32_t cycles, 
-    double inGamma,
-    double outGamma,
+    double inGamma_expo,
+    double outGamma_expo,
     bool_t showMap
   )
   {
@@ -363,7 +363,7 @@ void select_colors
           }
 
         /* Apply input gamma correction, result is {gi}: */
-        double gi = gamma_decode(zi, inGamma);
+        double gi = gamma_decode(zi, inGamma_expo);
 
         /* Compute output color {go} as linear float RGB: */
         frgb_t go;
@@ -392,9 +392,9 @@ void select_colors
           
         /* Apply output gamma to obtain nonlinear float RGB color {zo}: */
         frgb_t zo;
-        zo.c[0] = (float)gamma_encode(go.c[0], outGamma);
-        zo.c[1] = (float)gamma_encode(go.c[1], outGamma);
-        zo.c[2] = (float)gamma_encode(go.c[2], outGamma);
+        zo.c[0] = (float)gamma_encode(go.c[0], outGamma_expo);
+        zo.c[1] = (float)gamma_encode(go.c[1], outGamma_expo);
+        zo.c[2] = (float)gamma_encode(go.c[2], outGamma_expo);
         
         /* Quantize coords as {vo.c[0..2]}: */
         ppm_pixel_t vo;
@@ -421,12 +421,12 @@ void select_colors
 
 double gamma_decode(double y, double gammaDec)
   {
-    return sample_conv_gamma((float)y, gammaDec, BIAS);
+    return sample_conv_gamma((float)y, gammaDec, BT_BIAS);
   }
 
 double gamma_encode(double y, double gammaDec)
   {
-    return sample_conv_gamma((float)y, 1/gammaDec, BIAS);
+    return sample_conv_gamma((float)y, 1/gammaDec, BT_BIAS);
   }
 
 options_t *get_options(int32_t argc, char **argv)
@@ -478,14 +478,14 @@ options_t *get_options(int32_t argc, char **argv)
          
     
     if (argparser_keyword_present(pp, "-inGamma"))
-      { o->inGamma = argparser_get_next_double(pp, 1.0e-5, 1.0e5); }
+      { o->inGamma_expo = argparser_get_next_double(pp, 1.0e-5, 1.0e5); }
     else 
-      { o->inGamma = 1.0; }
+      { o->inGamma_expo = 1.0; }
     
     if (argparser_keyword_present(pp, "-outGamma"))
-      { o->outGamma = argparser_get_next_double(pp, 1.0e-5, 1.0e5); }
+      { o->outGamma_expo = argparser_get_next_double(pp, 1.0e-5, 1.0e5); }
     else 
-      { o->outGamma = 1.0; }
+      { o->outGamma_expo = 1.0; }
       
     o->showMap = argparser_keyword_present(pp, "-showMap");
     

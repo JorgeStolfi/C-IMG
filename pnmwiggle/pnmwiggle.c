@@ -1,7 +1,7 @@
 #define PROG_NAME "pnmwiggle"
 #define PROG_DESC "mix uniform random noise into a PBM/PGM/PPM file"
 #define PROG_VERS "1.0"
-/* Last edited on 2017-07-01 00:28:38 by stolfilocal */
+/* Last edited on 2024-12-21 11:59:23 by stolfi */
 
 #define PROG_COPYRIGHT "Copyright © 1996 by the State University of Campinas (UNICAMP)"
 
@@ -63,7 +63,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

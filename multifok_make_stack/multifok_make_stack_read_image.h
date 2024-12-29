@@ -1,8 +1,7 @@
 #ifndef multifok_make_stack_read_image_H
 #define multifok_make_stack_read_image_H
-/* Last edited on 2018-03-05 00:15:51 by stolfilocal */
+/* Last edited on 2024-12-21 13:58:56 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdint.h>
 
 #include <bool.h>

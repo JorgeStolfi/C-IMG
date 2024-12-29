@@ -1,8 +1,9 @@
-# Last edited on 2023-02-07 23:43:55 by stolfi
+# Last edited on 2024-08-30 23:24:49 by stolfi
 
 PROG := spegram
 
 JS_LIBS := \
+  libgeo.a \
   libjs.a \
   libjsaudio.a \
   

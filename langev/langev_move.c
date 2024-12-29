@@ -1,7 +1,6 @@
 /* See {langev_move.h} */
-/* Last edited on 2021-07-17 23:28:16 by jstolfi */
+/* Last edited on 2024-12-21 14:00:16 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>

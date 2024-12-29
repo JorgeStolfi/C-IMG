@@ -1,7 +1,6 @@
 /* See {multifok_make_stack_read_image.h}. */
-/* Last edited on 2018-03-05 01:09:53 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:00 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

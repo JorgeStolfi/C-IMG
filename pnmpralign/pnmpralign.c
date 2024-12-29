@@ -1,4 +1,4 @@
-/* Last edited on 2023-10-10 19:10:44 by stolfi */
+/* Last edited on 2024-12-21 11:59:43 by stolfi */
 
 #define PROG_NAME "pnmpralign"
 #define PROG_DESC "Finds a projective map that aligns two images"
@@ -170,7 +170,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

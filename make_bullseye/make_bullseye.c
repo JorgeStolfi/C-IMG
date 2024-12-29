@@ -2,7 +2,7 @@
 #define PROG_DESC "creates a grayscale image with a circular wave pattern"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-03-03 15:39:26 by stolfi */
+/* Last edited on 2024-12-21 14:00:01 by stolfi */
 
 /* Copyright © 2007 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
@@ -48,7 +48,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
@@ -81,8 +80,8 @@ int32_t main(int32_t argc, char **argv)
 
     double S = hypot(NX, NY)/2;
     int32_t NH = 5; /* Pixel subsampling order: */
-    for(int32_t i = 0; i < NY; i++)
-      for(int32_t j = 0; j < NX; j++)
+    for (uint32_t i = 0;  i < NY; i++)
+      for (uint32_t j = 0;  j < NX; j++)
         { /* Compute pixel in row {i} and column {j}, antialiased: */ 
           double sum_fw = 0;
           double sum_w = 0;
@@ -95,7 +94,8 @@ int32_t main(int32_t argc, char **argv)
                 double dx = ((double)dj)/NH;
                 double wx = 0.5*(1 + cos(M_PI*dx));
                 double zx = cx + dx;
-
+                /* ??? Should it use {float_image_test_gen_bullsqr}? ??? */
+                /* ??? Should it use {float_image_test_gen_bullsex}? ??? */
                 double dy = ((double)di)/NH;
                 double wy = 0.5*(1 + cos(M_PI*dy));
                 double zy = cy + dy;

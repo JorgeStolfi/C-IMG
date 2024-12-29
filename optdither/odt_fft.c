@@ -1,7 +1,6 @@
 /* See {odt_fft.h} */
-/* Last edited on 2023-03-17 22:53:40 by stolfi */
+/* Last edited on 2024-12-21 13:58:53 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdint.h>
 
 #include <float_image.h>
@@ -20,9 +19,9 @@ void odt_fft_filter(float_image_t *xf, double wtx[], double wty[]);
     float_image_get_size(xf, &NC, &NX, &NY);
 
     for (ic = 0; ic < NC; ic ++)
-      { for (int32_t iy = 0; iy < NY; iy++)
+      { for (uint32_t iy = 0;  iy < NY; iy++)
           { double wtyi = wty[i];
-            for (int32_t ix = 0; ix < NX; ix++)
+            for (uint32_t ix = 0;  ix < NX; ix++)
               { double wtxi = wtx[ix]; 
                 double amxy = 1.0 - wtxi*wtyi;
                 float *sp = float_image_get_sample_address(xf, ic, ix, iy);
@@ -43,8 +42,8 @@ void odt_fft_permutize(float_image_t *xf)
     for (ic = 0; ic < NC; ic ++)
       { /* Collect addresses of all samples in channel {ic}: */
         int32_t ks = 0;
-        for (int32_t iy = 0; iy < NY; iy++)
-          { for (int32_t ix = 0; ix < NX; ix++)
+        for (uint32_t iy = 0;  iy < NY; iy++)
+          { for (uint32_t ix = 0;  ix < NX; ix++)
               { sp[ks] = float_image_get_sample_address(xf, ic, ix, iy);
                 ks++;
               }

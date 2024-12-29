@@ -1,4 +1,4 @@
-# Last edited on 2017-06-24 01:43:46 by stolfilocal
+# Last edited on 2024-08-30 23:27:25 by stolfi
 
 PROG := asus_capture
 
@@ -20,7 +20,8 @@ BOTHER_I_FLAGS := \
 BOTHER_I_FLAGS :=
 
 JS_LIBS := \
-  libimg.a \
+  libimg.a  \
+  libgeo.a\
   libjs.a
   
 OTHER_LIBS := \

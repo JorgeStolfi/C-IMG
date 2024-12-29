@@ -1,7 +1,6 @@
 /* See fvw_paint_self_colored.h */
-/* Last edited on 2017-06-25 16:27:24 by stolfilocal */
+/* Last edited on 2024-12-23 09:06:36 by stolfi */
 
-#define _GNU_SOURCE
 #include <assert.h>
 #include <math.h>
 #include <GL/glu.h>
@@ -17,7 +16,7 @@
 
 void fvw_paint_self_colored_hist_height_map
   ( float_image_t *ht, 
-    int c, 
+    uint32_t c, 
     double zscale, 
     float vmin,
     float vmax,
@@ -28,7 +27,7 @@ void fvw_paint_self_colored_hist_height_map
     
     /* Get  the height image dimensons: */
     assert(ht != NULL);
-    int HNC, HNX, HNY;
+    int32_t HNC, HNX, HNY;
     float_image_get_size(ht, &HNC, &HNX, &HNY);
 
     /* We need buffers for two rows of height map samples: */
@@ -37,12 +36,12 @@ void fvw_paint_self_colored_hist_height_map
     float *vm = vb; /* Next row of height samples. */
     
     /* Scan rows of height array: */
-    int x, y;
+    int32_t x, y;
     for(y = 0; y <= HNY; y++)
       { /* If {y > 0}, then {vm} contains the pixel values of row {y-1}. */
 	if (y <= HNY-1)
           { /* Get in {vo} the pixel values of row {y}: */
-            float_image_get_sample_row(ht, c, 0, HNX-1, y, vo);
+            float_image_get_sample_row(ht, (int32_t)c, 0, HNX-1, y, vo);
           }
 	/* Paint the pixels in row {y} and the walls between row {y} and row {y-1}: */
 	glBegin(GL_QUADS);

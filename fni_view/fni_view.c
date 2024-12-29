@@ -4,7 +4,7 @@
 
 #define PROG_C_COPYRIGHT "Copyright © 2005 Universidade Estadual Fluminense (UFF)."
 
-/* Last edited on 2022-10-22 11:17:40 by stolfi */
+/* Last edited on 2024-12-23 09:09:26 by stolfi */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
@@ -177,7 +177,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -234,7 +233,7 @@ typedef struct options_t
     char* texture_file;       /* Name of texture map, or NULL if not specified. */
     options_range_t colorize; /* Height range options for color mapping. */
     /* Other options: */
-    int32_t channel;          /* Initial channel to display. */
+    uint32_t channel;          /* Initial channel to display. */
     bool_t isMask;        /* TRUE if input samples are to be converted as in a mask. */
     bool_t hist;          /* TRUE specifies histogram-like plot. */
   } options_t;
@@ -253,7 +252,7 @@ fvw_state_range_t fvw_state_range_make(options_range_t *orn, int32_t NC);
   /* Creates a {fvw_state_range_t} from the user options {orn} for
     a height map image with {NC} channels. */
   
-void fvw_get_vrange(int32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP);  
+void fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP);  
   /* Obtains the height scaling or colormapping pixel range {*vminP} and {*vmaxP} for channel {c}
     of the image {ht}.  If the range has been previously computed and saved in the record {srn},
     takes it from there.  Otherwise, if {srn} has a user-specified range, uses that range.
@@ -267,7 +266,7 @@ typedef struct fvw_state_t
     double RAD;         /* Nominal radius of terrain (for default height scaling). */
 
     /* Channel to display: */
-    int32_t channel;         /* Current channel being displayed (mutable). */
+    uint32_t channel;         /* Current channel being displayed (mutable). */
 
     /* Display style: */
     bool_t hist;         /* TRUE specifies histogram-like plot (mutable). */
@@ -346,7 +345,7 @@ void fvw_set_lights(fvw_state_t *w);
 
 void fvw_paint_height_map
   ( float_image_t *ht, 
-    int32_t c, 
+    uint32_t c, 
     double ht_scale, 
     float cm_vmin,
     float cm_vmax,
@@ -437,8 +436,8 @@ fvw_state_t *fvw_create_state(options_t *o)
 
     /* Extra height scaling factors: */
     w->def_ht_mag = o->scale;
-    w->ht_mag = double_vec_new(ht_NC);
-    for (int32_t c = 0; c < ht_NC; c++) { w->ht_mag.e[c] = NAN; }
+    w->ht_mag = double_vec_new((uint32_t)ht_NC);
+    for (uint32_t c = 0;  c < ht_NC; c++) { w->ht_mag.e[c] = NAN; }
 
     /* Pixel ranges for color mapping: */
     w->cm_range = fvw_state_range_make(&(o->colorize), ht_NC);
@@ -484,23 +483,23 @@ fvw_state_range_t fvw_state_range_make(options_range_t *orn, int32_t NC)
   { fvw_state_range_t srn;
     srn.def_vmin = (orn->vauto ? NAN : orn->vmin);
     srn.def_vmax = (orn->vauto ? NAN : orn->vmax);
-    srn.vmin = float_vec_new(NC);
-    srn.vmax = float_vec_new(NC);
-    for (int32_t c = 0; c < NC; c++)
+    srn.vmin = float_vec_new((uint32_t)NC);
+    srn.vmax = float_vec_new((uint32_t)NC);
+    for (uint32_t c = 0;  c < NC; c++)
       { srn.vmin.e[c] = NAN; 
         srn.vmax.e[c] = NAN;
       }
     return srn;
   }
     
-void fvw_get_vrange(int32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP)
+void fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP)
   { float vmin = srn->vmin.e[c];
     float vmax = srn->vmax.e[c];
     if (isnan(vmin) || isnan(vmax))
       { if (isnan(srn->def_vmin) || isnan(srn->def_vmax))
           { vmin = +INF;
             vmax = -INF;
-            float_image_update_sample_range(ht, c, &vmin, &vmax);
+            float_image_update_sample_range(ht, (int32_t)c, &vmin, &vmax);
             if (vmin > vmax)
               { /* There are no valid samples: */
                 vmin = 0; vmax = 0;
@@ -522,7 +521,7 @@ void fvw_get_vrange(int32_t c, fvw_state_range_t *srn, float_image_t *ht, float 
 float_image_t *fvw_read_image(char *name, bool_t isMask, int32_t *NCP, int32_t *NXP, int32_t *NYP)
   { float_image_t *fim = NULL;
     /* Decide type by file name: */
-    int32_t len = (int32_t)strlen(name);
+    uint32_t len = (uint32_t)strlen(name);
     if ((strcmp(name,"-") == 0) || ((len > 4) && (strcmp(name+len-4,".fni") == 0)))
       { /* Float image file: */
         fim = fvw_read_float_image(name);
@@ -561,7 +560,7 @@ void fvw_paint_everything(fvw_state_t *w)
     float_image_get_size(w->ht, &ht_NC, &ht_NX, &ht_NY);
     
     /* Get the channel {c} to display: */
-    int32_t c = w->channel;
+    uint32_t c = w->channel;
     
     /* Recompute the height scale range if needed: */
     float ht_vmin, ht_vmax;
@@ -693,7 +692,7 @@ void fvw_set_lights(fvw_state_t *w)
 
 void fvw_paint_height_map
   ( float_image_t *ht, 
-    int32_t c, 
+    uint32_t c, 
     double ht_scale, 
     float cm_vmin,
     float cm_vmax,
@@ -863,7 +862,7 @@ void fvw_keyboard_method(unsigned char key, int32_t x, int32_t y)
 
         case 'c':
           /* Cycle through channels of height map: */
-          { int32_t NC = (int32_t)w->ht->sz[0]; 
+          { uint32_t NC = (uint32_t)w->ht->sz[0]; 
             w->channel = (w->channel + 1) % NC;
           }
           glutPostRedisplay();
@@ -881,8 +880,9 @@ void fvw_keyboard_method(unsigned char key, int32_t x, int32_t y)
         case '9':
           /* Select named channel of height map: */
           { int32_t c = key - '0';
+            assert((c >= 0) && (c <= 9));
             int32_t NC = (int32_t)w->ht->sz[0];
-            w->channel = (c < NC ? c : NC-1);
+            w->channel = (uint32_t)(c < NC ? c : NC-1);
           }
           glutPostRedisplay();
           break;
@@ -972,7 +972,7 @@ options_t *fvw_parse_options(int32_t argc, char **argv)
 
     /* Parse the initial channel index to display: */
     if (argparser_keyword_present(pp, "-channel"))
-      { o->channel = (int32_t)argparser_get_next_int(pp, 0, float_image_max_size-1); }
+      { o->channel = (uint32_t)argparser_get_next_int(pp, 0, float_image_max_size-1); }
     else
       { o->channel = 0; }
 

@@ -1,5 +1,5 @@
 # Tests of the pnmprojmap tool
-# Last edited on 2023-10-15 12:43:29 by stolfi
+# Last edited on 2024-10-31 22:25:53 by stolfi
 
 PROG := pnmprojmap
 PROGDIR := ../..
@@ -63,8 +63,10 @@ IMG_NAMES := ${basename ${notdir ${IMG_IN_FILES}}}
 IMG_ATTRS := :${EXT}
 ifeq "${ORG}" "C"
   IMG_ATTRS := ${IMG_ATTRS}:center
+  OSYS := -oCenter
 else ifeq "${ORG}" "O"
   IMG_ATTRS := ${IMG_ATTRS}:org:30:40
+  OSYS := -oOrg 0 0
 endif
 ifneq "${IUNIT}" "1.000"
   IMG_ATTRS := ${IMG_ATTRS}:unit:${IUNIT}
@@ -96,12 +98,13 @@ map-images: ${IMG_IN_FILES} ${PTS_IN_FILES} ${PROGDIR}/${PROG}
             -yAxis ${YAXIS} \
             -fromPoints \
             ${IMAGE_OPS} \
-            -oCenter \
+            ${OSYS} \
             -oUnit ${OUNIT} \
             -oSize ${NXO} ${NYO} \
             -interpolate 1 \
-            -outPrefix "out/${TEST_PREF}-"
-	out/.tried-mapping
+            -outPrefix "out/${TEST_PREF}-" \
+            -verbose
+	display -title "%f" -resize '>x700' out/${TEST_PREF}-*.ppm
         
 ######################################################################
 # For recursive "make" of a single image in a single test. Caller must define ${IMG_NAME}.
@@ -126,7 +129,7 @@ ${PTS_OT_EX_DIF_FILE}: out/.tried-mapping
 
 ${MAP_OT_EX_DIF_FILE}: out/.tried-mapping
 	../compare_output_points_map.sh ${MAP_OT_FILE} ${MAP_EX_FILE} ${MAP_OT_EX_DIF_FILE} ${SHOW}
-        
+
 endif
 # End  ${IMG_NAME} section.
 ######################################################################

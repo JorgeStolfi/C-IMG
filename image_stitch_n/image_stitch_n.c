@@ -2,7 +2,7 @@
 #define PROG_DESC "Finds projective map between N images, given corresponding points"
 #define PROG_VERS "1.0"
 
-// Last edited on 2023-10-09 19:36:19 by stolfi
+// Last edited on 2024-12-21 14:00:49 by stolfi
 
 #define image_stitch_n_C_COPYRIGHT \
     "© 2002 by the State University of Campinas (UNICAMP)"
@@ -198,7 +198,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -745,7 +744,7 @@ void imsn_optimize_all_pmaps
     //  if (verbose) { fprintf(stderr, "optimizing\n"); }
     //  double Fx = goalf(nx, x);
     //  if (verbose) { fprintf(stderr, "initial rms error = %13.6f\n", Fx); }
-    //  sve_minn_iterate(nx, &goalf, &is_ok, x, &Fx, dir, dMax, dBox, rIni, rMin, rMax, stop, maxIter, verbose);
+    //  sve_minn_iterate(nx, &goalf, &is_ok, NULL, x, &Fx, dir, dMax, dBox, rIni, rMin, rMax, minStep, maxIter, verbose);
     //  if (verbose) { fprintf(stderr, "final rms error = %13.6f\n", Fx); }
     //  
     //  /* Unpack projective map: */
@@ -919,7 +918,7 @@ void imsn_translate_all_images(hr2_pmap_vec_t *M, r2_t *vec)
   {
     int nim = M->ne;  /* Number of images. */
     
-    hr2_pmap_t T = hr2_pmap_translation(vec);
+    hr2_pmap_t T = hr2_pmap_translation_from_disp(vec,+1,+1);
     int i;
     for (i = 0; i < nim; i++)
       { hr2_pmap_t *Mi = &(M->e[i]);
@@ -1311,8 +1310,7 @@ void imsn_output_pmap(char *outPrefix, char *id, hr2_pmap_t *M, bool_t verbose)
     
 void imsn_output_matrix(char *outPrefix, char *id, char *dir, r3x3_t *M, bool_t verbose)
   {
-    char *fname = NULL;
-    asprintf(&fname, "%s-matrix-%s-%s.txt", outPrefix, id, dir);
+    char *fname = jsprintf("%s-matrix-%s-%s.txt", outPrefix, id, dir);
     FILE *wr = open_write(fname, verbose);
     fprintf(wr, "# Last edited on DATE TIME by USER\n");
     fprintf(wr, "# Created by %s %s\n", PROG_NAME, PROG_VERS);
@@ -1381,8 +1379,7 @@ void imsn_output_match
     int np = pA->ne;
     assert(np == pB->ne);
     
-    char *fname = NULL;
-    asprintf(&fname, "%s-match-%s-%s.txt", outPrefix, idA, idB);
+    char *fname = jsprintf("%s-match-%s-%s.txt", outPrefix, idA, idB);
     FILE *wr = open_write(fname, verbose);
     fprintf(wr, "# Last edited on DATE TIME by USER\n");
     fprintf(wr, "# Created by %s %s\n", PROG_NAME, PROG_VERS);

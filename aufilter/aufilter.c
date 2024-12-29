@@ -4,7 +4,7 @@
 
 /* Copyright © 2006 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2023-02-24 04:41:18 by stolfi */
+/* Last edited on 2024-12-21 14:01:50 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME "\\\n" \
@@ -95,8 +95,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-/* Must define _GNU_SOURCE to get the defintion of {asprinf}. */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -112,6 +110,7 @@
 #include <nget.h>
 #include <fget.h>
 #include <jsfile.h>
+#include <jsprintf.h>
 #include <rn.h>
 #include <argparser.h>
 #include <jsrandom.h>
@@ -126,8 +125,8 @@ typedef struct options_t
   { /* Input parameters: */
     bool_t noiseInput;    /* TRUE replaces the input signal by white noise. */
     /* Fourier analysis parameters: */
-    int32_t wsize;        /* Window width. */
-    int32_t overlap;      /* Num of consecutive overlapping frames. */
+    uint32_t wsize;        /* Window width. */
+    uint32_t overlap;      /* Num of consecutive overlapping frames. */
     /* Parameters of the bandpass filter: */
     double fmin;          /* Cutoff frequency of the highpass filter. */
     double fmax;          /* Cutoff frequency of the lowpass filter. */
@@ -145,16 +144,16 @@ typedef struct options_t
 int32_t main(int32_t argc, char **argv);
   /* Main program. */
 
-sound_t read_signal(char *fname, char *sname);
+jsaudio_t read_signal(char *fname, char *sname);
   /* Reads a sound clip from the file named {fname} (or from {stdin},
     if {fname} is "stdin"). The file must be in the Sun ".au" audio file format.
     The {sname} is the nature of the signal, e.g. "input" or "noise sample". */
 
-void write_signal(FILE *wr, sound_t *s);
+void write_signal(FILE *wr, jsaudio_t *s);
   /* Writes a sound clip to stream {wr}, in the Sun ".au" audio file format. */
 
 void combine_fixed_filters
-  ( int32_t nw,           /* Number of Fourier components. */
+  ( uint32_t nw,           /* Number of Fourier components. */
     double fstep,         /* Frequency step (Hz). */
     double fmin,          /* Cutoff frequency of the highpass filter (Hz). */
     double fmax,          /* Cutoff frequency of the lowpass filter (Hz). */
@@ -171,7 +170,7 @@ void combine_fixed_filters
     frequencies. */
 
 void compose_bandpass_filter
-  ( int32_t nw, 
+  ( uint32_t nw, 
     double fstep, 
     double fmin, 
     double fmax, 
@@ -187,7 +186,7 @@ double highpass_filter_gain(double freq, double fmin, double fdev);
     {fdev} (Hz). */
 
 void compose_bandkill_filter
-  ( int32_t nw,
+  ( uint32_t nw,
     double fstep,
     double gctr, 
     double fctr, 
@@ -201,16 +200,16 @@ void compose_bandkill_filter
     frequencies. */
 
 void process_frame
-  ( sound_t *si,          /* Input sound signal. */
-    int32_t skip,         /* Index of first sample of frame yo be processed. */
-    int32_t nw,           /* Samples per frame (window). */
-    int32_t no,           /* Number of successive overlapping frames. */
+  ( jsaudio_t *si,          /* Input sound signal. */
+    uint32_t skip,         /* Index of first sample of frame yo be processed. */
+    uint32_t nw,           /* Samples per frame (window). */
+    uint32_t no,           /* Number of successive overlapping frames. */
     double gain[],        /* Transfer function of fixed filters. */
     fftw_complex in[],    /* WORK: FFT input vector. */
     fftw_complex out[],   /* WORK: FFT output vector. */
     fftw_plan *plan_dir,  /* Precomputed direct FFTW parameters ({in ==> out}). */
     fftw_plan *plan_inv,  /* Precomputed inverse FFTW parameters ({out ==> in}). */
-    sound_t *so,          /* Output sound signal. */
+    jsaudio_t *so,          /* Output sound signal. */
     bool_t debug          /* Generate diagnostic output. */
   );
   /* Processes one frame of the input signal {si}, consisting of {nw}
@@ -223,12 +222,12 @@ void process_frame
     transfer function {gain}. The vectors {in},
     {out}, and {totgain} must be allocated by the caller. */
     
-void apply_hann_window_to_signal(fftw_complex *sg, int32_t nw, int32_t no);
+void apply_hann_window_to_signal(fftw_complex *sg, uint32_t nw, uint32_t no);
   /* Multiplies the signal {sg[0..nw-1]} by a Hann smoothing window,
     scaled so that the windows of all frames, assuming {no} overlap factor,
     add up to the unit constant function. */
     
-void show_filter(int32_t nw, double gain[]);
+void show_filter(uint32_t nw, double gain[]);
   /* Writes to {stderr} the transfer function {gain[0..nw]} of some filter. */
 
 options_t* get_options(int32_t argc, char **argv);
@@ -241,18 +240,18 @@ int32_t main(int32_t argc, char **argv)
     options_t *o = get_options(argc, argv);
     
     /* Read the input signal: */
-    sound_t si = read_signal("stdin", "input");
+    jsaudio_t si = read_signal("stdin", "input");
     
-    int32_t nw = o->wsize;    /* Number of samples in window. */
+    uint32_t nw = o->wsize;    /* Number of samples in window. */
     fprintf(stderr, "window size = %d samples (%.6f sec)\n", nw, ((double)nw)/si.fsmp);
-    int32_t nfrq = nw/2 + 1;   /* Number of distinct frequencies, per Nyquist. */
+    uint32_t nfrq = nw/2 + 1;   /* Number of distinct frequencies, per Nyquist. */
     fprintf(stderr, "spectrum has %d frequencies {0..%d}\n", nfrq, nfrq-1);
-    int32_t no = o->overlap;  /* Number of consecutive samples that overlap. */
+    uint32_t no = o->overlap;  /* Number of consecutive samples that overlap. */
     fprintf(stderr, "frame overlap count = %d\n", no);
     assert(no % 2 == 0);
     assert(nw % no == 0);
-    int32_t stride = nw/no; /* Number of time steps between spectrograms. */
-    int32_t nfrm = (si.ns - nw)/stride + 1;  /* Number of frames in input signal. */
+    uint32_t stride = nw/no; /* Number of time steps between spectrograms. */
+    uint32_t nfrm = (si.ns - nw)/stride + 1;  /* Number of frames in input signal. */
     fprintf(stderr, "number of frames = %d\n", nfrm);
     fprintf(stderr, "frame spacing = %d samples (%.6f sec)\n", stride, ((double)stride)/si.fsmp);
     double fstep = si.fsmp/nw;  /* Difference between consecutive frequencies. */
@@ -260,8 +259,8 @@ int32_t main(int32_t argc, char **argv)
     /* If requested, substitute white noise for the input: */
     if (o->noiseInput)
       { /* Fill frame with white noise: */
-        for (int32_t c = 0; c < si.nc; c++)
-          { for (int32_t ismp = 0; ismp < si.ns; ismp++) 
+        for (uint32_t c = 0;  c < si.nc; c++)
+          { for (uint32_t ismp = 0;  ismp < si.ns; ismp++) 
              { si.sv[c][ismp] = 2*drandom() - 1; }
           }
       }
@@ -271,8 +270,8 @@ int32_t main(int32_t argc, char **argv)
     fftw_complex out[nw]; /* FFTW output vector. */
 
     /* Precompute parameters for the FFT: */
-    fftw_plan plan_dir = fftw_plan_dft_1d(nw, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_plan plan_inv = fftw_plan_dft_1d(nw, out, in, FFTW_BACKWARD, FFTW_ESTIMATE);
+    fftw_plan plan_dir = fftw_plan_dft_1d((int32_t)nw, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_plan plan_inv = fftw_plan_dft_1d((int32_t)nw, out, in, FFTW_BACKWARD, FFTW_ESTIMATE);
 
     /* Allocate transfer function (TFs) of fixed filters: */
     double fixgain[nw]; /* TF of all fixed filters (precomputed). */
@@ -287,19 +286,19 @@ int32_t main(int32_t argc, char **argv)
 
     /* If user wants the removed chaff, complement the gain: */
     if (o->chaff) 
-      { for (int32_t k = 0; k < nw; k++) { fixgain[k] = 1.0 - fixgain[k]; }}
+      { for (uint32_t k = 0;  k < nw; k++) { fixgain[k] = 1.0 - fixgain[k]; }}
 
     /* Allocate and and initialize the output signal: */
-    sound_t so = jsa_allocate_sound(si.nc, si.ns);
+    jsaudio_t so = jsaudio_allocate_sound(si.nc, si.ns);
     so.fsmp = si.fsmp;
     so.ns = si.ns;
     
     /* Compute frames and output them: */
     double totTime = si.ns/((double)si.fsmp);
     int32_t debug_ifrm = (int32_t)floor(nfrm*(o->debugTime/totTime));
-    for (int32_t ifrm = 0; ifrm < nfrm; ifrm++)
+    for (uint32_t ifrm = 0;  ifrm < nfrm; ifrm++)
       { /* Compute index {skip} of first sample in frame: */
-        int32_t skip = ifrm*stride;
+        uint32_t skip = ifrm*stride;
         /* Compute the power spectrum: */
         bool_t debug = (ifrm == debug_ifrm);
         process_frame
@@ -318,10 +317,10 @@ int32_t main(int32_t argc, char **argv)
     return 0;
   }
   
-sound_t read_signal(char *fname, char *sname)
+jsaudio_t read_signal(char *fname, char *sname)
   { fprintf(stderr, "Reading %s file from %s...\n", sname, fname);
     FILE *rd = (strcmp(fname, "stdin") == 0 ? stdin : open_read(fname, TRUE));
-    sound_t si = jsa_read_au_file(rd);
+    jsaudio_t si = jsaudio_au_read_file(rd);
     fprintf(stderr, "input channels = %d\n", si.nc);
     fprintf(stderr, "input samples %d\n", si.ns);
     fprintf(stderr, "sampling frequency = %.4f  Hz\n", si.fsmp);
@@ -333,14 +332,14 @@ sound_t read_signal(char *fname, char *sname)
     return si;
   }
 
-void write_signal(FILE *wr, sound_t *s)
+void write_signal(FILE *wr, jsaudio_t *s)
   { fprintf(stderr, "Writing output file");
     fprintf(stderr, " (Sun \".au\" format)\n");
-    jsa_write_au_file(wr, s);
+    jsaudio_au_write_file(wr, s);
   }
   
 void combine_fixed_filters
-  ( int32_t nw,           /* Number of Fourier components. */
+  ( uint32_t nw,           /* Number of Fourier components. */
     double fstep,         /* Frequency step (Hz). */
     double fmin,          /* Cutoff frequency of the highpass filter (Hz). */
     double fmax,          /* Cutoff frequency of the lowpass filter (Hz). */
@@ -351,7 +350,7 @@ void combine_fixed_filters
   )
   {
     /* Initialize the filter's transfer function: */
-    for (int32_t k = 0; k < nw; k++) { gain[k] = 1.0; }
+    for (uint32_t k = 0;  k < nw; k++) { gain[k] = 1.0; }
 
     /* Compose the highpass and lowpass filters: */
     if ((fmin > 0.0) || (fmax < INFINITY))
@@ -359,22 +358,22 @@ void combine_fixed_filters
 
     /* Add effect of bandkill filters: */
     assert(fctr->ne == fdev->ne);
-    int32_t nk = fctr->ne;
-    for (int32_t j = 0; j < nk; j++)
+    uint32_t nk = fctr->ne;
+    for (uint32_t j = 0;  j < nk; j++)
       { compose_bandkill_filter
           ( nw, fstep,
             gctr->e[j], fctr->e[j], fdev->e[j], 
             gain
           );
       }
-    for (int32_t k = 0; k < nw; k++) 
+    for (uint32_t k = 0;  k < nw; k++) 
       { assert(isfinite(gain[k]));
         assert(gain[k] >= 0);
       }
   }
 
 void compose_bandpass_filter
-  ( int32_t nw, 
+  ( uint32_t nw, 
     double fstep, 
     double fmin, 
     double fmax, 
@@ -382,11 +381,11 @@ void compose_bandpass_filter
   )
   {
     /* Number of frequencies: */
-    int32_t nfrq = nw/2 + 1;
+    uint32_t nfrq = nw/2 + 1;
     
-    for (int32_t fp = 0; fp < nfrq; fp++)
+    for (uint32_t fp = 0;  fp < nfrq; fp++)
       { /* Get the freq {fm} equivalent to freq {-fp} modulo {nw}: */
-        int32_t fm = (nw - fp) % nw; 
+        uint32_t fm = (nw - fp) % nw; 
         /* Absolute frequency in Hertz: */
         double freq = fp * fstep;
         /* Highpass and lowpass gains: */
@@ -418,7 +417,7 @@ double highpass_filter_gain(double freq, double fmin, double fdev)
   }
   
 void compose_bandkill_filter
-  ( int32_t nw,
+  ( uint32_t nw,
     double fstep,
     double gctr, 
     double fctr, 
@@ -427,12 +426,12 @@ void compose_bandkill_filter
   )
   {
     /* Number of frequencies: */
-    int32_t nfrq = nw/2 + 1;
+    uint32_t nfrq = nw/2 + 1;
     
     /* Cleanup the spectrum: */
-    for (int32_t fp = 0; fp < nfrq; fp++)
+    for (uint32_t fp = 0;  fp < nfrq; fp++)
       { /* Get the freq {g} equivalent to freq {-f}. */
-        int32_t fm = (nw - fp) % nw;  /* Frequency {-fp} modulo {nw}. */
+        uint32_t fm = (nw - fp) % nw;  /* Frequency {-fp} modulo {nw}. */
 
         if (fp > 0) 
           { /* Compute the absolute frequency {freq} in Hertz: */
@@ -456,32 +455,32 @@ void compose_bandkill_filter
   }
 
 void process_frame
-  ( sound_t *si,          /* Input sound signal. */
-    int32_t skip,         /* Index of first sample of frame yo be processed. */
-    int32_t nw,           /* Samples per frame (window). */
-    int32_t no,           /* Number of successive overlapping frames. */
+  ( jsaudio_t *si,          /* Input sound signal. */
+    uint32_t skip,         /* Index of first sample of frame yo be processed. */
+    uint32_t nw,           /* Samples per frame (window). */
+    uint32_t no,           /* Number of successive overlapping frames. */
     double fixgain[],     /* Transfer function of fixed filters. */
     fftw_complex in[],    /* WORK: FFT input vector. */
     fftw_complex out[],   /* WORK: FFT output vector. */
     fftw_plan *plan_dir,  /* Precomputed direct FFTW parameters ({in ==> out}). */
     fftw_plan *plan_inv,  /* Precomputed inverse FFTW parameters ({out ==> in}). */
-    sound_t *so,          /* Output sound signal. */
+    jsaudio_t *so,          /* Output sound signal. */
     bool_t debug          /* Generate diagnostic output. */
   )
   { 
     assert(si->fsmp == so->fsmp);
     
     /* Number of channels: */
-    int32_t nc = (si->nc < so->nc ? si->nc : so->nc);
+    uint32_t nc = (si->nc < so->nc ? si->nc : so->nc);
     
     /* Seed for the noise generator: */
     srandom(519257027);
     
     /* Loop on channels: */
-    for (int32_t c = 0; c < nc; c++)
+    for (uint32_t c = 0;  c < nc; c++)
       { /* Extract frame from input signal: */
         assert(skip + nw <= si->ns); 
-        for (int32_t k = 0; k < nw; k++) 
+        for (uint32_t k = 0;  k < nw; k++) 
           { in[k][0] = si->sv[c][skip+k]; in[k][1] = 0.0; }
         
         /* Apply the Hann unit-partition window function: */
@@ -493,7 +492,7 @@ void process_frame
         /* if (skip == 0) { show_filter(nw, fixgain); } */
         
         /* Apply filters to the frame spectrum: */
-        for (int32_t k = 0; k < nw; k++) 
+        for (uint32_t k = 0;  k < nw; k++) 
           { out[k][0] *= fixgain[k]; out[k][1] *= fixgain[k]; }
         
         /* Compute inverse FFT: */
@@ -501,7 +500,7 @@ void process_frame
 
         /* Splat the frame onto the output signal: */
         assert(skip + nw <= so->ns); 
-        for (int32_t k = 0; k < nw; k++) 
+        for (uint32_t k = 0;  k < nw; k++) 
           { in[k][0] /= nw;
             in[k][1] /= nw;
             so->sv[c][skip+k] += in[k][0]; 
@@ -512,18 +511,18 @@ void process_frame
       }
   }
 
-void show_filter(int32_t nw, double gain[])
-  { for (int32_t k = 0; k < nw; k++) 
+void show_filter(uint32_t nw, double gain[])
+  { for (uint32_t k = 0;  k < nw; k++) 
       { fprintf(stderr, "gain[%03d] = %16.12f\n", k, gain[k]); }
   }
 
-void apply_hann_window_to_signal(fftw_complex *sg, int32_t nw, int32_t no)
+void apply_hann_window_to_signal(fftw_complex *sg, uint32_t nw, uint32_t no)
   {
     /* Scaling factor for Hann unit-partition window function */
     assert(nw % no == 0);
     double fac = 1.0/((double)no);
 
-    for (int32_t k = 0; k < nw; k++) 
+    for (uint32_t k = 0;  k < nw; k++) 
       { double x = M_PI*(2*((double)k)/((double)nw) - 1.0);
         double w = fac*(1.0 + cos(x)); 
         sg[k][0] *= w; sg[k][1] *= w;
@@ -543,10 +542,10 @@ options_t* get_options(int32_t argc, char **argv)
     o->noiseInput = argparser_keyword_present(pp, "-noiseInput");
     
     argparser_get_keyword(pp, "-window");
-    o->wsize = (int32_t)argparser_get_next_int(pp, 1, MAX_WSIZE);
+    o->wsize = (uint32_t)argparser_get_next_int(pp, 1, MAX_WSIZE);
     
     if (argparser_keyword_present(pp, "-overlap"))
-      { o->overlap = (int32_t)argparser_get_next_int(pp, 2, MAXINT); }
+      { o->overlap = (uint32_t)argparser_get_next_int(pp, 2, MAXINT); }
     else 
       { o->overlap = 8; }
     if (o->overlap % 2 != 0) 
@@ -567,7 +566,7 @@ options_t* get_options(int32_t argc, char **argv)
     o->gctr = double_vec_new(0);
     o->fctr = double_vec_new(0);
     o->fdev = double_vec_new(0);
-    int32_t nk = 0;
+    uint32_t nk = 0;
     while(argparser_keyword_present(pp, "-kill"))
       { double_vec_expand(&(o->gctr), nk);
         o->gctr.e[nk] = argparser_get_next_double(pp, 0, DBL_MAX);

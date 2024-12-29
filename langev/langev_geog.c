@@ -1,7 +1,6 @@
 /* See langev_geog.h. */
-/* Last edited on 2017-06-20 20:30:25 by stolfilocal */
+/* Last edited on 2024-12-21 14:00:30 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>

@@ -1,14 +1,15 @@
 /* ppmvquant.h - options, types and prototypes for ppmvquant.c */
-/* Last edited on 2017-06-20 20:43:49 by stolfilocal */
+/* Last edited on 2024-12-26 19:51:13 by stolfi */
 
 #ifndef ppmvquant_H
 #define ppmvquant_H
 
 #include <uint16_image_RGB_hist.h>
 #include <uint16_image_RGB_table.h>
-#include <uint16_image_RGB_medcut.h>
+#include <uint16_color_tree.h>
 #include <yuvhacks.h>
 #include <uint16_image.h>
+#include <uint16_image_match.h>
 
 typedef struct rgb_pixel_t { uint16_t c[3]; } rgb_pixel_t;
 
@@ -25,20 +26,9 @@ typedef struct rgb_pixel_t { uint16_t c[3]; } rgb_pixel_t;
 /* #define REP_CENTER_BOX */
 /* #define REP_AVERAGE_COLORS */
 
-typedef int matchfn_t
-  ( long r, long g, long b,
-    int maxval,
-    uint16_image_RGB_hist_vector cm, 
-    int ncolors, 
-    int mapmaxval
-  );
-  /* A function that finds the best match to (r,g,b)/maxval in the 
-    colormap cm, whose colors range in [0..mapmaxval].
-    Note that (r,g,b) may be somewhat outside of the color cube. */
-
 typedef struct box
-  { int ind;
-    int colors;
+  { int32_t ind;
+    uint32_t colors;
     long sum;
   } box;
   
@@ -48,66 +38,38 @@ typedef box* box_vector;
 
 typedef struct options_t
   { bool_t floyd;
-    matchfn_t *match;
-    char *mapname; 
-    int ncolors; 
-    char *imgname;
+    char *map; 
+    uint32_t maxColors; 
+    uint16_image_match_proc_t *match;
     bool_t verbose;
+    char *imgname;
   }options_t;
 
 /* PROTOTYPES */
 
-int main(int argc, char**argv);
+int32_t main(int32_t argc, char**argv);
 
-options_t *parse_options(int argc, char **argv);
+options_t *parse_options(int32_t argc, char **argv);
 
-uint16_image_RGB_hist_vector choose_colormap(uint16_image_t *img, int *newcolorsp);
-
-uint16_image_RGB_hist_vector collect_colors(uint16_image_t *map, int *newcolorsp);
-
-void uint16_image_quantize_floyd
-  ( uint16_image_t *img, 
-    uint16_image_RGB_hist_vector cm, 
-    int newcolors,
-    int mapmaxval,
-    matchfn_t *match
+uint32_t ppmvquant_choose_color
+  ( int32_t r, int32_t g, int32_t b, 
+    uint16_t maxval,
+    uint16_image_RGB_hist_t *chv, 
+    uint32_t nColors,
+    uint16_t mapmaxval,
+    uint16_image_match_proc_t *match,
+    uint16_image_RGB_table_node_t **cht, 
+    bool_t *addtohash
   );
-  /* Replaces each pixel in the image by a pixel from the given colormap. */
+  /* Finds best match to (r,g,b) in colormap chv, using/updating the 
+    hash table if appropriate. */
 
 void simple_quantize_uint16_image
   ( uint16_image_t *img, 
-    uint16_image_RGB_hist_vector cm, 
-    int newcolors,
-    int mapmaxval,
-    matchfn_t *match
+    uint16_image_RGB_hist_t *chv, 
+    uint32_t newcolors,
+    uint16_t mapmaxval,
+    uint16_image_match_proc_t *match
   );
-
-ppm_pixel_t *choose_color
-  ( long r, long g, long b, int maxval,
-    uint16_image_RGB_hist_vector cm, 
-    int ncolors,
-    int mapmaxval,
-    matchfn_t *match,
-    uint16_image_RGB_table cht, 
-    int *addtohash
-  );
-  /* Finds best match to (r,g,b) in colormap cm, using/updating the 
-    hash table if appropriate. */
-
-int rgb_match 
-  ( long r, long g, long b, int maxval, 
-    uint16_image_RGB_hist_vector cm, 
-    int ncolors, 
-    int mapmaxval
-  );
-  /* Search colormap for closest match in RGB metric. */
-  
-int yuv_match
-  ( long r, long g, long b, int maxval, 
-    uint16_image_RGB_hist_vector cm, 
-    int ncolors, 
-    int mapmaxval
-  );
-  /* Search colormap for closest match in YUV metric. */
 
 #endif

@@ -1,7 +1,6 @@
 /* See langev_lang.h. */
-/* Last edited on 2023-03-07 17:16:02 by stolfi */
+/* Last edited on 2024-12-21 14:00:26 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>

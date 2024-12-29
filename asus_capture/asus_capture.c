@@ -4,7 +4,7 @@
 
 #define asus_capture_C_COPYRIGHT "Copyright © 2008 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2017-06-24 01:46:26 by stolfilocal */
+/* Last edited on 2024-12-21 14:01:58 by stolfi */
 
 #define PROG_HELP \
   " " PROG_NAME " \\\n" \
@@ -79,7 +79,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -142,7 +141,7 @@ void acp_init_ffmpeg(void)
 
 void acp_save_frame(AVFrame *pFrame, int width, int height, int iFrame, char *dst_dir)
   { char *fname = NULL;
-    asprintf(&fname, "%s/frame%03d.ppm", dst_dir, iFrame);
+    char *fname = jsprintf("%s/frame%03d.ppm", dst_dir, iFrame);
     FILE *pFile = (FILE*)notnull(fopen(fname, "wb"), "could not open the output file");
     // Write header
     fprintf(pFile, "P6\n%d %d\n255\n", width, height);

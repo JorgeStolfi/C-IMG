@@ -135,9 +135,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-/* We need to set these in order to get {isnan}. What a crock... */
-#undef __STRICT_ANSI__
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

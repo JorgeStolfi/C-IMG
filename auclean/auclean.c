@@ -4,7 +4,7 @@
 
 /* Copyright © 2006 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2023-03-02 19:31:31 by stolfi */
+/* Last edited on 2024-12-24 17:24:15 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME "\\\n" \
@@ -82,13 +82,11 @@
   "  2023-03-01 J.Stolfi Ouput prefix option instead of {stdout}." \
   "  2023-02-24 J.Stolfi Split off the lineat time-invariant filters to {aufilter.c}." \
   "  2023-02-24 J.Stolfi Multiple noise examples and robust LSQ fitting.\n" \
-  "  2023-02-22 J.Stolfi Improved noise matching algorithm.\n" \
+  "  2023-02-22 J.Stolfi Improved noise matching algorithm.\n"
 
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-/* Must define _GNU_SOURCE to get the defintion of {asprinf}. */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -104,9 +102,11 @@
 #include <nget.h>
 #include <fget.h>
 #include <jsfile.h>
+#include <jsprintf.h>
 #include <rn.h>
 #include <rmxn.h>
-#include <gauss_elim.h>
+#include <gausol_solve.h>
+#include <gausol_print.h>
 #include <argparser.h>
 #include <jsrandom.h>
 
@@ -118,8 +118,8 @@
 /* Command line options: */
 typedef struct options_t
   { /* Fourier analysis parameters: */
-    int32_t wsize;          /* Window width. */
-    int32_t overlap;        /* Num of consecutive overlapping frames. */
+    uint32_t wsize;          /* Window width. */
+    uint32_t overlap;        /* Num of consecutive overlapping frames. */
     /* Parameters of the noise filter: */
     string_vec_t noiseFile;  /* Names of files with noise examples (.au format) or NULL. */
     double voice;            /* Enhancement factor for voice-like sounds. */
@@ -135,18 +135,18 @@ typedef struct options_t
 int32_t main(int32_t argc, char **argv);
   /* Main program. */
 
-sound_t read_signal(char *fname, char *sname);
+jsaudio_t read_signal(char *fname, char *sname);
   /* Reads a sound clip from the file named {fname} (or from {stdin},
     if {fname} is "stdin"). The file must be in the Sun ".au" audio file format.
     The {sname} is the nature of the signal, e.g. "input" or "noise example". */
 
-void write_signal(char *prefix, char *tag, sound_t *s);
+void write_signal(char *prefix, char *tag, jsaudio_t *s);
   /* Writes the sound clip {s} to file "{prefix}-{tag}.au" in the Sun ".au" audio file format. */
 
-int32_t get_noise_spectra
-  ( int32_t nw, 
-    int32_t no, 
-    int32_t nnoi, 
+uint32_t get_noise_spectra
+  ( uint32_t nw, 
+    uint32_t no, 
+    uint32_t nnoi, 
     char *fname[], 
     double pwr[],
     /* FFTW work areas and plan: */
@@ -164,15 +164,15 @@ int32_t get_noise_spectra
     actually retained. */
 
 void process_frame
-  ( sound_t *si,              /* Input sound signal. */
-    int32_t skip,             /* Index of first sample of frame to be processed. */
-    int32_t nw,               /* Samples per frame (window). */
-    int32_t no,               /* Number of successive overlapping frames. */
-    int32_t nnoi,             /* Number of noise examples. */
+  ( jsaudio_t *si,              /* Input sound signal. */
+    uint32_t skip,             /* Index of first sample of frame to be processed. */
+    uint32_t nw,               /* Samples per frame (window). */
+    uint32_t no,               /* Number of successive overlapping frames. */
+    uint32_t nnoi,             /* Number of noise examples. */
     double noise_pwr[],       /* Power spectra of noise examples. */
     double voice,             /* Enhancement factor for voice-like sounds. */
-    sound_t *so,              /* Output: denoised sound signal. */
-    sound_t *sn,              /* Output: removed noise. */
+    jsaudio_t *so,              /* Output: denoised sound signal. */
+    jsaudio_t *sn,              /* Output: removed noise. */
     bool_t debug,             /* Generate diagnostic output. */
     /* FFTW work areas and plan: */
     fftw_complex in[],        /* WORK: FFT input vector. */
@@ -199,13 +199,13 @@ void process_frame
     The FFT work vectors {in} and {out} must be allocated by the
     caller. */
     
-void apply_hann_window_to_signal(double frame[], int32_t nw, int32_t no);
+void apply_hann_window_to_signal(double frame[], uint32_t nw, uint32_t no);
   /* Multiplies the signal {frame[0..nw-1]} by a Hann smoothing window,
     scaled so that the windows of all frames, assuming {no} overlap factor,
     add up to the unit constant function. */
   
 void apply_filter
-  ( int32_t nw,
+  ( uint32_t nw,
     fftw_complex frame_ft[],
     double gain[],
     fftw_plan *plan_inv,
@@ -218,19 +218,19 @@ void apply_filter
     real and apodized, is returned in {frout[0..nw-1]}. */
   
 void splat_frame
-  ( int32_t nw,
+  ( uint32_t nw,
     double frame[],
-    int32_t ic,
-    int32_t skip,
-    sound_t *sd
+    uint32_t ic,
+    uint32_t skip,
+    jsaudio_t *sd
   );
   /* Adds the windowful of samples {frame[0..nw-1]} to channel {ic} of the 
     sound signal {sd}, shifted by {skip}. */
 
 void estimate_noise_in_frame
-  ( int32_t nw, 
+  ( uint32_t nw, 
     double frame_pwr[], 
-    int32_t nnoi,
+    uint32_t nnoi,
     double noise_pwr[],
     double audio_pwr[],
     double chaff_pwr[],
@@ -250,7 +250,7 @@ void estimate_noise_in_frame
     may be misidentified as chaff.  */
     
     
-void compute_freq_weights(int32_t nw, double frame_pwr[], double chaff_pwr[], double wt[]);
+void compute_freq_weights(uint32_t nw, double frame_pwr[], double chaff_pwr[], double wt[]);
   /* Computes weights {wt[0..nfrq-1]} for each frequency for least squares 
     fitting of noise spectrum combination to frame spectrum.
     
@@ -260,14 +260,14 @@ void compute_freq_weights(int32_t nw, double frame_pwr[], double chaff_pwr[], do
     where the chaff power is higher and the frame power is lower. 
     The weights are normalized to add to 1. */
 
-void compute_power_spectrum(int32_t nw, fftw_complex S[], double pwr[]);
+void compute_power_spectrum(uint32_t nw, fftw_complex S[], double pwr[]);
   /* Computes the power spectrum {pwr[0..nfrq-1]} from the Fourier transform
     {S[0..nw-1]} where {nfrq = nw/2 + 1}. */
 
 void get_noise_spectrum
   ( char *fname, 
-    int32_t nw, 
-    int32_t no,
+    uint32_t nw, 
+    uint32_t no,
     double pwr[],
     /* FFTW work areas and plan: */
     fftw_complex in[],  /* FFTW input vector. */
@@ -280,7 +280,7 @@ void get_noise_spectrum
     The number of frequencies {nfrq} is, by
     Nyquist, {nw/2 + 1}. */
     
-void show_filter(int32_t nw, double gain[]);
+void show_filter(uint32_t nw, double gain[]);
   /* Writes to {stderr} the transfer function {gain[0..nw]} of some filter. */
 
 options_t* get_options(int32_t argc, char **argv);
@@ -289,22 +289,22 @@ options_t* get_options(int32_t argc, char **argv);
 /* IMPLEMENTATIONS */
 
 int32_t main(int32_t argc, char **argv)
-  {
+  { 
     options_t *o = get_options(argc, argv);
     
     /* Read the input signal: */
-    sound_t si = read_signal("stdin", "input");
+    jsaudio_t si = read_signal("stdin", "input");
     
-    int32_t nw = o->wsize;    /* Number of samples in window. */
+    uint32_t nw = o->wsize;    /* Number of samples in window. */
     fprintf(stderr, "window size = %d samples (%.6f sec)\n", nw, ((double)nw)/si.fsmp);
-    int32_t nfrq = nw/2 + 1;   /* Number of distinct frequencies, per Nyquist. */
+    uint32_t nfrq = nw/2 + 1;   /* Number of distinct frequencies, per Nyquist. */
     fprintf(stderr, "spectrum has %d frequencies {0..%d}\n", nfrq, nfrq-1);
-    int32_t no = o->overlap;  /* Number of consecutive samples that overlap. */
+    uint32_t no = o->overlap;  /* Number of consecutive samples that overlap. */
     fprintf(stderr, "frame overlap count = %d\n", no);
     assert(no % 2 == 0);
     assert(nw % no == 0);
-    int32_t stride = nw/no; /* Number of time steps between spectrograms. */
-    int32_t nfrm = (si.ns - nw)/stride + 1;  /* Number of frames in input signal. */
+    uint32_t stride = nw/no; /* Number of time steps between spectrograms. */
+    uint32_t nfrm = (si.ns - nw)/stride + 1;  /* Number of frames in input signal. */
     fprintf(stderr, "number of frames = %d\n", nfrm);
     fprintf(stderr, "frame spacing = %d samples (%.6f sec)\n", stride, ((double)stride)/si.fsmp);
 
@@ -313,26 +313,26 @@ int32_t main(int32_t argc, char **argv)
     fftw_complex out[nw]; /* FFTW output vector. */
 
     /* Precompute parameters for the FFT: */
-    fftw_plan plan_dir = fftw_plan_dft_1d(nw, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_plan plan_inv = fftw_plan_dft_1d(nw, out, in, FFTW_BACKWARD, FFTW_ESTIMATE);
+    fftw_plan plan_dir = fftw_plan_dft_1d((int32_t)nw, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_plan plan_inv = fftw_plan_dft_1d((int32_t)nw, out, in, FFTW_BACKWARD, FFTW_ESTIMATE);
 
     /* Get the noise spectra {noise_pwr[0..nnoi-1,0..nfrq-1]}: */
-    int32_t nnoi = o->noiseFile.ne; /* Number of noise clips provided. */
+    uint32_t nnoi = o->noiseFile.ne; /* Number of noise clips provided. */
     double *noise_pwr = rmxn_alloc(nnoi, nfrq); /* Rows are noise spectra in log scale. */
     nnoi = get_noise_spectra(nw, no, nnoi, o->noiseFile.e, noise_pwr, in, out, &plan_dir);
     
     /* Allocate and and initialize the output signals: */
-    sound_t so = jsa_allocate_sound(si.nc, si.ns);
+    jsaudio_t so = jsaudio_allocate_sound(si.nc, si.ns);
     so.fsmp = si.fsmp;
-    sound_t sn = jsa_allocate_sound(si.nc, (o->writeChaff ? si.ns : 0));
+    jsaudio_t sn = jsaudio_allocate_sound(si.nc, (o->writeChaff ? si.ns : 0));
     sn.fsmp = si.fsmp;
     
     /* Compute frames and output them: */
     double totTime = si.ns/((double)si.fsmp);
     int32_t debug_ifrm = (int32_t)floor(nfrm*(o->debugTime/totTime));
-    for (int32_t ifrm = 0; ifrm < nfrm; ifrm++)
+    for (uint32_t ifrm = 0;  ifrm < nfrm; ifrm++)
       { /* Compute index {skip} of first sample in frame: */
-        int32_t skip = ifrm*stride;
+        uint32_t skip = ifrm*stride;
         bool_t debug = (ifrm == debug_ifrm);
         process_frame
           ( &si, skip, 
@@ -353,10 +353,10 @@ int32_t main(int32_t argc, char **argv)
     return 0;
   }
   
-sound_t read_signal(char *fname, char *sname)
+jsaudio_t read_signal(char *fname, char *sname)
   { fprintf(stderr, "Reading %s file from %s...\n", sname, fname);
     FILE *rd = (strcmp(fname, "stdin") == 0 ? stdin : open_read(fname, TRUE));
-    sound_t si = jsa_read_au_file(rd);
+    jsaudio_t si = jsaudio_au_read_file(rd);
     fprintf(stderr, "input channels = %d\n", si.nc);
     fprintf(stderr, "input samples %d\n", si.ns);
     fprintf(stderr, "sampling frequency = %.4f  Hz\n", si.fsmp);
@@ -368,10 +368,10 @@ sound_t read_signal(char *fname, char *sname)
     return si;
   }
 
-int32_t get_noise_spectra
-  ( int32_t nw, 
-    int32_t no, 
-    int32_t nnoi, 
+uint32_t get_noise_spectra
+  ( uint32_t nw, 
+    uint32_t no, 
+    uint32_t nnoi, 
     char *fname[], 
     double pwr[],
     /* FFTW work areas and plan: */
@@ -380,14 +380,14 @@ int32_t get_noise_spectra
     fftw_plan *plan_dir
   )
   { 
-    int32_t nfrq = nw/2 + 1; 
+    uint32_t nfrq = nw/2 + 1; 
     double npwrk[nfrq];
-    int32_t m = 0; /* Number of noise examples actually retained. */
-    for (int32_t i = 0; i < nnoi; i++)
+    uint32_t m = 0; /* Number of noise examples actually retained. */
+    for (uint32_t i = 0;  i < nnoi; i++)
       { /* Read the noise example {i} and compute the average spectrum of its frames: */
         fprintf(stderr, "reading noise example %d\n...", i);
         get_noise_spectrum(fname[i], nw, no, npwrk, in, out, plan_dir);
-        for (int32_t kf = 0; kf < nfrq; kf++)
+        for (uint32_t kf = 0;  kf < nfrq; kf++)
           { pwr[m*nfrq + kf] = npwrk[kf]; }
         m++;
       }
@@ -397,91 +397,90 @@ int32_t get_noise_spectra
 
 void get_noise_spectrum
   ( char *fname, 
-    int32_t nw, 
-    int32_t no,
+    uint32_t nw, 
+    uint32_t no,
     double pwr[],
     /* FFTW work areas and plan: */
     fftw_complex in[],  /* FFTW input vector. */
     fftw_complex out[], /* FFTW output vector. */
     fftw_plan *plan_dir
   )
-  { sound_t sn = read_signal(fname, "noise example");
+  { jsaudio_t sn = read_signal(fname, "noise example");
     /* Get displacement {stride} between frames: */
-    int32_t stride = nw/no;
+    uint32_t stride = nw/no;
     /* Get number {nfrm} of frames in noise spectrum: */
-    int32_t nfrm = (sn.ns - nw)/stride + 1; 
+    uint32_t nfrm = (sn.ns - nw)/stride + 1; 
     fprintf(stderr, "number of frames in noise example = %d\n", nfrm);
     /* Get the number of channels: */
-    int32_t nc = sn.nc;
+    uint32_t nc = sn.nc;
 
     /* Get the number of distinct frequencies: */
-    int32_t nfrq = nw/2 + 1;
+    uint32_t nfrq = nw/2 + 1;
 
     /* Initialize the total spectrum: */
-    for (int32_t kf = 0; kf < nfrq; kf++) { pwr[kf] = 0; }
+    for (uint32_t kf = 0;  kf < nfrq; kf++) { pwr[kf] = 0; }
 
     /* Compute frame spectrograms of noise signal and accumulate them: */
     double pwri[nfrq]; /* Power spectrum of one frame. */
-    for (int32_t ifrm = 0; ifrm < nfrm; ifrm++)
+    for (uint32_t ifrm = 0;  ifrm < nfrm; ifrm++)
       { /* Compute index {skip} of first sample in frame: */
-        int32_t skip = ifrm*stride;
+        uint32_t skip = ifrm*stride;
      
         /* Loop on channels: */
-        for (int32_t ic = 0; ic < nc; ic++)
+        for (uint32_t ic = 0;  ic < nc; ic++)
           { 
             /* Extract frame from input signal: */
             assert(skip + nw <= sn.ns); 
             double frame[nw];           /* Windowful of samples from an input channel. */
-            for (int32_t kw = 0; kw < nw; kw++) 
+            for (uint32_t kw = 0;  kw < nw; kw++) 
               { frame[kw] = sn.sv[ic][skip+kw]; }
 
             /* Apply the Hann unit-partition window function: */
             apply_hann_window_to_signal(frame, nw, no); 
 
             /* Perform Fourier transform: */
-            for (int32_t kw = 0; kw < nw; kw++) 
+            for (uint32_t kw = 0;  kw < nw; kw++) 
               { in[kw][0] = frame[kw]; in[kw][1] = 0.0; }
             fftw_execute(*plan_dir);
             fftw_complex frame_ft[nw];  /* FR of {frame}. */
-            for (int32_t kw = 0; kw < nw; kw++)
+            for (uint32_t kw = 0;  kw < nw; kw++)
               { frame_ft[kw][0] = out[kw][0]; frame_ft[kw][1] = out[kw][1]; }
             
             /* Convert to power spectrum and accumulate: */
             compute_power_spectrum(nw, frame_ft, pwri);
-            for (int32_t kf = 0; kf < nfrq; kf++)
+            for (uint32_t kf = 0;  kf < nfrq; kf++)
               { pwr[kf] += pwri[kf]; }
           }
       }
       
     /* Convert sum to average: */
     double tot_pwr = rn_sum(nfrq, pwr) + 1.0e-200;
-    for (int32_t kf = 0; kf < nfrq; kf++) 
+    for (uint32_t kf = 0;  kf < nfrq; kf++) 
       { assert(isfinite(pwr[kf]));
         pwr[kf] /= tot_pwr; 
         assert(isfinite(pwr[kf]));
       }
   }
 
-void write_signal(char *prefix, char *tag, sound_t *s)
-  { char *fname = NULL;
-    asprintf(&fname, "%s-%s.au", prefix, tag);
+void write_signal(char *prefix, char *tag, jsaudio_t *s)
+  { char *fname = jsprintf("%s-%s.au", prefix, tag);
     FILE *wr = open_write(fname, TRUE);
     fprintf(stderr, "Writing output file");
     fprintf(stderr, " (Sun \".au\" format)\n");
-    jsa_write_au_file(wr, s);
+    jsaudio_au_write_file(wr, s);
     free(fname);
   }
   
 void process_frame
-  ( sound_t *si,              /* Input sound signal. */
-    int32_t skip,             /* Index of first sample of frame to be processed. */
-    int32_t nw,               /* Samples per frame (window). */
-    int32_t no,               /* Number of successive overlapping frames. */
-    int32_t nnoi,             /* Number of noise examples. */
+  ( jsaudio_t *si,              /* Input sound signal. */
+    uint32_t skip,             /* Index of first sample of frame to be processed. */
+    uint32_t nw,               /* Samples per frame (window). */
+    uint32_t no,               /* Number of successive overlapping frames. */
+    uint32_t nnoi,             /* Number of noise examples. */
     double noise_pwr[],       /* Power spectra of noise examples. */
     double voice,             /* Enhancement factor for voice-like sounds. */
-    sound_t *so,              /* Output: denoised sound signal. */
-    sound_t *sn,              /* Output: removed noise signal. */
+    jsaudio_t *so,              /* Output: denoised sound signal. */
+    jsaudio_t *sn,              /* Output: removed noise signal. */
     bool_t debug,             /* Generate diagnostic output. */
     /* FFTW work areas and plans: */
     fftw_complex in[],        /* WORK: FFT input vector. */
@@ -491,28 +490,28 @@ void process_frame
   )
   { 
     assert(si->fsmp == so->fsmp);
-    int32_t nfrq = nw/2 + 1;
+    uint32_t nfrq = nw/2 + 1;
    
     /* Number of channels: */
-    int32_t nc = (si->nc < so->nc ? si->nc : so->nc);
+    uint32_t nc = (si->nc < so->nc ? si->nc : so->nc);
     
     /* Loop on channels: */
-    for (int32_t ic = 0; ic < nc; ic++)
+    for (uint32_t ic = 0;  ic < nc; ic++)
       { /* Extract frame from input signal: */
         assert(skip + nw <= si->ns); 
         double frame[nw];           /* Windowful of samples from an input channel. */
-        for (int32_t kw = 0; kw < nw; kw++) 
+        for (uint32_t kw = 0;  kw < nw; kw++) 
           { frame[kw] = si->sv[ic][skip+kw]; }
         
         /* Apply the Hann unit-partition window function: */
         apply_hann_window_to_signal(frame, nw, no); 
       
         /* Perform Fourier transform: */
-        for (int32_t kw = 0; kw < nw; kw++) 
+        for (uint32_t kw = 0;  kw < nw; kw++) 
           { in[kw][0] = frame[kw]; in[kw][1] = 0.0; }
         fftw_execute(*plan_dir);
         fftw_complex frame_ft[nw];  /* FR of {frame}. */
-        for (int32_t kw = 0; kw < nw; kw++)
+        for (uint32_t kw = 0;  kw < nw; kw++)
           { frame_ft[kw][0] = out[kw][0]; frame_ft[kw][1] = out[kw][1]; }
         
         /* Compute frame power spectrum: */
@@ -526,8 +525,8 @@ void process_frame
 
         /* Compute denoising filter gain: */
         double gain[nw];
-        for (int32_t kf = 0; kf < nfrq; kf++) 
-          { int32_t jf = (nw - kf) % nw; /* The freq {-kf} mod {nw}. */
+        for (uint32_t kf = 0;  kf < nfrq; kf++) 
+          { uint32_t jf = (nw - kf) % nw; /* The freq {-kf} mod {nw}. */
             double gk = sqrt(audio_pwr[kf]/frame_pwr[kf]);
             gain[kf] = gk;
             if (jf != kf) { gain[jf] = gk; }
@@ -540,7 +539,7 @@ void process_frame
         
         if (sn->ns != 0)
           { double chaff[nw];
-            for (int32_t kw = 0; kw < nw; kw++)
+            for (uint32_t kw = 0;  kw < nw; kw++)
               { chaff[kw] = frame[kw] - audio[kw]; }
             splat_frame(nw, chaff, ic, skip, sn);
           }
@@ -548,7 +547,7 @@ void process_frame
   }
           
 void apply_filter
-  ( int32_t nw,
+  ( uint32_t nw,
     fftw_complex frame_ft[],
     double gain[],
     fftw_plan *plan_inv,
@@ -558,7 +557,7 @@ void apply_filter
   )
   {
     /* Apply the filter to the input signal, pepare for FT inv: */
-    for (int32_t kw = 0; kw < nw; kw++) 
+    for (uint32_t kw = 0;  kw < nw; kw++) 
       { double gn = gain[kw];
         out[kw][0] = gn*frame_ft[kw][0]; 
         out[kw][1] = gn*frame_ft[kw][1];
@@ -566,7 +565,7 @@ void apply_filter
 
     /* Compute inverse FFT: */
     fftw_execute(*plan_inv);
-    for (int32_t kw = 0; kw < nw; kw++) 
+    for (uint32_t kw = 0;  kw < nw; kw++) 
       { if(fabs(in[kw][1]) > 1.0e-6)
           { fprintf(stderr, "%4d %16.10f %16.10f\n", kw, in[kw][0], in[kw][1]);
             demand(FALSE, "filtered signal is complex");
@@ -576,45 +575,45 @@ void apply_filter
   }
 
 void splat_frame
-  ( int32_t nw,
+  ( uint32_t nw,
     double frame[],
-    int32_t ic,
-    int32_t skip,
-    sound_t *sd
+    uint32_t ic,
+    uint32_t skip,
+    jsaudio_t *sd
   )
   { assert(skip + nw <= sd->ns); 
-    for (int32_t kw = 0; kw < nw; kw++) 
+    for (uint32_t kw = 0;  kw < nw; kw++) 
       { sd->sv[ic][skip+kw] += frame[kw]; }
   }
 
-void show_filter(int32_t nw, double gain[])
-  { for (int32_t kw = 0; kw < nw; kw++) 
+void show_filter(uint32_t nw, double gain[])
+  { for (uint32_t kw = 0;  kw < nw; kw++) 
       { fprintf(stderr, "gain[%03d] = %16.12f\n", kw, gain[kw]); }
   }
 
-void apply_hann_window_to_signal(double frame[], int32_t nw, int32_t no)
+void apply_hann_window_to_signal(double frame[], uint32_t nw, uint32_t no)
   {
     /* Scaling factor for Hann unit-partition window function */
     assert(nw % no == 0);
     double fac = 1.0/((double)no);
 
-    for (int32_t kw = 0; kw < nw; kw++) 
+    for (uint32_t kw = 0;  kw < nw; kw++) 
       { double x = M_PI*(2*((double)kw)/((double)nw) - 1.0);
         double w = fac*(1.0 + cos(x)); 
         frame[kw] *= w; 
       }
   }
-void compute_power_spectrum(int32_t nw, fftw_complex S[], double pwr[])
+void compute_power_spectrum(uint32_t nw, fftw_complex S[], double pwr[])
   {
     /* Number of frequencies: */
-    int32_t nfrq = nw/2 + 1;
+    uint32_t nfrq = nw/2 + 1;
     
     /* Normalization factor for power spectrum: */
     double norm = 1.0/nw;
   
-    for (int32_t kf = 0; kf < nfrq; kf++)
+    for (uint32_t kf = 0;  kf < nfrq; kf++)
       { /* Get the freq {jf} equivalent to freq {-kf} mod {nw}. */
-        int32_t jf = (nw - kf) % nw; 
+        uint32_t jf = (nw - kf) % nw; 
         
         /* Get real and imaginay parts of coeffs of freqs {kf} and {-kf}: */
         double rek = S[kf][0], imk = S[kf][1];
@@ -630,9 +629,9 @@ void compute_power_spectrum(int32_t nw, fftw_complex S[], double pwr[])
   }
 
 void estimate_noise_in_frame
-  ( int32_t nw, 
+  ( uint32_t nw, 
     double frame_pwr[], 
-    int32_t nnoi,
+    uint32_t nnoi,
     double noise_pwr[],
     double audio_pwr[],
     double chaff_pwr[],
@@ -642,21 +641,21 @@ void estimate_noise_in_frame
   { 
     if (debug) { fprintf(stderr, "starting {compose_denoising_filter} nnoi = %d\n", nnoi); }
 
-    int32_t nfrq = nw/2 + 1; /* Number of distinct frequencies: */
+    uint32_t nfrq = nw/2 + 1; /* Number of distinct frequencies: */
 
     if (nnoi == 0)
       { /* Nothing to do: */
-        for (int32_t kf = 0; kf < nfrq; kf++)
+        for (uint32_t kf = 0;  kf < nfrq; kf++)
           { audio_pwr[kf] = frame_pwr[kf];
             chaff_pwr[kf] = 0;
           }
         return;
       }
 
-    for (int32_t kf = 0; kf < nfrq; kf++)
+    for (uint32_t kf = 0;  kf < nfrq; kf++)
       { /* Initialize {chaff_pwr} with an arbitrary multiple of est noise power for freq {kf}: */
         double sum_p2 = 1.0e-200;
-        for (int32_t i = 0; i < nnoi; i++)
+        for (uint32_t i = 0;  i < nnoi; i++)
           { double pk = noise_pwr[i*nfrq + kf];
             sum_p2 += pk*pk;
           }
@@ -671,20 +670,19 @@ void estimate_noise_in_frame
     double wt[nfrq];
     compute_freq_weights(nw, frame_pwr, chaff_pwr, wt);
   
-    int32_t nnoi_u = nnoi; /* Number of noise samples to use in fit. */
-    int32_t ixnoi[nnoi]; /* Indices of noise samples to use in fit. */
-    for (int32_t i = 0; i < nnoi; i++) { ixnoi[i] = i; }
+    uint32_t nnoi_u = nnoi; /* Number of noise samples to use in fit. */
+    uint32_t ixnoi[nnoi]; /* Indices of noise samples to use in fit. */
+    for (uint32_t i = 0;  i < nnoi; i++) { ixnoi[i] = i; }
 
-    int32_t maxiter = nnoi+1;
-    int32_t niter = 0;
+    uint32_t maxiter = nnoi+1;
+    uint32_t niter = 0;
     while ((niter < maxiter) && (nnoi_u > 0))
       { niter++;
         if (debug) { fprintf(stderr, "iteration %d\n", niter); } 
 
         FILE *wr = NULL;
         if (debug)
-          { char *fname = NULL;
-            asprintf(&fname, "out/debug_%02d.pwr", niter);
+          { char *fname = jsprintf("out/debug_%02d.pwr", niter);
             wr = open_write(fname, TRUE);
             free(fname);
           }
@@ -695,20 +693,20 @@ void estimate_noise_in_frame
         /* Compute the moment matrix {M} and the indep vector {b}: */
         double M[nnoi_u*nnoi_u];
         double b[nnoi_u];
-        for (int32_t i_u = 0; i_u < nnoi_u; i_u++)
-          { int32_t i = ixnoi[i_u];
+        for (uint32_t i_u = 0;  i_u < nnoi_u; i_u++)
+          { uint32_t i = ixnoi[i_u];
             double *npi = &(noise_pwr[i*nfrq]);
             double bi = 0;
-            for (int32_t kf = 0; kf < nfrq; kf++)
+            for (uint32_t kf = 0;  kf < nfrq; kf++)
               { bi += wt[kf]*npi[kf]*frame_pwr[kf]; }
             b[i_u] = bi;
             
             double *Mi = &(M[i_u*nnoi_u]);
-            for (int32_t j_u = 0; j_u < nnoi_u; j_u++)
-              { int32_t j = ixnoi[j_u];
+            for (uint32_t j_u = 0;  j_u < nnoi_u; j_u++)
+              { uint32_t j = ixnoi[j_u];
                 double *npj = &(noise_pwr[j*nfrq]);
                 double Mij = 0;
-                for (int32_t kf = 0; kf < nfrq; kf++)
+                for (uint32_t kf = 0;  kf < nfrq; kf++)
                   { Mij += wt[kf]*npi[kf]*npj[kf]; }
                 Mi[j_u] = Mij;
                 assert(isfinite(Mij));
@@ -716,18 +714,19 @@ void estimate_noise_in_frame
           }
         /* Solve the system {M*x = b}: */
         double x[nnoi_u];
-        int32_t rank = gsel_solve(nnoi_u, nnoi_u, M, 1, b, x, 1.0e-10);
+        uint32_t rank;
+        gausol_solve(nnoi_u, nnoi_u, M, 1, b, x, TRUE,TRUE, 1.0e-10, NULL, &rank);
         if ((debug) || (! isfinite(x[0])))
-          { gsel_print_system(stderr, "%12.8f", "linear system:", nnoi_u, nnoi_u, M, 1, b, NULL);
-            rn_gen_print(stderr, nnoi_u, x, "%12.8f", "solution: ", " ", "\n"); 
+          { gausol_print_system(stderr, 4, "%12.8f", "linear system:", nnoi_u,NULL,0, nnoi_u,NULL,0, "M",M, 1,"b",b, 0,NULL,NULL, "");
+            gausol_print_array(stderr, 4, "%12.8f", "solution: ", nnoi_u,NULL,0, 1,NULL,0, "x",x, ""); 
           }
         assert(isfinite(x[0]));
         if (rank < nnoi_u)
           { fprintf(stderr, "lin sys solution failed, rank = %d\n", rank); }
           
         /* Exclude any noise component that got zero or negative {x}: */
-        int32_t nnoi_new = 0;
-        for (int32_t i_u = 0; i_u < nnoi_u; i_u++)
+        uint32_t nnoi_new = 0;
+        for (uint32_t i_u = 0;  i_u < nnoi_u; i_u++)
           { if (! isfinite(x[i_u]))
               { fprintf(stderr, "!? x[%d] = %14.8f\n", i_u, x[i_u]);
                 assert(FALSE);
@@ -748,10 +747,10 @@ void estimate_noise_in_frame
           }
           
         /* Compute chaff as determined by solution of lin sys: */
-        for (int32_t kf = 0; kf < nfrq; kf++)
+        for (uint32_t kf = 0;  kf < nfrq; kf++)
           { double chk = 0;
-            for (int32_t i_u = 0; i_u < nnoi_u; i_u++)
-              { int32_t i = ixnoi[i_u];
+            for (uint32_t i_u = 0;  i_u < nnoi_u; i_u++)
+              { uint32_t i = ixnoi[i_u];
                 chk += x[i_u]*noise_pwr[i*nfrq + kf];
               }
             chk = fmax(1.0e-200, chk);
@@ -780,9 +779,9 @@ void estimate_noise_in_frame
       }
   }
     
-void compute_freq_weights(int32_t nw, double frame_pwr[], double chaff_pwr[], double wt[])
-  { int32_t nfrq = nw/2 + 1;
-    for (int32_t kf = 0; kf < nfrq; kf++)
+void compute_freq_weights(uint32_t nw, double frame_pwr[], double chaff_pwr[], double wt[])
+  { uint32_t nfrq = nw/2 + 1;
+    for (uint32_t kf = 0;  kf < nfrq; kf++)
       { double fpk = frame_pwr[kf];
         assert(fpk >= 0);
         double cpk = chaff_pwr[kf];
@@ -809,10 +808,10 @@ options_t* get_options(int32_t argc, char **argv)
     options_t *o = (options_t *)malloc(sizeof(options_t)); 
     
     argparser_get_keyword(pp, "-window");
-    o->wsize = (int32_t)argparser_get_next_int(pp, 1, MAX_WSIZE);
+    o->wsize = (uint32_t)argparser_get_next_int(pp, 1, MAX_WSIZE);
     
     if (argparser_keyword_present(pp, "-overlap"))
-      { o->overlap = (int32_t)argparser_get_next_int(pp, 2, MAXINT); }
+      { o->overlap = (uint32_t)argparser_get_next_int(pp, 2, MAXINT); }
     else 
       { o->overlap = 8; }
     if (o->overlap % 2 != 0) 
@@ -821,7 +820,7 @@ options_t* get_options(int32_t argc, char **argv)
       { argparser_error(pp, "overlap count must divide frame size"); }
     
     o->noiseFile = string_vec_new(10);
-    int32_t nnoi = 0;
+    uint32_t nnoi = 0;
     while (argparser_keyword_present(pp, "-noiseFile"))
       { char *fn = argparser_get_next_non_keyword(pp);
         string_vec_expand(&(o->noiseFile), nnoi);

@@ -1,4 +1,4 @@
-# Last edited on 2023-02-24 05:11:29 by stolfi
+# Last edited on 2024-12-20 19:42:09 by stolfi
 
 PROG := aufilter
 PROGDIR := ..
@@ -43,7 +43,7 @@ out/%-cln.au: in/%-raw.au ${PROGDIR}/${PROG} Makefile plot_debug_pwr.sh
 	if [[ -s ${DEBUG_FILE} ]]; then \
           ./plot_debug_pwr.sh ${DEBUG_FILE} ; \
         fi
-]
+
 NO_OPTIONS := \
               -noiseInput          
 

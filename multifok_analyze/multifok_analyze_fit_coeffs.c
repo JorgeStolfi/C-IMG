@@ -1,7 +1,6 @@
 /* See {multifok_analyze_fit_coeffs.h}. */
-/* Last edited on 2018-09-10 18:03:31 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:23 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -31,9 +30,9 @@ void multifok_analyze_fit_coeffs
       { fprintf(stderr, "!! warning - least squares fit system has rank %d < %d\n", rank, NQ); }
     /* Allocates and computes the fitted values: */
     double *m2 = notnull(malloc(NP*sizeof(double)), "no mem");
-    for (int32_t p = 0; p < NP; p++)
+    for (uint32_t p = 0;  p < NP; p++)
       { double sum = 0;
-        for (int32_t q = 0; q < NQ; q++)
+        for (uint32_t q = 0;  q < NQ; q++)
           { sum += coeff[q] * terms[p*NQ + q]; }
         m2[p] = sum;
       }

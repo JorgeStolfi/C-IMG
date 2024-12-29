@@ -1,8 +1,7 @@
 #ifndef multifok_analyze_compute_rel_similarities_H
 #define multifok_analyze_compute_rel_similarities_H
-/* Last edited on 2018-09-10 18:33:41 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:30 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdint.h>
 
 #include <bool.h>

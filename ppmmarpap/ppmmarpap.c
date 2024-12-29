@@ -1,7 +1,7 @@
 #define PROG_NAME "ppmmarpap"
 #define PROG_DESC "Simulate marbleized paper."
 #define PROG_VERS "1.0"
-/* Last edited on 2020-10-11 02:56:56 by jstolfi */
+/* Last edited on 2024-12-21 11:58:51 by stolfi */
 
 #define ppmmarpap_C_COPY \
   "Copyright © 2012 by the State University of Campinas (UNICAMP)"
@@ -77,7 +77,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -91,6 +90,7 @@
 #include <r2x2.h> 
 #include <r2_extra.h> 
 #include <r3.h> 
+#include <ix_reduce.h> 
 #include <bool.h> 
 
 #include <jspnm.h> 
@@ -168,8 +168,7 @@ int main(int argc, char* argv[])
       }
       
     if (o->verbose)
-      { char *fname = NULL;
-        asprintf(&fname, "/tmp/init.%s", (NC == 3 ? "ppm" : "pgm"));
+      { char *fname = jsprintf("/tmp/init.%s", (NC == 3 ? "ppm" : "pgm"));
         FILE *tmp = open_write(fname, TRUE);
         write_image(tmp, iimg, o->maxval, o->verbose);
         fclose(tmp);
@@ -317,7 +316,7 @@ float_image_t *stir_paint(float_image_t *iimg, int NX, int NY, int NW, int ND, b
     int NXI = (int)iimg->sz[1];
     int NYI = (int)iimg->sz[2];
     float_image_t *oimg = float_image_new(NC, NX, NY);
-    ix_reduction_t red = ix_reduction_MIRROR;
+    ix_reduce_mode_t red = ix_reduce_mode_MIRROR;
     bool_t avg = TRUE;
     int order = 0; /* Interpolation order */
 

@@ -1,10 +1,9 @@
 /* Tools for simulated genomes */
-/* Last edited on 2008-01-06 19:27:47 by stolfi */ 
+/* Last edited on 2024-12-21 14:00:09 by stolfi */ 
 
 #ifndef langev_name_H
 #define langev_name_H
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <values.h>

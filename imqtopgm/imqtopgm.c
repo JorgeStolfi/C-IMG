@@ -2,7 +2,7 @@
 #define PROG_DESC "convert NASA-JPL-PDS's \".imq\" image files to PGM"
 #define PROG_VERS "1.1"
 
-/* Last edited on 2023-02-07 23:22:51 by stolfi */
+/* Last edited on 2024-12-21 14:00:46 by stolfi */
 
 /* Copyright © 1996 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
@@ -43,7 +43,7 @@
   "\n" \
   "RIGHTS\n" \
   argparser_help_info_STANDARD_RIGHTS
-#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -156,7 +156,7 @@ int32_t main(int32_t argc, char **argv)
         line += 1;
         write_pgm_line(wr, np, pix, verbline);
         if (format == 'K') /* do checksum for viking */
-          { for (int32_t i = 0; i < np; i++)
+          { for (uint32_t i = 0;  i < np; i++)
               { checksum += (uint32_t)pix[i]; }
           }
       }
@@ -237,7 +237,7 @@ void read_pixel_diff_histogram(FILE *rd, char format, uint32_t nh, uint64_t hist
     demand(nb_read == 4*nh, "diff histogram length is not 511");
 
     /* Parse {bbuf} into 4-byte integers: */
-    for (int32_t i = 0; i < nh; i++) 
+    for (uint32_t i = 0;  i < nh; i++) 
       { hist[i] = (uint64_t)small_endian_uint32(&(bbuf[4*i]));
         if (verbose) { fprintf(stderr, "  %+4d %lu\n", i-255, hist[i]); }
       }
@@ -256,7 +256,7 @@ void skip_line_header_table(FILE *rd, bool_t verbose)
     byte_t ibuf[nb];
     uint32_t nr = 1056; /* Number of records to skip. */
     uint32_t tot_bytes = 0;
-    for (int32_t i = 0; i < nr; i++)
+    for (uint32_t i = 0;  i < nr; i++)
       { uint32_t length = imq_read_var_length_record(rd, nb, ibuf);
         tot_bytes += length;
       }

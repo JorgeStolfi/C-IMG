@@ -1,4 +1,4 @@
-/* Last edited on 2023-03-29 13:44:58 by stolfi */
+/* Last edited on 2024-12-21 14:01:34 by stolfi */
 
 #define PROG_NAME "fni_to_pov"
 
@@ -28,7 +28,6 @@
   "  Etc. etc.."
 
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

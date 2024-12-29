@@ -2,12 +2,10 @@
 #define PROG_DESC "convert two PNM files into a partially transparent PNG."
 #define PROG_VERS "1.0"
 
-/* !!! Replace "pnm.h" by "jspnm.h" !!! */
+/* Last edited on 2024-12-25 09:46:28 by stolfi */
 
 /* Copyright © 2003 by the State University of Campinas (UNICAMP).
-** See the copyright, authorship, and warranty notice at end of file.
-** Last edited on 2017-06-20 20:38:01 by stolfilocal
-*/
+** See the copyright, authorship, and warranty notice at end of file. */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
@@ -25,8 +23,12 @@
   "DESCRIPTION\n" \
   "  The program reads two PBM, PGM, or PBM image files," \
   " {BLACKPNMFILE} and {WHITEPNMFILE}, and combines" \
-  " them into a PNG file with alpha (opacity) channel.  The" \
-  " two images must show the same object, in exactly the" \
+  " them into a PNG file with alpha (opacity) channel." \
+  "  The file name \"-\" denotes the standard input or output.\n" \
+  "\n" \
+  "   The two images must have the same pixel type(PPM, PGM, or PBM), the" \
+  " same dimensions, and the same {maxval}.  They must show" \
+  " the same object, in exactly the" \
   " same pose, imaged against a black background and against" \
   " a white background, respectively.  The transparency of" \
   " each pixel is deduced from its colors in the two images.\n" \
@@ -41,6 +43,25 @@
   " backgrounds.  The technique does not work for colored" \
   " transparent objects and more complicated" \
   " object-background light interactions.\n" \
+  "\n" \
+  "  The output file will be in color (3 chennels + alpha) if" \
+  " the inputs are PPM files,and grayscale (1 channel + alpha) otherwise.  The" \
+  " output will use 8 bits per channel if the input maxval is 255 or" \
+  " less, and 16 bits per channel otherwise.  In any case, the output will" \
+  " be true-color (i.e. not palette-based), and the alpha channel will be" \
+  " stored as an extra channel (i.e. not through a \"tRNS\" transparency chunk).\n" \
+  "\n" \
+  "  The input images are assumed to use gamma = 1 (linear intensity" \
+  "\n" \
+  " encoding), which is saved in the PNG file as the file gamma.  The output samples" \
+  "\n" \
+  " will be compressed with some internally chosen filter and compression level.\n" \
+  "\n" \
+  "  This is an intelligent program, because it does not try to be smart. All" \
+  " input information is preserved to the extent allowed by the output" \
+  " format. Any additional manipulations of the output file, such" \
+  " as the insertion of ancillary chunks, should be performed by" \
+  " separate PNG tools.\n" \
   "\n" \
   "OPTIONS\n" \
   "  None.\n" \
@@ -59,7 +80,8 @@
   " Poskanzer.\n" \
   "\n" \
   "MODIFICATION HISTORY\n" \
-  "  nov/2006: Rewritten to use lean PBM libs, argparser, etc. by J. Stolfi, IC-UNICAMP.\n" \
+  "  2006-11-xx: Rewritten to use lean PBM libs, argparser, etc. J. Stolfi.\n" \
+  "  2024-12-25: Merged old manpage into the {PROG_INFO} string. J. Stolfi.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \

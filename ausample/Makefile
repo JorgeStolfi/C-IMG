@@ -1,9 +1,10 @@
-# Last edited on 2008-01-15 01:32:03 by stolfi
+# Last edited on 2024-08-30 23:27:16 by stolfi
 
 PROG := \
   ausample
 
 JS_LIBS := \
+  libgeo.a \
   libjs.a \
   libjsaudio.a
   

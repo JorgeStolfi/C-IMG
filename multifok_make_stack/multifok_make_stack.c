@@ -2,7 +2,7 @@
 #define PROG_DESC "Creates a synthetic multi-focus image stack"
 #define PROG_VERS "1.0"
 
-// Last edited on 2023-11-26 06:38:29 by stolfi
+// Last edited on 2024-12-21 13:59:03 by stolfi
 
 #define multifok_make_stack_C_COPYRIGHT \
     "© 2018 by the State University of Campinas (UNICAMP)"
@@ -102,7 +102,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -242,7 +241,7 @@ int32_t main(int32_t argc, char **argv)
 
 float_image_t **multifok_make_stack_alloc_images(int32_t NF, int32_t NX, int32_t NY)
   { float_image_t **img = notnull(malloc(NF*sizeof(float_image_t *)), "no mem");
-    for (int32_t i = 0; i < NF; i++)
+    for (uint32_t i = 0;  i < NF; i++)
       { img[i] = float_image_new(1, NX, NY);
         float_image_fill_channel(img[i], 0, 0.0f);
       }
@@ -262,7 +261,7 @@ void multifok_make_stack_compute_blurred_images
     float_image_t **fMask            /* (OUT) focus masks. */
   )
   {
-    for(int32_t f = 0; f < NF; f++)
+    for (uint32_t f = 0;  f < NF; f++)
       { double frameZ = minHeight + f*heightStep;
         if (verbose) { fprintf(stderr, "computing frame %d (Z = %.5f)...\n", f, frameZ); }
         multifok_make_stack_compute_blurred_image(timg, zimg, frameZ, blurFactor, minBlur, frame[f], fMask[f]);
@@ -291,8 +290,8 @@ void multifok_make_stack_compute_blurred_image
     
     int32_t subm = 1; /* Subsampling order. */
     bool_t debugged = FALSE;
-    for (int32_t iy = 0; iy < NY; iy++)
-      { for (int32_t ix = 0; ix < NX; ix++)
+    for (uint32_t iy = 0;  iy < NY; iy++)
+      { for (uint32_t ix = 0;  ix < NX; ix++)
           { /* Pixel center coordinates: */
             double xctr = (double)ix + 0.5;
             double yctr = (double)iy + 0.5;
@@ -328,19 +327,17 @@ void multifok_make_stack_write_frame_images
     float_image_t **fMask
   )
   {
-    for(int32_t f = 0; f < NF; f++)
-      { char *name = NULL;
-        asprintf(&name, "%s/frame_%05d", outDir, f);
+    for (uint32_t f = 0;  f < NF; f++)
+      { char *name = jsprintf("%s/frame_%05d", outDir, f);
         image_file_format_t ffmt = image_file_format_PNG;
         double v0 = 0.0;
         double vM = 1.0;
         double gammaEnc = 1.0;
         double bias = 0.0;
         bool_t verbose = FALSE;
-        char *fname = NULL;
         
         /* Write the frame:  */
-        asprintf(&fname, "%s.png", name);
+        char *fname jsprintf("%s.png", name);
         fprintf(stderr, "writing %s\n", fname);
         fprintf(stderr, "channel ranges before gamma encoding:\n");
         multifok_make_stack_analyze_image(frame[f]);
@@ -348,17 +345,17 @@ void multifok_make_stack_write_frame_images
         free(fname);
         
         /* Write the mask: */
-        asprintf(&fname, "%s_mask.png", name);
-        fprintf(stderr, "writing %s\n", fname);
-        float_image_write_gen_named(fname, fMask[f], ffmt, v0, vM, gammaEnc, bias, verbose);
-        free(fname);
+        char *maskname = jsprintf("%s_mask.png", name);
+        fprintf(stderr, "writing %s\n", maskname);
+        float_image_write_gen_named(maskname, fMask[f], ffmt, v0, vM, gammaEnc, bias, verbose);
+        free(maskname);
         free(name);
       }
   }
     
 void multifok_make_stack_analyze_image(float_image_t *img)
   { int32_t NC = (int32_t)img->sz[0];;
-    for (int32_t c = 0; c < NC; c++)
+    for (uint32_t c = 0;  c < NC; c++)
       { float vMin = +INF;
         float vMax = -INF;
         float_image_update_sample_range(img, c, &vMin, &vMax);

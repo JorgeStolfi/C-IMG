@@ -2,7 +2,7 @@
 #define PROG_DESC "make a mask for pixels in a given value range"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-03-03 15:05:53 by stolfi */
+/* Last edited on 2024-12-21 12:00:44 by stolfi */
 
 /* Copyright © 1996 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
@@ -53,7 +53,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

@@ -2,14 +2,14 @@
 #define fvw_paint_cell_colored_H
 
 /* fvw_paint_cell_colored.h - painting a grid terrain with texmap-colored cells. */
-/* Last edited on 2010-07-01 22:30:26 by stolfi */
+/* Last edited on 2024-12-23 09:03:24 by stolfi */
 
-#define _GNU_SOURCE
+#include <stdint.h>
 #include <float_image.h>
 
 void fvw_paint_cell_colored_height_map
   ( float_image_t *ht, 
-    int c, 
+    uint32_t c, 
     double zscale,
     float_image_t *tx
   );
@@ -19,7 +19,7 @@ void fvw_paint_cell_colored_height_map
     {(x+1,y+1)} with color {tx[x,y]} */
 
 void fvw_paint_cell_colored_cell
-  ( int x, int y, 
+  ( int32_t x, int32_t y, 
     float z00, float z10, float z01, float z11, 
     float CR, float CG, float CB
   );

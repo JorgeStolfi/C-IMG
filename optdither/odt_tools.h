@@ -2,11 +2,10 @@
 #define odt_tools_H
 
 /* Tools for {optdither}. */
-/* Last edited on 2023-03-17 22:32:54 by stolfi */ 
+/* Last edited on 2024-12-21 12:01:01 by stolfi */ 
 
 /* COMPLEX MATH */
 
-#define _GNU_SOURCE
 #include <stdint.h>
 
 #include <bool.h>

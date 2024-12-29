@@ -4,7 +4,7 @@
 
 /* Copyright © 2004 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2023-03-07 20:42:29 by stolfi */
+/* Last edited on 2024-12-21 11:59:14 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME "  \\\n" \
@@ -73,7 +73,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -147,13 +146,13 @@ int32_t main(int32_t argc, char **argv)
 
     pnm_write_header(stdout, newcols, newrows, maxval, format);
 
-    for (int32_t row = 0; row < rows; row++) 
+    for (uint32_t row = 0;  row < rows; row++) 
       { pnm_read_pixels(ifd, imrow + chns*o->left, cols, chns, maxval, raw, bits);
         fill_side_borders(imrow, o->left, cols, o->right, chns, o->self, bdcolor);
 
         /* Write top border before row 0: */
         if (row == 0)
-          { for (int32_t k = 0; k < o->top; k++)
+          { for (uint32_t k = 0;  k < o->top; k++)
               { uint16_t *otrow = (o->self ? imrow : bdrow);
                 pnm_write_pixels(stdout, otrow, newcols, chns, maxval, raw, bits);
               }
@@ -163,7 +162,7 @@ int32_t main(int32_t argc, char **argv)
 
         /* Write bottom border after row {rows-1}: */
         if (row == rows-1)
-          { for (int32_t k = 0; k < o->bot; k++)
+          { for (uint32_t k = 0;  k < o->bot; k++)
               { uint16_t *otrow = (o->self ? imrow : bdrow);
                 pnm_write_pixels(stdout, otrow, newcols, chns, maxval, raw, bits);
               }

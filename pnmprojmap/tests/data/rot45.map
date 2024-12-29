@@ -1,5 +1,6 @@
-# Last edited on 2023-10-13 19:08:38 by stolfi
-# Rotation by 45 degrees counterclockwise around origin.
+# Last edited on 2024-10-31 17:21:57 by stolfi
+# Rotation by 45 degrees around origin.
+# Counterclockwise for (right,up) or (left,down) axis directions.
 
 +1.000000000 00.000000000 00.000000000
 00.000000000 +0.707106781 +0.707106781

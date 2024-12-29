@@ -2,7 +2,7 @@
 #define PROG_DESC "computes the power spectrum of a PBM/PGM/PPM image"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-01-14 12:09:24 by stolfi */
+/* Last edited on 2024-12-21 11:59:39 by stolfi */
 
 #define pnmspectrum_C_COPYRIGHT \
   "Copyright © 2008 by the State University of Campinas (UNICAMP)"
@@ -279,9 +279,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-/* We need to set these in order to get {isnan}. What a crock... */
-#undef __STRICT_ANSI__
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -317,8 +314,8 @@ typedef struct options_t
     /* Output image attributes: */
     char *outputImage;        /* output image file name, or "-", or NULL if none. */
     bool_t center;            /* TRUE to center the image on freq {(0,0)}. */
-    float maxPower;           /* Nominal max power for sample conversion. */
-    float minPower;           /* Nominal min power for logscale conversion, or 0.0 if linscale. */
+    double maxPower;          /* Nominal max power for sample conversion. */
+    double minPower;          /* Nominal min power for logscale conversion, or 0.0 if linscale. */
     uint16_t maxPixel;        /* Output maxval requested by user, or 0 if not given. */
     /* output table attributes: */
     char *outputTable;        /* Name of output table file, or "-", or NULL if none. */
@@ -335,9 +332,6 @@ options_t *get_options(int32_t argc, char **argv);
 
 float_image_t *read_image
   ( FILE *rd,
-    int32_t *colsP,
-    int32_t *rowsP,
-    int32_t *chnsP,
     uint16_t *maxvalP,
     bool_t verbose
   );
@@ -359,19 +353,21 @@ void apply_vignette(float_image_t *img_io, bool_t hann);
 void write_image
   ( FILE *wr,            /* Where to write the output image. */
     float_image_t *fim,  /* Power spectrum image. */
-    float v_min,         /* Nominal min power for logscale, 0 for linscale. */
-    float v_max,         /* Nominal max power for logscale or linscale. */
+    double vRef,         /* Nominal min power for logscale, 0 for linscale. */
+    double vMax,         /* Nominal max power for logscale or linscale. */
+    double bias,         /* Bias value for logscale. */
     uint16_t maxval,     /* Max sample value in output PNM image. */
     bool_t verbose
   );
   /* Writes the float image {fim} to {wr} as a PBM/PGM/PPM image file.
     The output image file will have samples in {0..maxval}. 
     
-    If {v_min} is 0, uses linear scale; if {v_min} is positive,
-    uses logscale conversion with {v_min} as the reference value.
+    If {vRef} is 0, uses linear scale; if {vRef} is positive,
+    uses logscale conversion with {vRef} as the reference value.
 
-    The parameter {v_max} is the is image sample value that is to be mapped to {maxval};
-    if it is 0 or negative, uses the actual max sample value in the image.
+    The parameter {vMax} is the image sample value that is to be mapped
+    to {maxval}; if it is 0 or negative, uses the actual max sample
+    value in the image.
     
     If {verbose}
     is true, prints image statistics to {stderr}. */
@@ -393,26 +389,27 @@ int32_t main(int32_t argc, char **argv)
     uint16_t maxval_ot = (o->maxPixel > 0 ? o->maxPixel : 65535);
     
     /* Imput image dimensions: */
-    int32_t chns = -1;
-    int32_t cols = -1;
-    int32_t rows = -1;
+    int32_t NC, NX, NY;
     
     /* Output accumulated power spectrum image (if any): */
     float_image_t *img_ot = NULL; /* Allocated after size is known. */
       
     int32_t NI = o->inputImage.ne; /* Number of images. */
     
-    int32_t i;
-    for (i = 0; i < NI; i++)
+    for (uint32_t i = 0;  i < NI; i++)
       { 
         /* Read the input image, get dimensions: */
         uint16_t maxval_in;
         FILE *rd = open_read(o->inputImage.e[i], o->verbose);
-        float_image_t *img_in = read_image(rd, &cols, &rows, &chns, &maxval_in, o->verbose);
+        float_image_t *img_in = read_image(rd, &maxval_in, o->verbose);
+        if (i == 0)
+          { float_image_get_size(img_in, &NC, &NX, &NY); }
+        else
+          { float_image_check_size(img_in, NC, NX, NY); }
 
         /* Allocate output image if needed: */
         if (img_ot == NULL)
-          { img_ot = float_image_new(chns, cols, rows);
+          { img_ot = float_image_new(NC, NX, NY);
             float_image_fill(img_ot, 0.0);
           }
           
@@ -429,8 +426,7 @@ int32_t main(int32_t argc, char **argv)
 
     /* Convert total image to average: */
     if (NI != 1)
-      { int32_t c;
-        for (c = 0; c < chns; c++)
+      { for (uint32_t c = 0;  c < NC; c++)
           { float_image_rescale_samples(img_ot, c, 0.0, (float)NI, 0.0, 1.0); }
       }
 
@@ -451,13 +447,12 @@ int32_t main(int32_t argc, char **argv)
       { /* Write the power spectrum image: */
         if (o->symmetric)
           { /* Replace entries with same freq, opposite phase by their average: */
-            int32_t c, x0, y0;
-            for (c = 0; c < chns; c++)
-              { for (x0 = 0; x0 <= cols/2; x0++)
-                  { int32_t x1 = (cols - x0) % cols;
+            for (uint32_t c = 0;  c < NC; c++)
+              { for (uint32_t x0 = 0;  x0 <= NX/2; x0++)
+                  { int32_t x1 = (NX - x0) % NX;
                     assert(x0 <= x1);
-                    for (y0 = 0; y0 < rows; y0++)
-                      { int32_t y1 = (rows - y0) % rows;
+                    for (uint32_t y0 = 0;  y0 < NY; y0++)
+                      { int32_t y1 = (NY - y0) % NY;
                         if ((x0 < x1) || ((x0 == x1) && (y0 < y1)))
                           { float *p0 = float_image_get_sample_address(img_ot, c, x0, y0);
                             float *p1 = float_image_get_sample_address(img_ot, c, x1, y1);
@@ -471,11 +466,11 @@ int32_t main(int32_t argc, char **argv)
           }
         if (o->center)
           { /* Shift the image so that {(0,0)} goes to the center: */
-            int32_t c;
-            for (c = 0; c < chns; c++) { float_image_shift(img_ot, c, cols/2, rows/2); }
+            for (uint32_t c = 0;  c < NC; c++) { float_image_shift(img_ot, c, NX/2, NY/2); }
           }
         FILE *wr = open_write(o->outputImage, TRUE);
-        write_image(wr, img_ot, o->minPower, o->maxPower, maxval_ot, o->verbose);
+        double bias = 0.0;
+        write_image(wr, img_ot, o->minPower, o->maxPower, bias, maxval_ot, o->verbose);
         fclose(wr);
       }
 
@@ -486,18 +481,12 @@ int32_t main(int32_t argc, char **argv)
 
 float_image_t *read_image
   ( FILE *rd,
-    int32_t *colsP,
-    int32_t *rowsP,
-    int32_t *chnsP,
     uint16_t *maxvalP,
     bool_t verbose
   )
   { uint16_image_t *pim = uint16_image_read_pnm_file(rd);
     bool_t isMask = FALSE;
     float_image_t *fim = float_image_from_uint16_image(pim, isMask, NULL, NULL, TRUE, verbose);
-    if ((*colsP) < 0) { (*colsP) = pim->cols; } else { demand(pim->cols == (*colsP), "inconsistent image cols"); }
-    if ((*rowsP) < 0) { (*rowsP) = pim->rows; } else { demand(pim->rows == (*rowsP), "inconsistent image rows"); }
-    if ((*chnsP) < 0) { (*chnsP) = pim->chns; } else { demand(pim->chns == (*chnsP), "inconsistent image chns"); }
     (*maxvalP) = pim->maxval;
     uint16_image_free(pim);
     return fim;
@@ -506,18 +495,14 @@ float_image_t *read_image
 void accum_image(float_image_t *img_in, float_image_t *img_ot)
   {
     /* Get image dimensions: */
-    int32_t NC = (int32_t)img_in->sz[0];
-    int32_t NX = (int32_t)img_in->sz[1];
-    int32_t NY = (int32_t)img_in->sz[2];
+    int32_t NC, NX, NY;
+    float_image_get_size(img_in, &NC, &NX, &NY);
+    float_image_check_size(img_ot, NC, NX, NY);
 
     /* Accumulate power spectrum on output image: */
-    assert(img_ot->sz[0] == NC);
-    assert(img_ot->sz[1] == NX);
-    assert(img_ot->sz[2] == NY);
-    int32_t c, x, y;
-    for (c = 0; c < NC; c++) 
-      { for (x = 0; x < NX; x++) 
-          { for (y = 0; y < NY; y++)
+    for (uint32_t c = 0;  c < NC; c++) 
+      { for (uint32_t x = 0;  x < NX; x++) 
+          { for (uint32_t y = 0;  y < NY; y++)
               { double pv = float_image_get_sample(img_in, c, x, y);
                 float *ov = float_image_get_sample_address(img_ot, c, x, y);
                 (*ov) += (float)pv;
@@ -529,12 +514,23 @@ void accum_image(float_image_t *img_in, float_image_t *img_ot)
 void convert_to_spectrum(float_image_t *img_io, bool_t vignette)
   {
     /* Get image dimensions: */
-    int32_t NC = (int32_t)img_io->sz[0];
-    int32_t NX = (int32_t)img_io->sz[1];
-    int32_t NY = (int32_t)img_io->sz[2];
+    int32_t NC, NX, NY;
+    float_image_get_size(img_io, &NC, &NX, &NY);
+    
+    auto bool_t check_energy(char *which, int32_t c, double erg1, double erg2);
+      /* Returns true if {erg1 == erg} apart from expected roundoff errors. 
+        Prints warning to {stderr} and returns false if not. */
 
-    /* Allocate the temp spectrum image: */
-    float_image_t *img_pw = float_image_new(NC, NX, NY);
+    /* Allocate the Hartley transform image: */
+    float_image_t *img_ht = float_image_new(NC, NX, NY);
+    
+    /* Compute and save the total energy in the space domain: */
+    double erg_in[NC];
+    for (uint32_t c = 0;  c < NC; c++) 
+      { int32_t NS;
+        erg_in[c] = float_image_compute_squared_sample_sum(img_io, c, 0.0, &NS);
+        assert(NS == NX*NY);
+       }
 
     if (vignette) 
       { bool_t hann = TRUE;
@@ -542,29 +538,53 @@ void convert_to_spectrum(float_image_t *img_io, bool_t vignette)
       }
     
     /* Compute the Hartley transform: */
-    float_image_hartley_transform(img_io, img_pw);
+    float_image_hartley_transform(img_io, img_ht);
+
+    /* Paranoia: check conservation of energy. */
+    bool_t ok = TRUE;
+    for (uint32_t c = 0;  c < NC; c++) 
+      { int32_t NS;
+        double erg_ht = float_image_compute_squared_sample_sum(img_ht, c, 0.0, &NS);
+        assert(NS == NX*NY);
+        ok = ok && check_energy("img_ht", c, erg_ht, erg_in[c]);
+      }
+    assert(ok);
 
     /* Store power spectrum on given image: */
-    int32_t c, x, y;
-    for (c = 0; c < NC; c++) 
-      { for (x = 0; x < NX; x++) 
-          { for (y = 0; y < NY; y++)
-              { double pv = float_image_get_sample(img_pw, c, x, y);
+    for (uint32_t c = 0;  c < NC; c++) 
+      { for (uint32_t x = 0;  x < NX; x++) 
+          { for (uint32_t y = 0;  y < NY; y++)
+              { double pv = float_image_get_sample(img_ht, c, x, y);
                 float *ov = float_image_get_sample_address(img_io, c, x, y);
                 (*ov) = (float)(pv*pv);
               }
           }
+        /* Paranoia: check conservation of energy. */
+        int32_t NS;
+        double erg_pw = float_image_compute_sample_sum(img_io, c, &NS);
+        assert(NS == NX*NY);
+        ok = ok && check_energy("img_io", c, erg_pw, erg_in[c]);
       }
       
-    float_image_free(img_pw);
+    float_image_free(img_ht);
+    return;
+        
+    bool_t check_energy(char *which, int32_t c, double erg1, double erg2)
+      { double diff = (erg1 - erg2)/(NX*NY);
+        if (fabs(diff) > 2.0e-9*(log(NX*NY)/log(2)))
+          { fprintf(stderr, "** energy discrepancy in channel %d of %s:", c, which);
+            fprintf(stderr, "  img_in = %24.16f  %s = %24.16f diff/NS = %24.16f\n", erg1, which, erg2, diff);
+            return FALSE;
+          } 
+        else
+          { return TRUE; }
+      }
   }
   
 void apply_vignette(float_image_t *img_io, bool_t hann)
   {
-    /* Get image dimensions: */
-    int32_t NC = (int32_t)img_io->sz[0];
-    int32_t NX = (int32_t)img_io->sz[1];
-    int32_t NY = (int32_t)img_io->sz[2];
+    int32_t NC, NX, NY;
+    float_image_get_size(img_io, &NC, &NX, &NY);
     
     double sigma = 0.5/3.0;
     
@@ -587,13 +607,12 @@ void apply_vignette(float_image_t *img_io, bool_t hann)
       }
 
     /* Multiply each pixel by the mask: */
-    int32_t c, x, y;
-    for (x = 0; x < NX; x++) 
+    for (uint32_t x = 0;  x < NX; x++) 
       { double wx = (hann ? hann_win(x, NX) : gauss_win(x, NX));
-        for (y = 0; y < NY; y++)
+        for (uint32_t y = 0;  y < NY; y++)
           { double wy = (hann ? hann_win(y, NY) : gauss_win(y, NY));
             double w = wx*wy;
-            for (c = 0; c < NC; c++) 
+            for (uint32_t c = 0;  c < NC; c++) 
               { float *ov = float_image_get_sample_address(img_io, c, x, y);
                 (*ov) *= (float)w;
               }
@@ -604,51 +623,60 @@ void apply_vignette(float_image_t *img_io, bool_t hann)
 void write_image
   ( FILE *wr,            /* Where to write the output image. */
     float_image_t *fim,  /* Power spectrum summed over all input images. */
-    float v_min,         /* Nominal min power for logscale, 0 for linscale. */
-    float v_max,         /* Nominal max power for logscale or linscale. */
+    double vRef,          /* Nominal min power for logscale, 0 for linscale. */
+    double vMax,          /* Nominal max power for logscale or linscale. */
+    double bias,          /* Bias value for logscale. */
     uint16_t maxval,     /* Max sample value in output PNM image. */
     bool_t verbose
   )
-  { int32_t chns = (int32_t)fim->sz[0];
-    int32_t c;
-    demand(v_min >= 0, "invalid {v_min}");
+  { 
+    int32_t NC, NX, NY;
+    float_image_get_size(fim, &NC, &NX, &NY);
 
-    /* Ensure {v_max} is defined and positive: */
-    if (v_max <= 0)
-      { /* Find true {v_max} over all channels (but leave {v_min} unchanged): */
+    demand(vRef >= 0, "invalid {vRef}");
+
+    /* Ensure {vMax} is defined and positive: */
+    if (vMax <= 0)
+      { /* Find true {vMax} over all channels: */
         float f_min = 0.0f, f_max = 1.0e-38f; /* To avoid division by zero if {fim} is all zeros. */
-        for (c = 0; c < chns; c++)
+        for (uint32_t c = 0;  c < NC; c++)
           { float_image_update_sample_range(fim, c, &f_min, &f_max); }
-        if (verbose) { fprintf(stderr, "max power = %13.5e\n", f_max); }
-        v_max = f_max;
+        if (verbose) { fprintf(stderr, "max power = %14.6e\n", f_max); }
+        vMax = f_max;
       }
-    assert(v_max > 0.0);
+    assert(vMax > 0.0);
+    /* Assume {vMin} before log is 0.0, since negatives map to {NAN}: */
+    double vMin = 0.0;
 
-    /* Convert image and {v_max} to logscale if so requested: */
-    if (v_min > 0)
+    /* Convert image and {vMax} to logscale if so requested: */
+    if (vRef == 0)
+      { /* affine conversion only: */
+        vMin = 0;  /* Since the power is non-negative. */
+      }
+    else
       { /* Apply log-scale conversion to the image: */
-        if (verbose) { fprintf(stderr, "applying log scale [ %13.5e _  %13.5e ] -->", v_min, v_max); }
+        if (verbose) 
+          { fprintf(stderr, "applying log scale bias = %14.6e vRef = %14.6e [ %14.6e _  %14.6e ] -->", bias, vRef, vMin, vMax); }
         double base = M_E;
-        for (c = 0; c < chns; c++) 
-          { float_image_log_scale(fim, c, v_min, base); }
-        /* Apply log-scale conversion to {v_max} too: */
         double logBase = 1.0;
-        v_max = fmaxf(1.0e-38f, sample_conv_log(v_max, v_min, logBase));
-        /* The old {v_min} should be mapped to zero: */
-        v_min = 0.0;
-        if (verbose) { fprintf(stderr, " [ %13.5e _  %13.5e ]\n", v_min, v_max); }
+        for (uint32_t c = 0;  c < NC; c++) { float_image_log_scale(fim, c, bias, vRef, base); }
+        /* Write original values below {vRef} as zero: */
+        vMin = sample_conv_log((float)vRef, bias, vRef, logBase);
+        /* Apply log-scale conversion to {vMax} too: */
+        vMax = fmaxf(1.0e-38f + (float)vMin, sample_conv_log((float)vMax, bias, vRef, logBase));
+        if (verbose) { fprintf(stderr, " [ %14.6e _  %14.6e ]\n", vMin, vMax); }
       }
 
-    /* At this point we must have {v_min == 0} in any case: */
-    assert(v_min == 0.0);
-    assert(v_max > 0.0);
+    /* At this point we must have {vMin == 0} in any case: */
+    assert(vMin < vMax);
+    assert(vMax > 0.0);
 
-    /* Write image with linear scaling {[0 _ v_max]} --> {[0 _ maxval}: */
-    double vLo[chns];
-    double vHi[chns];
-    for (c = 0; c < chns; c++) { vLo[c] = 0; vHi[c] = v_max; }
+    /* Write image with linear scaling {[0 _ vMax]} --> {[0 _ maxval}: */
+    double vLo[NC];
+    double vHi[NC];
+    for (uint32_t c = 0;  c < NC; c++) { vLo[c] = 0; vHi[c] = vMax; }
     bool_t isMask = FALSE;
-    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, chns, vLo, vHi, NULL, maxval, TRUE, verbose);
+    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, NC, vLo, vHi, NULL, maxval, TRUE, verbose);
     bool_t forceplain = FALSE;
     uint16_image_write_pnm_file(wr, pim, forceplain, verbose);
     uint16_image_free(pim);
@@ -656,24 +684,24 @@ void write_image
 
 void write_spectrum_table(FILE *wr, float_image_t *fim, int32_t nRanges, bool_t verbose)
   {
-    int32_t chns = (int32_t)fim->sz[0];
-    int32_t cols = (int32_t)fim->sz[1];
-    int32_t rows = (int32_t)fim->sz[2];
+    int32_t NC, NX, NY;
+    float_image_get_size(fim, &NC, &NX, &NY);
 
     /* Create a binned spectrum table {tb}: */
     spectrum_table_binned_t tb;
-    int32_t c;
     if (nRanges == 0)
       { /* Create an exact spectrum table {tx}: */
         if (verbose) { fprintf(stderr, "gathering the exact spectrum table...\n"); }
         spectrum_table_exact_t tx = spectrum_table_exact_new(0);
         if (verbose) { fprintf(stderr, "  %12u raw entries\n", tx.ne); }
-        for (c = 0; c < chns; c++)
-          { spectrum_table_exact_append_all(fim, c, &tx, FALSE); }
+        for (uint32_t c = 0;  c < NC; c++)
+          { bool_t center = FALSE;
+            spectrum_table_exact_append_all(fim, center, c, &tx, FALSE);
+          }
         spectrum_table_exact_sort(&tx, verbose);
         if (verbose) { fprintf(stderr, "  %12u sorted entries\n", tx.ne); }
         /* Convert {tx} to a binned table {tb}, preserving the exactness as fas as possible: */
-        tb = spectrum_table_convert_exact_to_binned(&tx, cols, rows);
+        tb = spectrum_table_convert_exact_to_binned(&tx, NX, NY);
         if (verbose) { fprintf(stderr, "  %12u binned entries\n", tb.ne); }
         spectrum_table_exact_trim(&tx, 0);
       }
@@ -682,15 +710,16 @@ void write_spectrum_table(FILE *wr, float_image_t *fim, int32_t nRanges, bool_t 
         if (verbose) { fprintf(stderr, "gathering the binned spectrum table...\n"); }
         tb = spectrum_table_binned_make(nRanges);
         if (verbose) { fprintf(stderr, "  %12u binned entries\n", tb.ne); }
-        for (c = 0; c < chns; c++)
-          { spectrum_table_binned_add_all(fim, c, &tb, FALSE); }
+        for (uint32_t c = 0;  c < NC; c++)
+          { bool_t center = FALSE;
+            spectrum_table_binned_add_all(fim, center, c, &tb, FALSE);
+          }
       }
 
     /* Write the binned spectrum table to the output: */
-    int32_t k;
     double fprev = 0.0;
     char *tbfmt = "%14.8f %14.10f %14.8f  %10.0f  %18.12f\n";
-    for (k = 0; k < tb.ne; k++)
+    for (uint32_t k = 0;  k < tb.ne; k++)
       { spectrum_table_binned_entry_t *ek = &(tb.e[k]);
         assert(fprev == ek->fmin);
         assert(ek->fmin <= ek->fmid);

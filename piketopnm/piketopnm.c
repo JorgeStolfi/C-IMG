@@ -4,7 +4,7 @@
 
 #define piketopnm_C_COPYRIGHT "Copyright © 2010 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2017-06-30 01:04:42 by stolfilocal */
+/* Last edited on 2024-12-21 12:00:37 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME  " \\\n" \
@@ -130,7 +130,6 @@
   "  -verbose\n" \
   "    Produces diagnostic output."
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 
 #include <string.h>

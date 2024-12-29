@@ -2,7 +2,7 @@
 #define PROG_DESC "creates an EPS file with a simple focus calibration chart"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-10-01 19:49:20 by stolfi */
+/* Last edited on 2024-12-21 13:59:58 by stolfi */
 
 #define make_focus_chart_C_COPYRIGHT \
   "Copyright © 2017  by the State University of Campinas (UNICAMP)"
@@ -93,7 +93,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

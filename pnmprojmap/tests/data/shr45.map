@@ -1,5 +1,6 @@
-# Last edited on 2023-10-13 19:11:43 by stolfi
-# Shearing in the X direction with ratio +1 (45 degrees clockwise).
+# Last edited on 2024-10-31 17:23:39 by stolfi
+# Shearing in the X direction with ratio +1 (45 degrees)
+# Clockwise for (right,up) or (left,down) axis directions.
 
 +1.000000000   00.000000000   00.000000000
 00.000000000   +1.000000000   00.000000000

@@ -1,10 +1,9 @@
 /* Tools for simulated geography */
-/* Last edited on 2017-06-20 21:18:27 by stolfilocal */ 
+/* Last edited on 2024-12-21 14:00:28 by stolfi */ 
 
 #ifndef langev_geog_H
 #define langev_geog_H
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <values.h>

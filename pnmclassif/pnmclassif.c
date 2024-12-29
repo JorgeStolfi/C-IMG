@@ -4,7 +4,7 @@
 
 #define pnmclassif_C_COPYRIGHT "Copyright © 2010 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2023-10-14 23:06:15 by stolfi */
+/* Last edited on 2024-12-21 12:00:02 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME  " \\\n" \
@@ -112,7 +112,6 @@
   "  -verbose\n" \
   "    Produces diagnostic output."
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

@@ -1,5 +1,5 @@
 /* Test of jspng.h, uint16_image_io_png.h */
-/* Last edited on 2017-06-25 16:25:34 by stolfilocal */
+/* Last edited on 2024-12-21 11:59:33 by stolfi */
 
 #define PROG_NAME "pnmtoobj"
 #define PROG_DESC "converts a height map and/or a color image to a Wavefront OBJ file"
@@ -150,7 +150,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

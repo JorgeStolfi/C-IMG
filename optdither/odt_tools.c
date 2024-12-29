@@ -1,10 +1,9 @@
 /* See odt_tools.h */
-/* Last edited on 2023-03-17 22:07:44 by stolfi */
+/* Last edited on 2024-12-21 13:58:42 by stolfi */
 
 #define odt_tools_C_COPYRIGHT \
   "Copyright © 1993 by the State University of Campinas (UNICAMP)"
 
-#define _GNU_SOURCE
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -112,8 +111,8 @@ void Dith(int32_t m, int32_t n, float *x, int32_t *y, int32_t mm, int32_t nn, in
 
     int32_t ii = 0;
     int32_t jj = 0;
-    for (int32_t i = 0; i < m; i++)
-      { for (int32_t j = 0; j < n; j++)
+    for (uint32_t i = 0;  i < m; i++)
+      { for (uint32_t j = 0;  j < n; j++)
           { if (ii == mm)
               { ii = 0; }
             if (jj == nn)
@@ -130,8 +129,8 @@ void Dith(int32_t m, int32_t n, float *x, int32_t *y, int32_t mm, int32_t nn, in
 
 void rebuild(int32_t m, int32_t n, cmp * x, cmp * y)
   {
-    for (int32_t i = 0; i < m / 2; i++)
-      for (int32_t j = 0; j < n / 2; j++)
+    for (uint32_t i = 0;  i < m / 2; i++)
+      for (uint32_t j = 0;  j < n / 2; j++)
         {
           *(y + i * n + j) = *(x + (i + m / 2) * n + j + n / 2);
           *(y + (i + m / 2) * n + j + n / 2) = *(x + i * n + j);
@@ -143,14 +142,14 @@ void rebuild(int32_t m, int32_t n, cmp * x, cmp * y)
 void LiveAgua (int32_t m, int32_t n, cmp * x, int32_t *y)
   {
     int32_t *oo = (int32_t *) calloc (m * n, sizeof (int32_t));
-    for (int32_t i = 0; i < m; i++)
-      for (int32_t j = 0; j < n; j++)
+    for (uint32_t i = 0;  i < m; i++)
+      for (uint32_t j = 0;  j < n; j++)
         *(oo + i * n + j) = 0;
 
     for (int32_t k = m * n; k > 0; k--)
       { float mx = -20000.0;
-        for (int32_t i = 0; i < m; i++)
-          for (int32_t j = 0; j < n; j++)
+        for (uint32_t i = 0;  i < m; i++)
+          for (uint32_t j = 0;  j < n; j++)
             {
               cmp z = *(x + i * n + j);
               if (*(oo + i * n + j) == 0)
@@ -167,8 +166,8 @@ void LiveAgua (int32_t m, int32_t n, cmp * x, int32_t *y)
 
 void MskFlt(int32_t m, int32_t n, cmp * ax, cmp * ay, cmp * az)
   {
-    for (int32_t i = 0; i < m; i++)
-      for (int32_t j = 0; j < n; j++)
+    for (uint32_t i = 0;  i < m; i++)
+      for (uint32_t j = 0;  j < n; j++)
         *(ay + i * n + j) = M (*(ax + i * n + j), *(az + i * n + j));
 
   }
@@ -176,8 +175,8 @@ void MskFlt(int32_t m, int32_t n, cmp * ax, cmp * ay, cmp * az)
 void Justifier (int32_t m, int32_t n, cmp * x, cmp * y, cmp * res)
   {
     float jst = Power (m, n, x) / Power (m, n, y);
-    for (int32_t i = 0; i < m; i++)
-      for (int32_t j = 0; j < n; j++)
+    for (uint32_t i = 0;  i < m; i++)
+      for (uint32_t j = 0;  j < n; j++)
         {	cmp z = *(y + i * n + j);
           z.re = z.re * jst;
           z.im = z.im * jst;

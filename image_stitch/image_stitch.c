@@ -2,7 +2,7 @@
 #define PROG_DESC "Finds projective map between two images, given corresponding points"
 #define PROG_VERS "1.0"
 
-// Last edited on 2023-10-09 19:36:33 by stolfi
+// Last edited on 2024-12-21 14:00:51 by stolfi
 
 #define image_stitch_C_COPYRIGHT \
     "© 2002 by the State University of Campinas (UNICAMP)"
@@ -105,7 +105,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -387,7 +386,7 @@ hr2_pmap_t image_stitch_optimize_pmap
          mapped points {p1*M.dir} and {p2*M.inv}, given the packed
          parameters {x[0..nx-1]}. */
     
-    auto bool_t is_ok(int32_t nx, double x[], double Fx);
+    auto bool_t is_ok(int32_t iter, int32_t nx, double x[], double Fx, double dist, double step, double radius);
       /* Returns true if the squared error {Fx} is small enough. */
     
     double esq = image_stitch_mean_err_sqr(p1, &(M0->dir), p2, &(M0->inv));
@@ -396,7 +395,7 @@ hr2_pmap_t image_stitch_optimize_pmap
     double rIni = 0.250*dMax;        /* Initial probe radius. */
     double rMin = 0.5;               /* Minimum probe radius. */
     double rMax = 0.500*dMax;        /* Maximum probe radius. */
-    double stop = 0.1*maxErr;        /* Stopping criterion. */
+    double minStep = 0.1*maxErr;        /* Stopping criterion. */
     sign_t dir = -1;                 /* Look for minimum. */
 
     if (verbose) 
@@ -409,16 +408,27 @@ hr2_pmap_t image_stitch_optimize_pmap
     pack_parameters(M0, nx, x);
     if (verbose) 
       { char *fname = NULL;
-        asprintf(&fname, "%s-f2-plot.txt", outPrefix);
+        char *fname = jsprintf("%s-f2-plot.txt", outPrefix);
         FILE *wr = open_write(fname, TRUE);
-        minn_plot_1D_gnuplot(wr, nx, goalf, x, 20, rIni);
+        for (uint32_t ku = 0;  ku < nu; ku++)
+          { double *uk = &(U[ku*nz]);
+            minn_plot_1D_gnuplot(wr, nx, goalf, x, 20, rIni);
+          }
         fclose(wr);
         free(fname);
       }
     if (verbose) { fprintf(stderr, "optimizing\n"); }
     double Fx = goalf(nx, x);
     if (verbose) { fprintf(stderr, "initial rms error = %13.6f\n", Fx); }
-    sve_minn_iterate(nx, &goalf, &is_ok, x, &Fx, dir, dMax, dBox, rIni, rMin, rMax, stop, maxIter, verbose);
+    double ctr[nx]; rn_copy(nx, x, ctr);
+    bool_t sve_debug = verbose;
+    bool_t sve_debug_probes = FALSE; 
+    sve_minn_iterate
+      ( nx, &goalf, &is_ok, NULL, 
+        x, &Fx, dir, 
+        ctr, dMax, dBox, rIni, rMin, rMax, 
+        minStep, maxIter, sve_debug, sve_debug_probes
+      );
     if (verbose) { fprintf(stderr, "final rms error = %13.6f\n", Fx); }
     
     /* Unpack projective map: */
@@ -477,16 +487,16 @@ hr2_pmap_t image_stitch_optimize_pmap
     
     double goalf(int32_t nx, double x[])
       {
-        if (debug) { rn_gen_print(stderr, nx, x, "%8.1f", "\n    [ ", " ", " ]\n"); }
+        if (sve_debug) { rn_gen_print(stderr, nx, x, "%8.1f", "\n    [ ", " ", " ]\n"); }
         hr2_pmap_t M;
         unpack_parameters(nx, x, &M);
         /* Mean square error on point lists: */
-        double esq = hr2_pmap_mismatch_sqr(&M, np, p1, p2);
+        double esq = hr2_pmap_mismatch_sqr(&M, np, p1, p2, w);
         /* Deformation penalty: */
         double dsq1 = image_stitch_deform_sqr(L1, H1, &(M.dir));
         double dsq2 = image_stitch_deform_sqr(L2, H2, &(M.inv));
         double F = esq + 0.0001*(dsq1 + dsq2);
-        if (debug) 
+        if (sve_debug) 
           { fprintf(stderr, "    mean squared error = %13.6e", esq); 
             fprintf(stderr, " squared deform = %13.6e %13.6e", dsq1, dsq2);
             fprintf(stderr, " function = %13.6e\n", F);
@@ -500,7 +510,7 @@ hr2_pmap_t image_stitch_optimize_pmap
       
       }
       
-    bool_t is_ok(int32_t nx, double x[], double Fx)
+    bool_t is_ok(int32_t iter, int32_t nx, double x[], double Fx, double dist, double step, double radius)
       {
         return Fx < maxErr*maxErr;
       }
@@ -524,7 +534,7 @@ void image_stitch_show_pmap_and_square(hr2_pmap_t *M, char *tag)
   {
     image_stitch_show_pmap(M, tag);
     char *tagsqr = NULL;
-    asprintf(&tagsqr, "%s squared", tag);
+    char *tagsqr = jsprintf("%s squared", tag);
     hr2_pmap_t M2 = hr2_pmap_compose(M,M);
     image_stitch_show_pmap(&M2, tagsqr);
     free(tagsqr);
@@ -550,7 +560,7 @@ void image_stitch_check_matrices(char *outPrefix, r2_vec_t *p1, r3x3_t *M1, r2_v
     FILE *wr = stderr;     
     if ((outPrefix != NULL) && (strlen(outPrefix) != 0))
       { char *fname = NULL;
-        asprintf(&fname, "%s-pairs.txt", outPrefix);
+        char *fname = jsprintf("%s-pairs.txt", outPrefix);
         wr = open_write(fname, TRUE);
         delims = FALSE;
         free(fname);
@@ -626,8 +636,7 @@ void image_stitch_check_matrices(char *outPrefix, r2_vec_t *p1, r3x3_t *M1, r2_v
 void image_stitch_write_matrix(char *outPrefix, int32_t K, r3x3_t *M)
   {
     assert((K == 1) || (K == 2));
-    char *fname = NULL;
-    asprintf(&fname, "%s-%d-matrix.txt", outPrefix, K);
+    char *fname = jsprintf("%s-%d-matrix.txt", outPrefix, K);
     FILE *wr = open_write(fname, TRUE);
     r3x3_gen_print(wr, M, "%24.15e", "", "", "", "", " ", "\n");
     fclose(wr);
@@ -666,10 +675,9 @@ void image_stitch_write_points(char *outPrefix, int32_t K, int32_t nc, r2_t C[])
   {
     assert((K == 1) || (K == 2));
     
-    char *fname = NULL;
-    asprintf(&fname, "%s-%d-outline.txt", outPrefix, K);
+    char *fname = jsprintf("%s-%d-outline.txt", outPrefix, K);
     FILE *wr = open_write(fname, TRUE);
-    for (int32_t kc = 0; kc <= nc; kc++)
+    for (uint32_t kc = 0;  kc <= nc; kc++)
       { r2_t *q = &(C[kc % nc]);
         r2_gen_print(wr, q, "%12.6e", "", " ", "\n");
       }

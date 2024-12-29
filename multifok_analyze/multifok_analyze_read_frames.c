@@ -1,7 +1,6 @@
 /* See {multifok_analyze_read_frames.h}. */
-/* Last edited on 2018-01-03 14:21:27 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:16 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -31,9 +30,8 @@ float_image_t **multifok_analyze_read_frames
   {
     float_image_t **fimg = notnull(malloc(NF*sizeof(float_image_t*)), "no mem");
     
-    for (int32_t f = 0; f < NF; f++)
-      { char *fname = NULL;
-        asprintf(&fname, framePattern, frameID[f]);
+    for (uint32_t f = 0;  f < NF; f++)
+      { char *fname = jsprintf(framePattern, frameID[f]);
         if (verbose) { fprintf(stderr, "reading frame[%3d]  from file \"%s\"\n", f, fname); }
         float v0 = 0.0;
         float vM = 1.0;

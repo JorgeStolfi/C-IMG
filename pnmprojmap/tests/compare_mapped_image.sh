@@ -1,5 +1,5 @@
 #! /bin/bash
-# Last edited on 2023-10-15 12:23:14 by stolfi
+# Last edited on 2024-10-31 22:34:32 by stolfi
 
 OT_FILE="$1"; shift
 EX_FILE="$1"; shift
@@ -28,11 +28,10 @@ fi
 if [[ ( -s "${OT_FILE}" ) && ( -s "${EX_FILE}" ) ]]; then
   pnmxarith -subtract -offset 0.5 "${OT_FILE}" "${EX_FILE}" > "${OT_EX_DIF_FILE}"
   imgs+=( "${OT_EX_DIF_FILE}" )
-else
 fi
 if [[ "/${SHOW}" == "/YES" ]]; then
   tfile="${tmp}.png"
   convert "${imgs[@]}" -background black +append ${tfile}
-  display -title '%f' -resize '>x800' ${tfile}
+  display -title "${OT_FILE}" -resize '>x800' ${tfile}
   rm ${tfile}
 fi

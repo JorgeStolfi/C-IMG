@@ -2,9 +2,11 @@
 #define PROG_DESC "convert a float-valued FNI image file to a PGM or PPM file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-03-29 12:27:42 by stolfi */
+/* Last edited on 2024-12-25 09:20:50 by stolfi */
 
-#define PROG_C_COPYRIGHT "Copyright © 2005 by the State University of Campinas (UNICAMP)."
+#define PROG_C_COPYRIGHT "Copyright © 2005 State University of Campinas (UNICAMP).  Run \"" PROG_NAME " -info\" for details"
+
+/* !!! Add "-gamma" option !!! */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
@@ -17,6 +19,7 @@
   "    [ -maxval {MAXVAL} ] \\\n" \
   "    [ -isMask {ISMASK} ] \\\n" \
   "    [ -nanval {NANVAL} ] \\\n" \
+  "    " imgc_parse_y_axis_HELP " \\\n" \
   "    < {FNI_FILE} \\\n" \
   "    > {PNM_FILE}"
 
@@ -46,6 +49,7 @@
   "  aug/2009 Replacement of NaNs added by R. F. V. Saracchini.\n" \
   "  aug/2009 \"-nanval\" option added by J. Stolfi.\n" \
   "  2010-08-14 \"-isMask\" flag added by J. Stolfi.\n" \
+  "  2024-12-24 Added \"-yAxis\". J.Stolfi.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \
@@ -80,8 +84,10 @@
   " the integers {0..MAXVAL}, as specified by the \"-isMask\" option.  The" \
   " encoding is essentially linear, without any gamma mapping.  Any {NaN} samples" \
   " in the input file are mapped directly to the sample value defined" \
-  " by the \"-nanval\" argument.  The top scanline of" \
-  " the output image is row 0 of the input.\n" \
+  " by the \"-nanval\" argument.\n" \
+  "\n" \
+  "  The \"-yAxis\" option determines whether row 0 of the" \
+  " FNI image is the top or bottom row of the PNM image.\n" \
   "\n" \
   "SPECIFYING THE SAMPLE SCALING\n" \
   "  The input scaling range [{VMIN} _ {VMAX}] is specified by" \
@@ -134,6 +140,8 @@
   "\n" \
   pst_scaling_parse_uniform_HELP_INFO ".\n" \
   "\n" \
+  imgc_parse_y_axis_INFO_OPTS(imgc_parse_y_axis_INFO_OPTS_default_pbm) "\n" \
+  "\n" \
   "  -maxval {INTEGER}\n" \
   "    Specifies the maximum output sample value {MAXVAL}.\n" \
   "\n" \
@@ -145,14 +153,13 @@
   " " sample_conv_0_1_isMask_true_INFO "  If {ISMASK} is false (\"F\" or 0)," \
   " " sample_conv_0_1_isMask_false_INFO "  The default is \"-isMask F\".\n" \
   "\n" \
-  "  -nanval {UNDVAL}\n" \
+  "  -nanval {NANVAL}\n" \
   "    This optional parameter specifies the floating-point value to" \
   " be substituted for {NAN} samples. After substitution, that value" \
   " will be converted by the same formula as the original samples.  If this" \
   " parameter is not specified, the program will use the midpoint of the" \
   " nominal input range of each channel, as specified by the scaling arguments."
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -166,6 +173,7 @@
 #include <jspnm.h>
 #include <uint16_image.h>
 #include <sample_conv.h>
+#include <image_coords.h>
 #include <bool.h>
 
 #include <pst_scaling.h>
@@ -176,48 +184,61 @@
 /* COMMAND-LINE OPTIONS */
 
 typedef struct options_t
-  { int NC;              /* Number of channels to output, or -1 if unknown. */
-    uint16_t maxval; /* Maximum output sample value. */
-    bool_t isMask;       /* Interpretation of integer sample values. */
+  { int32_t NC;            /* Number of channels to output, or -1 if unknown. */
+    uint16_t maxval;       /* Maximum output sample value. */
+    bool_t isMask;         /* Interpretation of integer sample values. */
     /* Input channel data (indexed {0..NC-1}): */
     int32_vec_t channel;   /* Indices of input channels to convert; empty vec if not given. */
-    double_vec_t min;    /* Low endpoint of scaling range; empty vec if not given. */
-    double_vec_t max;    /* High endpoint of scaling range; empty vec if not given. */
-    double_vec_t ctr;    /* Center of scaling range; empty vec if not given. */
-    double_vec_t wid;    /* Width of scaling range; empty vec if not given. */
-    bool_t uniform;      /* Obtains default scaling args from whole image rather than single channel. */
+    double_vec_t min;      /* Low endpoint of scaling range; empty vec if not given. */
+    double_vec_t max;      /* High endpoint of scaling range; empty vec if not given. */
+    double_vec_t ctr;      /* Center of scaling range; empty vec if not given. */
+    double_vec_t wid;      /* Width of scaling range; empty vec if not given. */
+    bool_t uniform;        /* Obtains default scaling args from whole image rather than single channel. */
     float nanval;        /* Value to be substituted for {NAN} samples, or {NAN} if none. */
+    bool_t yUp;          /* If true, row 0 of the FNI image is bottom of PNM. */
   } options_t;
 
 /* INTERNAL PROTOTYPES */
 
-int main(int argc, char** argv);
+int32_t main(int32_t argc, char** argv);
 
-options_t *ftp_parse_options(int argc, char **argv);
+options_t *ftp_parse_options(int32_t argc, char **argv);
   /* Parses the command line arguments and packs them as an {options_t}. */
 
-float_image_t *ftp_read_fni_image(FILE *rd, int *NC, int *NX, int *NY);
+float_image_t *ftp_read_fni_image(FILE *rd, int32_t *NC, int32_t *NX, int32_t *NY);
   /* Reads a float-valued image from the FNI file {rd}.
     Sets {*NC,*NX,*NY} to the image dimensions. */
 
-void ftp_float_image_write_pgm(FILE *wr, float_image_t *fim, bool_t isMask, int c, double lo, double hi, uint16_t maxval);
+void ftp_float_image_write_pgm(FILE *wr, float_image_t *fim, bool_t isMask, int32_t c, double lo, double hi, uint16_t maxval, bool_t yUp);
   /* Writes channel {c} of image {fim} to file {wr} as a PGM image,
     mapping each pixel from {[lo _ hi]} to {[0..maxval]}. Note that
     row 0 of {fim} is the *bottom* row of the PGM image. */
 
-void ftp_write_ppm_image(FILE *wr, float_image_t *fim, bool_t isMask, int ch[], double lo[], double hi[], uint16_t maxval);
+void ftp_write_ppm_image
+  ( FILE *wr,
+    float_image_t *fim,
+    bool_t isMask,
+    int32_t ch[],
+    double lo[],
+    double hi[],
+    uint16_t maxval,
+    bool_t yUp
+  );
   /* Writes channels {ch[0..2]} of image {fim} to file {wr} as a PPM image,
     scaling each sample of channel {ch[k]} linearly from {[lo[k] _ hi[k]]} to
     {[0..maxval]}. Note that row 0 of {fim} is the *bottom* row of the PPM image. */
+  /* !!! What happens to {NAN}? !!! */
+    
+/* !!! Add {nanval} option !!! */
 
 /* IMPLEMENTATIONS */
 
-int main(int argc, char** argv)
+int32_t main(int32_t argc, char** argv)
   {
     options_t *o = ftp_parse_options(argc, argv);
 
     /* Read image, get its depth: */
-    int NCI, NXI, NYI; /* Input image dimensions. */
+    int32_t NCI, NXI, NYI; /* Input image dimensions. */
     float_image_t *fim = ftp_read_fni_image(stdin, &NCI, &NXI, &NYI);
     
     /* If the number of output channels was not specified by the user, use {NCI}. */
@@ -242,8 +263,7 @@ int main(int argc, char** argv)
       );
       
     /* Replace {NAN}s: */
-    int c;
-    for (c = 0; c < NCI; c++)
+    for (int32_t c = 0; c < NCI; c++)
       { float v = o->nanval;
         if (isnan(v)) { v = (float)o->ctr.e[c]; }
         float_image_replace_nan_samples(fim, c, v);
@@ -251,27 +271,36 @@ int main(int argc, char** argv)
 
     /* Convert the image {fim} to PGM or PPM and write the result: */
     if (o->NC == 1)
-      { ftp_float_image_write_pgm(stdout, fim, o->isMask, o->channel.e[0], o->min.e[0], o->max.e[0], o->maxval); }
+      { ftp_float_image_write_pgm(stdout, fim, o->isMask, o->channel.e[0], o->min.e[0], o->max.e[0], o->maxval, o->yUp); }
     else if (o->NC == 3)
-      { ftp_write_ppm_image(stdout, fim, o->isMask, o->channel.e, o->min.e, o->max.e, o->maxval); }
+      { ftp_write_ppm_image(stdout, fim, o->isMask, o->channel.e, o->min.e, o->max.e, o->maxval, o->yUp); }
     else
       { assert(FALSE); }
 
     return 0;
   }
 
-float_image_t *ftp_read_fni_image(FILE *rd, int *NC, int *NX, int *NY)
+float_image_t *ftp_read_fni_image(FILE *rd, int32_t *NC, int32_t *NX, int32_t *NY)
   { float_image_t *fim = float_image_read(rd);
-    (*NC) = (int)fim->sz[0];
-    (*NX) = (int)fim->sz[1];
-    (*NY) = (int)fim->sz[2];
+    (*NC) = (int32_t)fim->sz[0];
+    (*NX) = (int32_t)fim->sz[1];
+    (*NY) = (int32_t)fim->sz[2];
     return fim;
   }
 
-void ftp_float_image_write_pgm(FILE *wr, float_image_t *fim, bool_t isMask, int c, double lo, double hi, uint16_t maxval)
-  { int ch[1]; /* Channels to convert. */
+void ftp_float_image_write_pgm
+  ( FILE *wr,
+    float_image_t *fim,
+    bool_t isMask,
+    int32_t c,
+    double lo,
+    double hi,
+    uint16_t maxval,
+    bool_t yUp
+  )
+  { int32_t ch[1]; /* Channels to convert. */
     ch[0] = c;
-    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, 1, &lo, &hi, ch, maxval, TRUE, TRUE);
+    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, 1, &lo, &hi, ch, maxval, yUp, TRUE);
     /* Write to disk: */
     bool_t forceplain = FALSE;
     bool_t verbose = FALSE;
@@ -281,9 +310,18 @@ void ftp_float_image_write_pgm(FILE *wr, float_image_t *fim, bool_t isMask, int 
     uint16_image_free(pim);
   }
 
-void ftp_write_ppm_image(FILE *wr, float_image_t *fim, bool_t isMask, int ch[], double lo[], double hi[], uint16_t maxval)
+void ftp_write_ppm_image
+  ( FILE *wr,
+    float_image_t *fim,
+    bool_t isMask,
+    int32_t ch[],
+    double lo[],
+    double hi[],
+    uint16_t maxval,
+    bool_t yUp
+  )
   { /* Convert {fim} to PPM image: */
-    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, 3, lo, hi, ch, maxval, TRUE, TRUE);
+    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, 3, lo, hi, ch, maxval, yUp, TRUE);
     /* Write to disk: */
     bool_t forceplain = FALSE;
     bool_t verbose = FALSE;
@@ -293,7 +331,7 @@ void ftp_write_ppm_image(FILE *wr, float_image_t *fim, bool_t isMask, int ch[], 
     uint16_image_free(pim);
   }
 
-options_t *ftp_parse_options(int argc, char **argv)
+options_t *ftp_parse_options(int32_t argc, char **argv)
   {
     argparser_t *pp = argparser_new(stderr, argc, argv);
     argparser_set_help(pp, PROG_NAME " version " PROG_VERS ", usage:\n" PROG_HELP);
@@ -309,7 +347,7 @@ options_t *ftp_parse_options(int argc, char **argv)
     else if (argparser_keyword_present(pp, "-channels"))
       { o->NC = 3; }
     if (o->NC >= 0)
-      { o->channel = pst_int32_vec_parse(pp, &(o->NC)); }
+      { o->channel = pst_int_vec_parse(pp, &(o->NC)); }
     else
       { o->channel = int32_vec_new(0); }
 
@@ -321,6 +359,9 @@ options_t *ftp_parse_options(int argc, char **argv)
 
     /* Uniform scaling option: */
     o->uniform = pst_scaling_parse_uniform(pp, FALSE);
+
+    o->yUp = FALSE;
+    imgc_parse_y_axis(pp, &(o->yUp));
 
     if (argparser_keyword_present(pp, "-maxval"))
       { o->maxval = (uint16_t)argparser_get_next_int(pp, 1, 65535); }

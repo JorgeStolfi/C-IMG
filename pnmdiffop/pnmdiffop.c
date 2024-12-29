@@ -5,7 +5,7 @@
 #define pnmdiffop_C_COPYRIGHT \
   "Copyright © 2006 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2023-09-24 12:00:47 by stolfi */
+/* Last edited on 2024-12-21 11:59:59 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME " \\\n" \
@@ -203,7 +203,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -386,7 +385,7 @@ void filter_image_file
     
     /* Loop on output image rows: */
     double wsmp[wnsmp];  /* Linearized window sample array, single-channel. */
-    for (int32_t y = 0; y < rows; y++)
+    for (uint32_t y = 0;  y < rows; y++)
       { if (o->verbose) { fputc('!', stderr); }
         int32_t yimin = y - wry; /* Min input {y} needed to compute this row. */
         if (yimin < 0) { yimin = 0; }
@@ -399,14 +398,14 @@ void filter_image_file
         assert(ibuf->ylim > yimax);
         
         /* Compute row {y} of output image: */
-        for (int32_t x = 0; x < cols; x++)
+        for (uint32_t x = 0;  x < cols; x++)
           { /* Now loop on channels: */
-            for (int32_t c = 0; c < chns; c++)
+            for (uint32_t c = 0;  c < chns; c++)
               { /* Get input pixel values and mask (if any) for the new window placement: */
                 grab_input_samples(c, x, y, ibuf, o->replicate, wrx, wry, wsmp);
                 
                 if (o->verbose)
-                  { for (int32_t ix = 0; ix < wnsmp; ix++)
+                  { for (uint32_t ix = 0;  ix < wnsmp; ix++)
                       { update_sample_range(wsmp[ix], &vmin_in, &vmax_in, &nbad_in); }
                   }
               

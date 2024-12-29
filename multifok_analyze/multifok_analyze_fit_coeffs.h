@@ -1,8 +1,7 @@
 #ifndef multifok_analyze_fit_coeffs_H
 #define multifok_analyze_fit_coeffs_H
-/* Last edited on 2018-09-10 17:49:23 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:19 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdint.h>
 
 void multifok_analyze_fit_coeffs

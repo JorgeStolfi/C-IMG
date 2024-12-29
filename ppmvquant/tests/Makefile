@@ -1,4 +1,4 @@
-# Last edited on 2008-01-14 20:46:56 by stolfi
+# Last edited on 2024-12-25 20:38:27 by stolfi
 
 PROG := ppmvquant
 PROGDIR := ..
@@ -6,7 +6,7 @@ PROGDIR := ..
 include ${STOLFIHOME}/programs/c/GENERIC-PROGS-TEST.make
 
 all:
-	run-tests
+	./run_tests.sh
 
 clean::
 

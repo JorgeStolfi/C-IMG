@@ -1,4 +1,4 @@
-# Last edited on 2023-03-29 12:51:14 by stolfi
+# Last edited on 2024-12-25 09:17:36 by stolfi
 
 PROG := \
   fni_to_png
@@ -6,6 +6,7 @@ PROG := \
 JS_LIBS := \
   libimg.a \
   libgeo.a \
+  libgausol.a \
   libjs.a
   
 OTHER_LIBS := \

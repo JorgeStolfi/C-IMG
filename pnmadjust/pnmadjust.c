@@ -4,7 +4,7 @@
 
 #define pnmadjust_C_COPYRIGHT "Copyright © 2003 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2017-06-24 23:19:50 by stolfilocal */
+/* Last edited on 2024-12-21 12:00:05 by stolfi */
 
 /* TO DO: !!! Unify the documentation with that of {pnmfield.c} !!! */
 
@@ -77,7 +77,7 @@
   " enhancements. Finally, it applies another `gamma' encoding and" \
   " re-quantizes the result.  The gamma decoding and encoding is" \
   " performed by {sample_conv_gamma} (q.v.) with" \
-  " user-given {gamma} parameters and a standard {bias}."
+  " user-given {expo} parameters and a standard {bias}."
   
 #define PROG_INFO_OPTS \
   "  In what follows, the {TRIPLET} parameters are three real numbers," \
@@ -90,9 +90,8 @@
   " encoding.\n" \
   "\n" \
   "  -inGamma {TRIPLET}\n" \
-  "    Specifies the exponent (`gamma') of the nonlinear encoding" \
-  " for each channel of the input image. (For typical monitors, {gamma}" \
-  " usually ranges between 1.8 and 2.2.)\n" \
+  "    Specifies the exponent of the nonlinear encoding (`gamma')" \
+  " for each channel of the input image.\n" \
   "\n" \
   "  -black {COLOR}\n" \
   "    Specifies the pixel value in the actual image which should be" \
@@ -155,7 +154,7 @@
   " \"foo.ppm\" for a uniform dark-field bias and a light" \
   " field that varies according to two orthogonal waves," \
   " with periods (300,100) and (-50,150).  The resulting" \
-  " image is re-encoded with exponent gamma = 2.2 and written" \
+  " image is re-encoded with gamma exponent = 2.2 and written" \
   " out to file\"bar.ppm\":\n" \
   "\n" \
   "    pnmadjust \\\n" \
@@ -181,7 +180,6 @@
   "      < foo.ppm \\\n" \
   "      > bar.ppm\n"
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <values.h>
 #include <stdlib.h>
@@ -205,19 +203,19 @@
 
 #define BT_BIAS (sample_conv_BT709_BIAS) 
 /* A {bias} parameter that approximates BT.709 when
-  used with gamma {0.45} or {1/0.45}. */
+  used with expo {0.45} or {1/0.45}. */
 
 /* COMMAND LINE ARGUMENTS */
 
 typedef struct options_t 
   { char *f_in_name;       /* Input filename, or "-" for stdin. */
-    frgb_t inGamma;        /* Gamma of input image, per channel. */
+    frgb_t inGamma_expo;        /* Gamma of input image, per channel. */
     cfld_args_t *black;    /* The {black} color field, or NULL. */
     cfld_args_t *white;    /* The {white} color field, or NULL. */
     double globalKappa;    /* Kappa correction for intensity. */
     frgb_t channelKappa;   /* Additional kappa correction, per channel. */
     double saturation;     /* Saturation enhancement factor. */
-    frgb_t outGamma;       /* Gamma of output image, per channel. */
+    frgb_t outGamma_expo;       /* Gamma of output image, per channel. */
     bool_t showWhite;      /* TRUE to show the white reference field. */
     bool_t showBlack;      /* TRUE to show the black reference field. */
     int debug_col;         /* Column of pixel to debug, or -1 if none. */
@@ -239,22 +237,22 @@ int scale_is_trivial(options_t *o, int chns);
     
 cfld_params_t *compute_color_field
   ( cfld_args_t *cfargs, 
-    frgb_t *inGamma, 
+    frgb_t *inGamma_expo, 
     int chns
   );
   /* Computes the parameters of a gamma-corrected reference color
-    field. The result depends on {cfargs} and {inGamma}.
+    field. The result depends on {cfargs} and {inGamma_expo}.
     If {chns == 1}, all color arguments are reduced to grayscale. */
 
 cfld_params_t *compute_white_field
   ( cfld_args_t *wfargs, 
-    frgb_t *inGamma, 
+    frgb_t *inGamma_expo, 
     cfld_params_t *black, 
     int chns
   );
   /* Computes the parameters of the gamma- and black-corrected `white'
     reference field. The result depends on the white firls arguments 
-    {wfargs}, {inGamma},  and the previously computed black-field map {black}.
+    {wfargs}, {inGamma_expo},  and the previously computed black-field map {black}.
     If {chns == 1}, all color arguments are reduced to grayscale. */
 
 void read_input_file_header(FILE *rd, uint16_image_t **hd, pnm_format_t *fmt);
@@ -326,18 +324,18 @@ void process_pixels(FILE *rd, options_t *o, FILE *wr)
     double scale_ot = unit_ot - zero_ot;
     
     /* Required pixel processing stages: */
-    bool_t do_in_gamma = ! eqn(o->inGamma.c, frgb_Ones.c, chns);
+    bool_t do_in_gamma = ! eqn(o->inGamma_expo.c, frgb_Ones.c, chns);
     bool_t do_scale = (! scale_is_trivial(o, chns)) | o->showWhite | o->showBlack;
     bool_t do_chan_kappa = ! eqn(o->channelKappa.c, frgb_Ones.c, chns);
     bool_t do_glob_kappa = ! (o->globalKappa == 1.0);
     bool_t do_saturation = ! (o->saturation == 1.0);
-    bool_t do_ot_gamma = ! eqn(o->outGamma.c, frgb_Ones.c, chns);
+    bool_t do_ot_gamma = ! eqn(o->outGamma_expo.c, frgb_Ones.c, chns);
 
-    frgb_t *inGamma = (do_in_gamma ? &(o->inGamma) : NULL);
+    frgb_t *inGamma_expo = (do_in_gamma ? &(o->inGamma_expo) : NULL);
 
     /* Black and white reference fields: */
-    cfld_params_t *blackField = compute_color_field(o->black, inGamma, chns);
-    cfld_params_t *whiteField = compute_color_field(o->white, inGamma, chns);
+    cfld_params_t *blackField = compute_color_field(o->black, inGamma_expo, chns);
+    cfld_params_t *whiteField = compute_color_field(o->white, inGamma_expo, chns);
     
     /* Alocate row buffers: */
     uint16_t *smp_row_in = uint16_image_alloc_pixel_row(cols, chns);
@@ -377,7 +375,7 @@ void process_pixels(FILE *rd, options_t *o, FILE *wr)
               { double fvc = fv.c[i];
                 if (do_in_gamma)
                   { /* Convert input values to linear scale: */
-                    fvc = sample_conv_gamma(fvc, o->inGamma.c[i], BT_BIAS);
+                    fvc = sample_conv_gamma(fvc, o->inGamma_expo.c[i], BT_BIAS);
                   }
                 if (do_scale)
                   { /* Apply linear black- and white-level correction: */
@@ -410,7 +408,7 @@ void process_pixels(FILE *rd, options_t *o, FILE *wr)
             if (do_ot_gamma)
               { for (i = 0; i < chns; i++)
                   { /* Convert linear scale to output pixels: */
-                    fv.c[i] = sample_conv_gamma(fv.c[i], 1/o->outGamma.c[i], BT_BIAS);
+                    fv.c[i] = sample_conv_gamma(fv.c[i], 1/o->outGamma_expo.c[i], BT_BIAS);
                   }
               }
             frgb_debug("op", col, row, &fv, chns, "\n");
@@ -430,7 +428,7 @@ int scale_is_trivial(options_t *o, int chns)
 
 cfld_params_t *compute_color_field
   ( cfld_args_t *cfargs, 
-    frgb_t *inGamma, 
+    frgb_t *inGamma_expo, 
     int chns
   )
   { if (cfargs == NULL)
@@ -439,7 +437,7 @@ cfld_params_t *compute_color_field
       { auto frgb_t adjust_color_arg(frgb_t *v, int col, int row);
 
         frgb_t adjust_color_arg(frgb_t *v, int col, int row)
-          { return frgb_correct_arg(v, inGamma, (chns == 1)); }
+          { return frgb_correct_arg(v, inGamma_expo, (chns == 1)); }
 
         cfld_params_t *bfp = cfld_compute_params(cfargs, adjust_color_arg, FALSE);
         return bfp;
@@ -448,7 +446,7 @@ cfld_params_t *compute_color_field
 
 cfld_params_t *compute_white_field
   ( cfld_args_t *wfargs, 
-    frgb_t *inGamma, 
+    frgb_t *inGamma_expo, 
     cfld_params_t *black, 
     int chns
   )
@@ -458,7 +456,7 @@ cfld_params_t *compute_white_field
       { auto frgb_t adjust_white_arg(frgb_t *v, int col, int row);
 
         frgb_t adjust_white_arg(frgb_t *v, int col, int row)
-          { frgb_t fv = frgb_correct_arg(v, inGamma, (chns == 1));
+          { frgb_t fv = frgb_correct_arg(v, inGamma_expo, (chns == 1));
             if (black != NULL)
               { frgb_t bv;
                 cfld_eval(black, col, row,  &bv, chns);
@@ -484,9 +482,9 @@ options_t *parse_options(int argc, char **argv)
 
     /* Parse command line options: */
     if (argparser_keyword_present(pp, "-inGamma"))
-      { o->inGamma = frgb_parse(pp, 0.1, 10.0); }
+      { o->inGamma_expo = frgb_parse(pp, 0.1, 10.0); }
     else
-      { o->inGamma = (frgb_t){{1.0, 1.0, 1.0}}; }
+      { o->inGamma_expo = (frgb_t){{1.0, 1.0, 1.0}}; }
     
     if (argparser_keyword_present(pp, "-black"))
       { frgb_t color = frgb_parse_color(pp);
@@ -527,9 +525,9 @@ options_t *parse_options(int argc, char **argv)
       { o->saturation = 1.0; }
     
     if (argparser_keyword_present(pp, "-outGamma"))
-      { o->outGamma = frgb_parse(pp, 0.1, 10.0); } 
+      { o->outGamma_expo = frgb_parse(pp, 0.1, 10.0); } 
     else
-      { o->outGamma = (frgb_t){{1.0, 1.0, 1.0}}; }
+      { o->outGamma_expo = (frgb_t){{1.0, 1.0, 1.0}}; }
 
     if (argparser_keyword_present(pp, "-showWhite"))
       { o->showWhite = TRUE; o->showBlack = FALSE; } 

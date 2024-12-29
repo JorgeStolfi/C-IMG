@@ -1,9 +1,10 @@
-# Last edited on 2010-03-13 14:53:25 by stolfi
+# Last edited on 2024-08-30 23:25:33 by stolfi
 
 PROG := pnmpairtopng
 
 JS_LIBS := \
   libimg.a \
+  libgeo.a \
   libjs.a
   
 OTHER_LIBS := \

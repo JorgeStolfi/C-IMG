@@ -1,7 +1,6 @@
 /* See fvw_paint_node_colored.h */
-/* Last edited on 2017-06-25 16:26:35 by stolfilocal */
+/* Last edited on 2024-12-23 09:06:25 by stolfi */
 
-#define _GNU_SOURCE
 #include <assert.h>
 #include <GL/glu.h>
 
@@ -12,18 +11,18 @@
 
 void fvw_paint_node_colored_height_map
   ( float_image_t *ht, 
-    int c, 
+    uint32_t c, 
     double zscale,
     float_image_t *tx
   )
   {
     /* Get  the height image dimensons: */
     assert(ht != NULL);
-    int HNC, HNX, HNY;
+    int32_t HNC, HNX, HNY;
     float_image_get_size(ht, &HNC, &HNX, &HNY);
     
     /* Get the texture image dimensions: */
-    int TNC, TNX, TNY;
+    int32_t TNC, TNX, TNY;
     assert(tx != NULL);
     float_image_get_size(tx, &TNC, &TNX, &TNY);
     assert((TNC == 1) || (TNC == 3));
@@ -44,16 +43,16 @@ void fvw_paint_node_colored_height_map
     float clr[TNC*TNX];
 
     /* Get in {v0} the heights of row 0: */
-    float_image_get_sample_row(ht, c, 0, HNX-1, 0, v0);
+    float_image_get_sample_row(ht, (int32_t)c, 0, HNX-1, 0, v0);
     
     /* Scan rows of height array: */
-    int x, y;
+    int32_t x, y;
     for(y = 0; y < HNY; y++)
       { /* Get in {clr} the colors of corners at ordinate {y}: */
         float_image_get_pixel_row(tx, 0, TNX-1, y, clr);
         if (y < HNY-1)
           { /* Get in {v1} the heights at ordinate {y+1}: */
-            float_image_get_sample_row(ht, c, 0, HNX-1, y+1, v1);
+            float_image_get_sample_row(ht, (int32_t)c, 0, HNX-1, y+1, v1);
             /* Compute the means {m1} for row {y+1/2}: */
             for(x = 0; x < HNX; x++)
               { /* Compute the mean height for vertical edge at {x}: */

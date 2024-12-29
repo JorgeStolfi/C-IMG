@@ -2,7 +2,7 @@
 #define PROG_DESC "Finds projective map between two images, given corresponding points"
 #define PROG_VERS "1.0"
 
-// Last edited on 2023-10-09 19:36:33 by stolfi
+// Last edited on 2024-11-20 06:12:36 by stolfi
 
 #define image_stitch_C_COPYRIGHT \
     "© 2002 by the State University of Campinas (UNICAMP)"
@@ -408,8 +408,7 @@ hr2_pmap_t image_stitch_optimize_pmap
     double x[nx]; /* Initial guess and final optimum parameters. */ 
     pack_parameters(M0, nx, x);
     if (verbose) 
-      { char *fname = NULL;
-        asprintf(&fname, "%s-f2-plot.txt", outPrefix);
+      { char *fname = jsprintf("%s-f2-plot.txt", outPrefix);
         FILE *wr = open_write(fname, TRUE);
         minn_plot_1D_gnuplot(wr, nx, goalf, x, 20, rIni);
         fclose(wr);
@@ -481,7 +480,7 @@ hr2_pmap_t image_stitch_optimize_pmap
         hr2_pmap_t M;
         unpack_parameters(nx, x, &M);
         /* Mean square error on point lists: */
-        double esq = hr2_pmap_mismatch_sqr(&M, np, p1, p2);
+        double esq = hr2_pmap_mismatch_sqr(&M, np, p1, p2, w);
         /* Deformation penalty: */
         double dsq1 = image_stitch_deform_sqr(L1, H1, &(M.dir));
         double dsq2 = image_stitch_deform_sqr(L2, H2, &(M.inv));
@@ -523,8 +522,7 @@ void image_stitch_map_point(r2_t *p, r3x3_t *M, r2_t *q)
 void image_stitch_show_pmap_and_square(hr2_pmap_t *M, char *tag)
   {
     image_stitch_show_pmap(M, tag);
-    char *tagsqr = NULL;
-    asprintf(&tagsqr, "%s squared", tag);
+    char *tagsqr = jsprintf("%s squared", tag);
     hr2_pmap_t M2 = hr2_pmap_compose(M,M);
     image_stitch_show_pmap(&M2, tagsqr);
     free(tagsqr);
@@ -549,8 +547,7 @@ void image_stitch_check_matrices(char *outPrefix, r2_vec_t *p1, r3x3_t *M1, r2_v
     /* Choose the output file: */
     FILE *wr = stderr;     
     if ((outPrefix != NULL) && (strlen(outPrefix) != 0))
-      { char *fname = NULL;
-        asprintf(&fname, "%s-pairs.txt", outPrefix);
+      { char *fname = jsprintf("%s-pairs.txt", outPrefix);
         wr = open_write(fname, TRUE);
         delims = FALSE;
         free(fname);
@@ -626,8 +623,7 @@ void image_stitch_check_matrices(char *outPrefix, r2_vec_t *p1, r3x3_t *M1, r2_v
 void image_stitch_write_matrix(char *outPrefix, int32_t K, r3x3_t *M)
   {
     assert((K == 1) || (K == 2));
-    char *fname = NULL;
-    asprintf(&fname, "%s-%d-matrix.txt", outPrefix, K);
+    char *fname = jsprintf("%s-%d-matrix.txt", outPrefix, K);
     FILE *wr = open_write(fname, TRUE);
     r3x3_gen_print(wr, M, "%24.15e", "", "", "", "", " ", "\n");
     fclose(wr);
@@ -666,10 +662,9 @@ void image_stitch_write_points(char *outPrefix, int32_t K, int32_t nc, r2_t C[])
   {
     assert((K == 1) || (K == 2));
     
-    char *fname = NULL;
-    asprintf(&fname, "%s-%d-outline.txt", outPrefix, K);
+    char *fname = jsprintf("%s-%d-outline.txt", outPrefix, K);
     FILE *wr = open_write(fname, TRUE);
-    for (int32_t kc = 0; kc <= nc; kc++)
+    for (uint32_t kc = 0;  kc <= nc; kc++)
       { r2_t *q = &(C[kc % nc]);
         r2_gen_print(wr, q, "%12.6e", "", " ", "\n");
       }

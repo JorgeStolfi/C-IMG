@@ -1,8 +1,7 @@
 #ifndef multifok_analyze_collect_observations_H
 #define multifok_analyze_collect_observations_H
-/* Last edited on 2018-09-05 17:58:10 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:38 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdint.h>
 
 #include <bool.h>

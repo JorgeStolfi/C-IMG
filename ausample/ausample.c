@@ -4,7 +4,7 @@
 
 /* Copyright © 2006 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2015-10-18 02:54:10 by stolfilocal */
+/* Last edited on 2024-12-21 14:01:44 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME "\\\n" \
@@ -29,8 +29,11 @@
   "\n" \
   "  The input signal is read from standard input and is converted from" \
   " its external format to a sequence of double-precision floating-point" \
-  " samples.  Each segment has length {CLIP_LENGTH}, and successive segments" \
-  " start {CLIP_STRIDE} apart.  The series is centered over the length of" \
+  " samples.\n" \
+  "\n" \
+  "  Each segment to be extracted has length {CLIP_LENGTH}, and" \
+  " successive segments start {CLIP_STRIDE} apart.  The series" \
+  " is centered over the length of" \
   " the input signal.\n" \
   "\n" \
   "  If the \"-splice\" option is used, the segments are concatenated" \
@@ -77,8 +80,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-/* Must define _GNU_SOURCE to get the defintion of {asprinf}. */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -90,6 +91,7 @@
 #include <fftw3.h>
 
 #include <bool.h>
+#include <jsprintf.h>
 #include <vec.h>
 #include <nget.h>
 #include <fget.h>
@@ -103,7 +105,7 @@
 
 typedef enum
   { TUN_SECOND,  /* Unit is second. */
-    TUN_SAMPLE   /* UNit is the sampling step. */
+    TUN_SAMPLE   /* Unit is the sampling step. */
   } time_unit_t;
   /* Specifies the unit of time. */
 
@@ -117,55 +119,53 @@ typedef struct options_t
 
 /* PROTOTYPES */
 
-int main(int argc, char **argv);
+int32_t main(int32_t argc, char **argv);
   /* Main program. */
 
-void write_signal(FILE *wr, sound_t *s);
+void write_signal(FILE *wr, jsaudio_t *s);
   /* Writes a sound clip to stream {wr}, in the Sun ".au" audio file format. */
 
 double samples_per_unit(time_unit_t unit, double fsmp);
   /* Computes the number of sampling steps coresponding to the {unit},
     assuming that the sampling frequency is {fsmp} (in Hz). */
 
-void cut_and_paste_segment
-  ( sound_t *si, 
-    int ipos, 
-    int ntake, 
-    double rlo,
-    double rhi,
-    sound_t *so, 
-    int opos
+void paste_segment
+  ( jsaudio_t *si,
+    uint32_t ni,
+    uint32_t nlo, 
+    jsaudio_t *so, 
+    uint32_t *no_P
   );
-  /* Extracts a segment from {si} and pastes it onto {so}.
-    Nominally, the input segment has {ntake} samples, starts at sample
-    {si[ipos]}, and is pasted starting at sample {so[opos]}. 
+  /* Pastes {ni} samples {si[0..ni-1]} it onto {so}. 
+    Assumes that, on input, {so} has {no}
+    samples, where {no} is {*no_P}.  The first {nlo} samples of 
+    {si} will be mixed with the last {nlo} samples
+    of {so}, and the rest will be stored into {so[no..no_new-1]}
+    where {no_new = no+ni-nlo}.  Updates {*no_P} with {no_new}.
     
-    However, if {rlo} is positive, the cut is smoothed by a Hann step
-    of half-width {rlo}. In that case, the operation may affect
-    several samples before {si[ipos]} and {so[opos]}. The same thing
-    holds for the other end, if {rhi} is positive. Assumes that all
-    samples affected by the cut/paste exist. */
+    The number {nlo} must not exceed {no}. */
  
-double smooth_step(double x, double r);
-  /* Computes a C1-smooth step function that is 0 for {x <= -r},
-    0.5 for {x == 0}, and 1 for {x >= +r}. */
+double splice_weight(uint32_t k, uint32_t n);
+  /* Computes the weight of sample {k} of the input 
+    in a splice that involves the first {n} samples.
+    Requires {k} in {0..n-1}. */
 
-options_t* get_options(int argc, char **argv);
+options_t* get_options(int32_t argc, char **argv);
   /* Parses the command-line arguments. */
 
 /* IMPLEMENTATIONS */
 
-int main(int argc, char **argv)
+int32_t main(int32_t argc, char **argv)
   {
     options_t *o = get_options(argc, argv);
     
     /* Read the input file header: */
-    au_file_header_t h = jsa_read_au_file_header(stdin);
+    jsaudio_au_file_header_t h = jsaudio_au_read_file_header(stdin);
     
     /* Compute number of channels {nc} and samples per channel {ns}: */
-    int nc = h.channels;
-    int bps = jsa_au_file_bytes_per_sample(h.encoding);
-    int ns = h.data_size / nc / bps;
+    uint32_t nc = h.channels;
+    uint32_t bps = jsaudio_au_file_bytes_per_sample(h.encoding);
+    uint32_t ns = h.data_size / nc / bps;
     assert(h.data_size == ns * nc * bps); 
     fprintf(stderr, "input channels = %d\n", nc);
     fprintf(stderr, "input samples %d\n", ns);
@@ -177,51 +177,55 @@ int main(int argc, char **argv)
     /* Get number of samples per unit: */
     double spu = samples_per_unit(o->unit, fsmp);
 
-    /* Compute nominal number {ntake} of samples per segment: */
-    int ntake = (int)floor(o->take * spu + 0.5); 
-    assert(ntake >= 0);
+    /* Compute nominal number {ntake} of samples per segment (excluding splices): */
+    uint32_t ntake = (uint32_t)floor(o->take * spu + 0.5); 
+    demand(ntake >= 0, "segments have zero samples");
     double ttake = ((double)ntake)/fsmp;
     fprintf(stderr, "nominal segment length = %d samples (%.6f sec)\n", ntake, ttake);
 
     /* Compute nominal number {njump} of sampling steps between seg starts: */
-    int njump = (int)floor(o->every * spu + 0.5);
+    uint32_t njump = (uint32_t)floor(o->every * spu + 0.5);
     if (njump == 0) { njump = 1; }
-    assert(njump > 0);
     double tjump = ((double)njump)/fsmp;
     fprintf(stderr, "nominal segment stride = %d samples (%.6f sec)\n", njump, tjump);
     
-    /* Compute fractional half-extent {rjoin} of splice, in sampling steps: */
+    /* Compute extra samples {njoin} for splicing: */
     double rjoin = o->splice/2 * spu;
     assert(rjoin >= 0.0);
-    double tjoin = rjoin/fsmp;
-    fprintf(stderr, "splicing radius = %.6f samples (%.6f sec)\n", rjoin, tjoin);
-
-    /* Compute extra samples {njoin} to take on internal cuts: */
-    int njoin = (int)ceil(rjoin + 0.5) - 1; 
+    uint32_t njoin = (uint32_t)ceil(rjoin + 0.5) - 1; 
     assert(njoin >= 0);
     assert(rjoin <= njoin + 0.5);
+    double tjoin = njoin/fsmp;
+    fprintf(stderr, "splice samples = %d (%.6f sec)\n", njoin, tjoin);
     
     /* Compute number {nsegs} of segments to take. */
-    int nsegs = (ns < ntake ? 0 : (ns - ntake) / njump + 1);
-    if (nsegs == 0) { fprintf(stderr, "input file is too short"); }
+    uint32_t nsegs;
+    if (ns < ntake)
+      { nsegs = 0; }
+    else if (ns < 2*ntake + njump)
+      { nsegs = 1; }
+    else
+      { nsegs = (ns - ntake) / njump + 1;
+        demand(njump >= ntake + 2*njoin, "segment tails overlap");
+      }
+        
+    demand(nsegs >= 1, "input file is too short");
     fprintf(stderr, "extracting %d segments\n", nsegs);
     
     /* Compute number {nspan} of samples spanned by all segs in input stream: */
-    int nspan = (nsegs == 0 ? 0 : ntake + njump * (nsegs - 1));
+    uint32_t nspan = (nsegs == 1 ? ntake : ntake + njump*(nsegs-1));
+    fprintf(stderr, "reading a total of %d samples\n", nspan);
     assert(ns >= nspan);
     
     /* Compute index {iskip} of first sample of first segment in input: */
-    int iskip = (ns - nspan) / 2;
-    
-    /* Compute index {oskip} of that sample in output: */
-    int oskip = 0;
+    uint32_t iskip = (ns - nspan) / 2;
     
     /* Compute number of samples in output file: */
-    int nosmp = nsegs * ntake;
+    uint32_t nosmp = (nsegs == 1 ? ntake : ntake*nsegs + njoin*(nsegs-1));
     fprintf(stderr, "total samples in output file = %d\n", nosmp);
     
     /* Allocate and and initialize a sound clip for the output signal: */
-    sound_t so = jsa_allocate_sound(nc, nosmp);
+    jsaudio_t so = jsaudio_allocate_sound(nc, nosmp);
     so.fsmp = fsmp;
     so.ns = nosmp;
     
@@ -230,80 +234,45 @@ int main(int argc, char **argv)
       memory, we read only those chunks that contain the requested
       segments, plus any samples needed for the smooth joins. */
     
-    /* Allocate a sound clip structure large enough for the largest input chunk: */
-    int nfull = ntake + 2*njoin;
-    sound_t si = jsa_allocate_sound(nc, nfull);
+    /* Allocate a {jsaudio_t} large enough for the largest input chunk: */
+    uint32_t nfull = ntake + 2*njoin;
+    jsaudio_t si = jsaudio_allocate_sound(nc, nfull);
     si.fsmp = fsmp;
     si.ns = nfull;
 
-    /* Position and size of the current chunk: */
-    int ichunk = -1; /* Index of sample {si[0]} in input file. */
-    int nchunk = -1; /* Number of samples used in {si}. */
-
     /* Loop on segments/chunks: */
-    int iseg; /* Index of segment. */
-    int nread = 0; /* Number of samples per channel read from the input file. */
-    for (iseg = 0; iseg < nsegs; iseg++)
+    uint32_t nread = 0; /* Number of samples per channel read from the input file. */
+    uint32_t no = 0; /* Samples in {so}. */
+    for (uint32_t iseg = 0; iseg < nsegs; iseg++)
       { 
-        /* The previous input chunk, if any, is stored in {si[0..nchunk]},
-          and sample {si[0]} has index {ichunk} in the input file. */
-        
-        /* Compute smooth join radii on each side: */
-        double rlo = (iseg == 0 ? 0.0 : rjoin);
-        double rhi = (iseg == nsegs - 1 ? 0.0 : rjoin);
+        /* The previous segments, spliced, are stored in 
+          {so[0..onext-1] where {onext} is 0 if {iseg} is zero,
+          else {iseg*ntake + njoin}.  Already {nrad} samples
+          have been read from the input file.*/
         
         /* Compute number of extra samples to take on each side: */
-        int nlo = (int)ceil(rlo + 0.5) - 1; 
-        int nhi = (int)ceil(rhi + 0.5) - 1; 
-
-        /* Save data of previous chunk: */
-        int ichunk_old = ichunk;
-        int nchunk_old = nchunk;
-        
-        /* Compute index {ichunk} of first sample of chunk in input file: */
-        int ichunk = iskip + iseg*njump - nlo;
+        uint32_t nlo = (iseg == 0 ? 0 : njoin); 
+        uint32_t nhi = (iseg == nsegs - 1 ? 0 : njoin); 
 
         /* Compute number {nchunk} of segment samples to read: */
-        int nchunk = nlo + ntake + nhi;
+        uint32_t nchunk = nlo + ntake + nhi;
         
-        /* Read the relevant chunk from the input file: */
-        if (ichunk >= nread)
-          { /* Chunks do not overlap. */
-            int nskip = ichunk - nread;
-            fprintf(stderr, "skipping %d samples [%d..%d]\n", nskip, nread, nread + nskip - 1);
-            jsa_skip_au_file_samples(stdin, &h, nc*nskip); 
-            nread += nskip;
-            fprintf(stderr, "reading %d samples [%d..%d]\n", nchunk, nread, nread + nchunk - 1);
-            jsa_read_au_file_samples(stdin, &h, &si, 0, nchunk);
-            nread += nchunk;
-          }
-        else
-          { /* This chunk overlaps the previous one. */
-            assert(nchunk_old >= 0);
-            assert(ichunk_old >= 0);
-            assert(ichunk >= nread - nchunk_old);
-            /* Shift down the overlapped portion in {si}: */
-            int nover = nread - ichunk;
-            int nskip = nchunk_old - nover;
-            int k;
-            fprintf(stderr, "reusing %d samples [%d..%d]\n", nover, nread - nover, nread - 1);
-            for (k = 0; k < nover; k++)
-              { int c; 
-                for (c = 0; c < nc; c++)
-                  { si.sv[c][k] = si.sv[c][nskip + k]; }
-              }
-            /* Read the new portion: */
-            int nrest = nchunk - nover;
-            fprintf(stderr, "reading %d samples [%d..%d]\n", nrest, nread, nread + nrest - 1);
-            jsa_read_au_file_samples(stdin, &h, &si, nover, nrest);
-            nread += nrest;
-          }
+        /* Compute index {ichunk} of first sample of next chunk in input file: */
+        int32_t ichunk = (int32_t)(iskip + iseg*njump) - (int32_t)nlo;
+        assert(ichunk > 0);
         
-        /* Compute index {opos} of that sample in output clip: */
-        int opos = oskip + iseg*ntake;
-
+        /* Read the next segment from the input file into {si[0..nchunk-1]}: */
+        assert(ichunk >= nread); /* Chunks should not overlap.*/
+        uint32_t nskip = (uint32_t)ichunk - nread;
+        fprintf(stderr, "skipping %d samples [%d..%d]\n", nskip, nread, nread + nskip - 1);
+        jsaudio_au_skip_file_samples(stdin, &h, nc*nskip); 
+        nread += nskip;
+        fprintf(stderr, "reading segment %d - %d samples [%d..%d]\n", iseg, nchunk, nread, nread + nchunk - 1);
+        jsaudio_au_read_file_samples(stdin, &h, &si, 0, nchunk);
+        nread += nchunk;
+        
         /* Cut and paste segment (with smooth join if applicable): */
-        cut_and_paste_segment(&si, nlo,  ntake, rlo, rhi,  &so, opos);
+        paste_segment(&si, nchunk, nlo, &so, &no);
       }
       
     /* Output sound: */
@@ -312,10 +281,10 @@ int main(int argc, char **argv)
     return 0;
   }
 
-void write_signal(FILE *wr, sound_t *s)
+void write_signal(FILE *wr, jsaudio_t *s)
   { fprintf(stderr, "Writing output file");
     fprintf(stderr, " (Sun \".au\" format)\n");
-    jsa_write_au_file(wr, s);
+    jsaudio_au_write_file(wr, s);
   }
   
 double samples_per_unit(time_unit_t unit, double fsmp)
@@ -328,59 +297,57 @@ double samples_per_unit(time_unit_t unit, double fsmp)
       { assert(FALSE); }
   }
 
-void cut_and_paste_segment
-  ( sound_t *si, 
-    int ipos, 
-    int ntake, 
-    double rlo, 
-    double rhi,
-    sound_t *so, 
-    int opos
+void paste_segment
+  ( jsaudio_t *si, 
+    uint32_t ni, 
+    uint32_t nlo, 
+    jsaudio_t *so, 
+    uint32_t *no_P
   )
   {
+    uint32_t no = (*no_P);
+    demand(nlo <= no, "not enough output samples to overlap");
+    demand(nlo <= ni, "not enough input samples to overlap");
+    uint32_t ko = no - nlo; /* Nex sample to splice/store in {so}. */
+    fprintf(stderr, "pasting into {so[%d..%d]}\n", ko, ko + ni - 1);
+    demand(no + ni - nlo <= so->ns, "not enough space in {so}");
+    
     /* Number of channels: */
-    int nc = (si->nc < so->nc ? si->nc : so->nc);
+    uint32_t nc = (si->nc < so->nc ? si->nc : so->nc);
     
-    /* Number of extra splicing samples before segment: */
-    int nlo = (int)ceil(rlo + 0.5) - 1;
-    assert(rlo <= nlo + 1);
-    assert(ipos - nlo >= 0); 
-    assert(opos - nlo >= 0); 
-    
-    /* Number of extra splicing samples after segment: */
-    int nhi = (int)ceil(rhi + 0.5) - 1;
-    assert(rhi <= nhi + 1);
-    assert(ipos + ntake + nhi <= si->ns); 
-    assert(opos + ntake + nhi <= so->ns);
-
-    /* Loop on channels: */
-    int c;
-    for (c = 0; c < nc; c++)
-      { int k;
-        for (k = -nlo; k < ntake + nhi; k++) 
-          { /* Extract sample from input signal: */
-            double sk = si->sv[c][ipos+k];
-            /* Compute clip mask {wk}: */
-            double wlo = smooth_step(k + 0.5, rlo);
-            double whi = smooth_step(ntake - k - 0.5, rhi);
-            /* Paste onto the output signal: */
-            so->sv[c][opos+k] += wlo*whi*sk;
+    /* Loop on input samples: */
+    for (uint32_t ki = 0; ki < ni; ki++) 
+      { if (ki < nlo)
+          { /* Splice: */
+            assert(ko < no);
+            double wik = splice_weight(ki, nlo);
+            double wok = 1 - wik;
+            for (uint32_t c = 0; c < nc; c++) 
+              { double ski = si->sv[c][ki];
+                double sko = so->sv[c][ko];
+                so->sv[c][ko] = wok*sko + wik*ski; 
+              }
           }
+        else
+          { /* Append: */
+            for (uint32_t c = 0; c < nc; c++)
+              { so->sv[c][ko] = si->sv[c][ki];
+                no++;
+              }
+          }
+        ko++;
       }
+    assert(ko == no);
+    (*no_P) = no;
   }
 
-double smooth_step(double x, double r)
-  { if (x <= -r) 
-      { return 0.0; }
-    else if (x >= +r)
-      { return 1.0; }
-    else
-      { /* Hann half-window: */
-        return (1 + sin(M_PI*(x/r)/2))/2;
-      }
+double splice_weight(uint32_t k, uint32_t n)
+  { demand(k < n, "not a splice point");
+    double arg = M_PI*(k + 0.5)/n;
+    return 0.5*(1 - cos(arg));
   }
 
-options_t* get_options(int argc, char **argv)
+options_t* get_options(int32_t argc, char **argv)
   {
     argparser_t *pp = argparser_new(stderr, argc, argv);
     argparser_set_help(pp, PROG_NAME " version " PROG_VERS ", usage:\n" PROG_HELP);

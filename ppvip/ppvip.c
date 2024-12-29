@@ -4,7 +4,7 @@
 
 /* Copyright © 2006 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2021-07-08 15:44:10 by jstolfi */
+/* Last edited on 2024-12-21 11:58:38 by stolfi */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
@@ -37,8 +37,6 @@
   "AUTHOR\n" \
   "  Created in mar/2006 by Jorge Stolfi, IC-UNICAMP."
 
-/* Must define _GNU_SOURCE in order to get {asprintf} */
-#define _GNU_SOURCE
 #include <math.h>
 #include <values.h>
 #include <string.h>

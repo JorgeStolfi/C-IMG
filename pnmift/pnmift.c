@@ -4,7 +4,7 @@
 
 #define pnmift_C_COPYRIGHT "Copyright © 2001 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2023-02-12 07:53:24 by stolfi */
+/* Last edited on 2024-12-21 11:59:47 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME  " \\\n" \
@@ -223,7 +223,6 @@
   "  -verbose\n" \
   "    Produces diagnostic output."
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>

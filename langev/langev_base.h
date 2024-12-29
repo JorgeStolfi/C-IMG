@@ -1,10 +1,9 @@
 /* Basic data types for {langev.c} */
-/* Last edited on 2008-01-09 15:14:44 by stolfi */ 
+/* Last edited on 2024-12-21 14:00:37 by stolfi */ 
 
 #ifndef langev_base_H
 #define langev_base_H
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <values.h>

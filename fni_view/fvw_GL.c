@@ -1,7 +1,6 @@
 /* See fvw_GL.h */
-/* Last edited on 2020-10-11 06:50:30 by jstolfi */
+/* Last edited on 2024-12-21 14:01:28 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <values.h>

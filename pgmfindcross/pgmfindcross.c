@@ -2,7 +2,7 @@
 #define PROG_DESC "sub-pixel location of crosshair in PGM image"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-02-25 16:05:02 by stolfi */
+/* Last edited on 2024-12-25 09:48:49 by stolfi */
 /* Copyright © 2003 by the State University of Campinas (UNICAMP).*/
 /* See the copyright, authorship, and warranty notice at end of file. */
 
@@ -31,7 +31,81 @@
   "AUTHOR\n" \
   "???"
 
-#define _GNU_SOURCE
+// .TH pgmfindcross 1 "11 mar 2000"
+// .IX pgmfindcross
+// .SH NAME
+// pgmfindcross - find line-crossings in a PGM image
+// .SH SYNOPSIS
+// .B pgmfindcross
+// .RB [ -radius
+// .IR R ]
+// .RB [ -linewd
+// .IR W ]
+// .RB [ -maxdisp
+// .IR MAXD ]
+// .RB [ -maxrot
+// .IR MAXR ]
+// .I pgmfile
+// \<
+// .I hvfile1
+// \>
+// .I hvfile2
+// .SH DESCRIPTION
+// Looks for line crossings in the PGM image
+// .IR pgmfile ,
+// near pixel positions listed in 
+// .IR hvfile1 ,
+// and writes their exact coordinates to
+// .IR hvfile2 .
+// .PP
+// The input file should contain one or more tentative line crossings,
+// each described by four numbers --- the approximate coordinates
+// .IR H , V 
+// of the crossing (in pixels) and the approximate directions
+// .IR R , S
+// of the two lines (in degrees, clockwise from the horizontal).  The output 
+// will contain the refined coordinates and refined (local) line directions, in the same
+// format, with one decimal fraction digit.
+// .PP
+// The refined coordinates will be at most 
+// .I MAXD
+// away from the input coordinates, and the refined line directions
+// will be at most 
+// .I MAXR
+// degrees away from the input directions.
+// .PP
+// A crossing is identified by looking 
+// within a window of radius 
+// .I R
+// centered at the current candidate position. The lines are assumed to 
+// be bright against a dark background, and to have
+// approximately Gaussian profile, of width 
+// .I W 
+// (i.e., standard deviation 
+// .IR W / 2
+// ).
+// .PP
+// Coordinates are measured from the upper left corner.
+// The center of the pixel in row 
+// .I i
+// and column
+// .I j
+// is (
+// .I i 
+// + 0.5,
+// .I j 
+// + 0.5
+// ).
+// .PP
+// All command line options can be abbreviated to their shortest unique prefix.
+// .SH "SEE ALSO"
+// pbmmask(1), pnmpaste(1), pnminvert(1), pnmgtran(1), 
+// pgmlocnorm(1), pnm(5)
+// .SH AUTHOR
+// Copyright (C) 2003 by Jorge Stolfi <stolfi@dcc.unicamp.br>
+// .PP
+// Created 2003-02-15 by Amandio Sena Jr. and Jorge Stolfi.
+
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

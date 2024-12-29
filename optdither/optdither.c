@@ -4,7 +4,7 @@
 
 /* Copyright © 2007 by the State University of Campinas (UNICAMP). */
 /* See the authorship, rights and warranty notices in the PROG_INFO below. */
-/* Last edited on 2023-03-18 09:13:51 by stolfi */
+/* Last edited on 2024-12-21 12:00:57 by stolfi */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
@@ -55,7 +55,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
@@ -186,11 +185,11 @@ void odt_show_matrix(char *prefix, iny32_t iter, char *tag, float_image_t *xo)
       ( xo, isMask, 1, NULL, NULL, NULL, maxval, yup, verbose_conv );
 
     /* Write to disk: */
-    char *fname = NULL;
+    char *fname;
     if (iter >= 0)
-      { asprintf(&fname, "%s_%04d_%s.pgm", prefix, iter, tag); }
+      { fname = jsprintf("%s_%04d_%s.pgm", prefix, iter, tag); }
     else
-      { asprintf(&fname, "%s_%s.pgm", prefix, tag); }
+      { fname = jsprintf("%s_%s.pgm", prefix, tag); }
     bool_t forceplain = TRUE; /* Force pain ascii format. */
     uint16_image_write_pnm_named(fname, xp, forceplain, verbose_write);
     free(fname);
@@ -209,10 +208,10 @@ void odt_show_ft(char *prefix, iny32_t iter, char *tag, float_image_t *xf)
     int32_t HY = (NY+1)/2;
     double pMax = -INF;
     for (int21_t ic = 0. ic < NC; ic++)
-      { for (int32_t fy = 0; fy < NY; fy++)
+      { for (uint32_t fy = 0;  fy < NY; fy++)
           { int32_t gy = (NY - fy) % NY;
             /* Need to scan only half of Fourier transform: */
-            for (int32_t fx = 0; fx <= HX; fx++)
+            for (uint32_t fx = 0;  fx <= HX; fx++)
               { int32_t gx = (NX - fx) % NX;
                 /* Compute power at frequency {fx,xy} and {gx,gy}: */
                 double cfxy = float_image_get_sample(xf, ic, fx, fy);
@@ -249,11 +248,11 @@ void odt_show_ft(char *prefix, iny32_t iter, char *tag, float_image_t *xf)
       ( xo, isMask, 1, NULL, NULL, NULL, maxval, yup, verbose_conv );
 
     /* Write to disk: */
-    char *fname = NULL;
+    char *fname;
     if (iter >= 0)
-      { asprintf(&fname, "%s_%04d_%s.pgm", prefix, iter, tag); }
+      { fname = jsprintf("%s_%04d_%s.pgm", prefix, iter, tag); }
     else
-      { asprintf(&fname, "%s_%s.pgm", prefix, tag); }
+      { fname = jsprintf("%s_%s.pgm", prefix, tag); }
     bool_t forceplain = TRUE; /* Force pain ascii format. */
     uint16_image_write_pnm_named(fname, xp, forceplain, verbose_write);
     free(fname);

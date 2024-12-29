@@ -1,24 +1,28 @@
-#define PROG_NAME "fni_to_pnm"
+#define PROG_NAME "fni_to_png"
 #define PROG_DESC "convert a float-valued FNI image file to a PNG file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-03-29 12:51:30 by stolfi */
+/* Last edited on 2024-12-25 09:20:56 by stolfi */
 
-#define PROG_C_COPYRIGHT "Copyright © 2021 by the State University of Campinas (UNICAMP)."
+#define PROG_C_COPYRIGHT "  Run \"" PROG_NAME " -info\" for details"
 
 /* !!! Add "-gamma" option !!! */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
   "    [ -channels {CHAN}... ] \\\n" \
-  "    [ -min {VMIN}... ] \\\n" \
-  "    [ -max {VMAX}... ] \\\n" \
+  "    [ " pst_scaling_parse_min_any_HELP " ] \\\n" \
+  "    [ " pst_scaling_parse_max_any_HELP " ] \\\n" \
+  "    [ " pst_scaling_parse_center_any_HELP " ] \\\n" \
+  "    [ " pst_scaling_parse_width_any_HELP " ] \\\n" \
+  "    [ " pst_scaling_parse_uniform_HELP " ] \\\n" \
   "    [ -maxval {MAXVAL} ] \\\n" \
   "    [ -isMask {ISMASK} ] \\\n" \
   "    [ -nanval {NANVAL} ] \\\n" \
+  "    " imgc_parse_y_axis_HELP " \\\n" \
   "    [ -verbose {VERB} ] \\\n" \
   "    < {FNI_FILE} \\\n" \
-  "    > {PNM_FILE}"
+  "    > {PNG_FILE}"
 
 #define PROG_INFO \
   "NAME\n" \
@@ -45,6 +49,7 @@
   "MODIFICATION HISTORY\n" \
   "  2021-08-24 Created based on {fni_to_pnm.c}. J. Stolfi.\n" \
   "  2021-08-24 Added \"-verbose\" option. J. Stolfi.\n" \
+  "  2024-12-24 Added \"-yAxis\". J.Stolfi.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \
@@ -78,31 +83,62 @@
   " encoding is essentially linear, without any gamma mapping.  Any {NaN} samples" \
   " in the input file are mapped directly to the sample value defined" \
   " by the \"-nanval\" argument.  The top scanline of" \
-  " the output image is row 0 of the input."
+  " the output image is row 0 of the input.\n" \
+  "\n" \
+  "  The \"-yAxis\" option determines whether row 0 of the" \
+  " FNI image is the top or bottom row of the PNM image.\n" \
+  "\n" \
+  "SPECIFYING THE SAMPLE SCALING\n" \
+  "  The input scaling range [{VMIN} _ {VMAX}] is specified by" \
+  " the options " pst_scaling_option_list_INFO ".\n" \
+  "\n" \
+  "  " pst_scaling_use_actual_range_INFO "  " \
+  pst_scaling_use_actual_range_with_uniform_INFO "\n" \
+  "\n" \
+  "  In any case, at most two of these four parameters may be specified. " \
+  " " pst_scaling_complete_params_INFO ""
   
 #define PROG_INFO_OPTS \
   "  -channel {CHAN}\n" \
   "  -channels {CHAN}...\n" \
-  "    These two mutually exclusive optional arguments pecify the" \
+  "    These two mutually exclusive optional arguments specify the" \
   " indices of between 1 and 4 channels to use in the output image.  Channel" \
   " indices start at zero; channels that do not exist in the input" \
   " image are assumed to be all zeros.  If neither option is present," \
   " the input must have at most 4 channels.  The channel" \
   " indices need not be distinct.\n" \
   "\n" \
-  "  -min {VMIN}...\n" \
-  "  -max {VMAX}...\n" \
-  "    These optional arguments specify the range of values from the input image that" \
-  " is to be mapped to {0..MAXVAL} in the output.  Each keyword should be followed by" \
-  " one real value, that applies to all channels, or by one value for each selected channel.  If" \
-  " either parameter is omitted, or the value given is \"nan\", the program uses the minimum or maxmium" \
-  " sample value in the respective channel.\n" \
+  "  " pst_scaling_parse_min_one_HELP "\n" \
+  "  " pst_scaling_parse_min_RGB_HELP "\n" \
+  "    " pst_scaling_parse_min_INFO \
+  " of the input scaling range.  " \
+  pst_double_vec_spec_den_INFO "  " \
+  pst_scaling_num_values_INFO "\n" \
   "\n" \
-  "  -uniform {UNI_FLAG}.\n" \
-  "    This optional parameter is relevant only if {VMIN} or {VMAX} is unspecified for some" \
-  " channel(s).  If it is present and true, the maxmimum and mnimum sample" \
-  " values are computed for all unspecified channels, instead of separately for each" \
-  " channel (the default).\n" \
+  "  " pst_scaling_parse_max_one_HELP "\n" \
+  "  " pst_scaling_parse_max_RGB_HELP "\n" \
+  "    " pst_scaling_parse_max_INFO \
+  " of the input scaling range.  " \
+  pst_double_vec_spec_den_INFO "  " \
+  pst_scaling_num_values_INFO "\n" \
+  "\n" \
+  "  " pst_scaling_parse_center_one_HELP "\n" \
+  "  " pst_scaling_parse_center_RGB_HELP "\n" \
+  "    " pst_scaling_parse_center_INFO \
+  " of the input scaling range.  " \
+  pst_double_vec_spec_den_INFO "  " \
+  pst_scaling_num_values_INFO "\n" \
+  "\n" \
+  "  " pst_scaling_parse_width_one_HELP "\n" \
+  "  " pst_scaling_parse_width_RGB_HELP "\n" \
+  "    " pst_scaling_parse_width_INFO \
+  " of the input scaling range.  " \
+  pst_double_vec_spec_den_INFO "  " \
+  pst_scaling_num_values_INFO "\n" \
+  "\n" \
+  pst_scaling_parse_uniform_HELP_INFO ".\n" \
+  "\n" \
+  imgc_parse_y_axis_INFO_OPTS(imgc_parse_y_axis_INFO_OPTS_default_pbm) "\n" \
   "\n" \
   "  -maxval {INTEGER}\n" \
   "    Specifies the maximum output sample value {MAXVAL}.\n" \
@@ -115,7 +151,7 @@
   " " sample_conv_0_1_isMask_true_INFO "  If {ISMASK} is false (\"F\" or 0)," \
   " " sample_conv_0_1_isMask_false_INFO "  The default is \"-isMask F\".\n" \
   "\n" \
-  "  -nanval {UNDVAL}\n" \
+  "  -nanval {NANVAL}\n" \
   "    This optional parameter specifies the floating-point value to" \
   " be substituted for {NAN} samples. After substitution, that value" \
   " will be converted by the same formula as the original samples.  If this" \
@@ -128,7 +164,6 @@
   " diagnostics, or \"F\" of 0 to suppress them.  If omitted, the program" \
   " assumes \"-verbose F\"."
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -142,6 +177,7 @@
 #include <uint16_image_write_png.h>
 #include <uint16_image.h>
 #include <sample_conv.h>
+#include <image_coords.h>
 #include <bool.h>
 
 #include <pst_scaling.h>
@@ -152,13 +188,15 @@
 /* COMMAND-LINE OPTIONS */
 
 typedef struct options_t
-  { uint16_t maxval;         /* Maximum output sample value. */
+  { int32_t NC;            /* Number of channels to output, or -1 if unknown. */
+    uint16_t maxval;         /* Maximum output sample value. */
     bool_t isMask;           /* Interpretation of integer sample values. */
     int32_vec_t channels;      /* Indices of input channels to convert; empty vec if not given. */
     double_vec_t min;        /* Low endpoint of scaling range; empty vec if not given. */
     double_vec_t max;        /* High endpoint of scaling range; empty vec if not given. */
     bool_t uniform;          /* Obtains default scaling args from all unspec channels rather than each channel. */
     float nanval;            /* Value to be substituted for {NAN} samples, or {NAN} if none. */
+    bool_t yUp;          /* If true, row 0 of the FNI image is bottom of PNM. */
     bool_t verbose;          /* True to print image stats and conversion info. */
   } options_t;
 
@@ -194,8 +232,9 @@ void ftp_write_png_image
     int32_t ch[], 
     double lo[], 
     double hi[],
-     uint16_t maxval, 
+    uint16_t maxval, 
     float nanval, 
+    bool_t yUp,
     bool_t verbose
   );
   /* Writes channels {ch[0..nc-1]} of image {fim} to file {wr} as a PNG image,
@@ -218,9 +257,9 @@ int32_t main(int32_t argc, char** argv)
     /* If the number of output channels was not specified by the user, use {NCI}. */
     if (o->channels.ne == 0)
       { int32_vec_expand(&(o->channels), NCI-1);
-        for (int32_t c = 0; c < NCI; c++) { o->channels.e[c] = c; }
+        for (int32_t c = 0;  c < NCI; c++) { o->channels.e[c] = c; }
       }
-    int32_t nc = o->channels.ne;
+    int32_t nc = (int32_t)o->channels.ne;
     int32_t *ch = o->channels.e;
     if ((nc < 1) || (nc > 4))
       { fprintf(stderr, "** number of channels %d should be in 1..4\n", nc);
@@ -233,7 +272,7 @@ int32_t main(int32_t argc, char** argv)
     ftp_fill_missing_range_params(fim, nc, ch, o->uniform, &(o->min), &(o->max));
     
     /* Convert the image {fim} to PNG and write the result: */
-    ftp_write_png_image(stdout, fim, o->isMask, nc, ch, o->min.e, o->max.e, o->maxval, o->nanval, o->verbose);
+    ftp_write_png_image(stdout, fim, o->isMask, nc, ch, o->min.e, o->max.e, o->maxval, o->nanval, o->yUp, o->verbose);
 
     return 0;
   }
@@ -245,13 +284,13 @@ void ftp_fix_scaling_param_vec(int32_t nc, double_vec_t *vex)
       }
     else if (vex->ne == 0)
       { /* Set to a vecor of {NAN}: */
-        (*vex) = double_vec_new(nc);
-        for (int32_t c = 0; c < nc; c++) { vex->e[c] = NAN; }
+        (*vex) = double_vec_new((vec_size_t)nc);
+        for (int32_t c = 0;  c < nc; c++) { vex->e[c] = NAN; }
       }
     else if ((vex->ne == 1) && (nc > 1))
       { /* Replicate to all elems: */
         double_vec_expand(vex, nc-1);
-        for (int32_t c = 1; c < nc; c++) { vex->e[c] = vex->e[0]; }
+        for (int32_t c = 1;  c < nc; c++) { vex->e[c] = vex->e[0]; }
       }
     else
       { demand(FALSE, "invalid range spec"); }
@@ -263,20 +302,20 @@ void ftp_fill_missing_range_params(float_image_t *fim, int32_t nc, int32_t ch[],
     if (uniform)
       { /* Find global range of all channels with unspecified range: */
         smin = +INF; smax = -INF;
-        for (int32_t c = 0; c < nc; c++)
+        for (int32_t c = 0;  c < nc; c++)
           { int32_t ich = ch[c];
             if ((ich >= 0) && (ich < NCI) && (isnan(vmin->e[c]) || (isnan(vmin->e[c]))))
               { float_image_update_sample_range(fim, ich, &smin, &smax); }
           }
         demand(vmin < vmax, "cannot choose default scaling range");
         /* Set alll unspecified ranges: */
-        for (int32_t c = 0; c < nc; c++)
+        for (int32_t c = 0;  c < nc; c++)
           { if (isnan(vmin->e[c])) { vmin->e[c] = smin; }
             if (isnan(vmax->e[c])) { vmax->e[c] = smax; }
           }
       }
     else
-      { for (int32_t c = 0; c < nc; c++)
+      { for (int32_t c = 0;  c < nc; c++)
           { int32_t ich = ch[c];
             if ((ich >= 0) && (ich < NCI) && (isnan(vmin->e[c]) || (isnan(vmin->e[c]))))
               { smin = +INF; smax = -INF;
@@ -305,8 +344,9 @@ void ftp_write_png_image
     int32_t ch[], 
     double lo[], 
     double hi[],
-     uint16_t maxval, 
-    float nanval, 
+    uint16_t maxval, 
+    float nanval,
+    bool_t yUp, 
     bool_t verbose
   )
   { int32_t NCI = (int32_t)fim->sz[0];
@@ -325,8 +365,7 @@ void ftp_write_png_image
     double gamma = 1.0;
 
     /* Convert {fim} to PNG image: */
-    bool_t yup = TRUE; /* Y axis up. */
-    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, nc, lo, hi, ch, maxval, yup, verbose);
+    uint16_image_t *pim = float_image_to_uint16_image(fim, isMask, nc, lo, hi, ch, maxval, yUp, verbose);
     /* Write to disk: */
     uint16_image_write_png_file(wr, pim, gamma, verbose);
     fflush(wr);
@@ -352,14 +391,16 @@ options_t *ftp_parse_options(int32_t argc, char **argv)
       { o->channels = ftp_parse_int32_vec(pp, "-channels"); }
 
     /* Parse input range specs: */
-    o->min = ftp_parse_double_vec(pp, "-min");
-    o->max = ftp_parse_double_vec(pp, "-max");
+    o->min = pst_scaling_parse_range_option(pp, "-min",    &(o->NC));
+    o->max = pst_scaling_parse_range_option(pp, "-max",    &(o->NC));
+    o->ctr = pst_scaling_parse_range_option(pp, "-center", &(o->NC));
+    o->wid = pst_scaling_parse_range_option(pp, "-width",  &(o->NC));
 
     /* Uniform scaling option: */
-    if (argparser_keyword_present(pp, "-uniform"))
-      { o->uniform = argparser_get_next_bool(pp); }
-    else
-      { o->uniform = TRUE; }
+    o->uniform = pst_scaling_parse_uniform(pp, FALSE);
+
+    o->yUp = FALSE;
+    imgc_parse_y_axis(pp, &(o->yUp));
 
     if (argparser_keyword_present(pp, "-maxval"))
       { o->maxval = (uint16_t)argparser_get_next_int(pp, 1, 65535); }

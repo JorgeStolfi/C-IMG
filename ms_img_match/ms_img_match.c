@@ -2,7 +2,7 @@
 #define PROG_DESC "find camera correspondence matrix and depth between two images"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-02-25 16:04:45 by stolfi */
+/* Last edited on 2024-12-21 13:59:48 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME " \\\n" \
@@ -50,7 +50,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS  
  
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

@@ -1,10 +1,9 @@
 /* Tools for simulated languages */
-/* Last edited on 2008-01-06 19:21:07 by stolfi */ 
+/* Last edited on 2024-12-21 14:00:24 by stolfi */ 
 
 #ifndef langev_lang_H
 #define langev_lang_H
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <values.h>

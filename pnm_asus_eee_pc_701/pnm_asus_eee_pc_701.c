@@ -5,7 +5,7 @@
 /* !!! Finish !!! */
 
 #define pnm_asus_eee_pc_701_C_COPYRIGHT "Copyright © 2008 by the State University of Campinas (UNICAMP)"
-/* Last edited on 2017-06-30 01:05:19 by stolfilocal */
+/* Last edited on 2024-12-21 12:00:20 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME " \\\n" \
@@ -103,9 +103,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-/* We need to set these in order to get {isnan}. What a crock... */
-#undef __STRICT_ANSI__
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>

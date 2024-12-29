@@ -72,7 +72,7 @@
   "  2017-06-24 Changed to {float_image_t} throughout (J.Stolfi)."
   
 /* TO DO: !!! Implement the tomogram output. */
-#define _GNU_SOURCE
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>

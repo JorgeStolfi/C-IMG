@@ -1,7 +1,6 @@
 /* See langev_gene.h. */
-/* Last edited on 2008-01-07 22:28:52 by stolfi */
+/* Last edited on 2024-12-21 14:00:35 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>

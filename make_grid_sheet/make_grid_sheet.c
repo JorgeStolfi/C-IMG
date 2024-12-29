@@ -2,7 +2,7 @@
 #define PROG_DESC "creates a Postscript and/or PNG file with a grid of dots and crosses"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-03-02 22:50:16 by stolfi */
+/* Last edited on 2024-12-21 13:59:56 by stolfi */
 
 #define make_grid_sheet_C_COPYRIGHT \
   "Copyright © 2018  by the State University of Campinas (UNICAMP)"
@@ -110,7 +110,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -408,8 +407,7 @@ mkgr_mark_grid_t *mgs_create_mark_grid
 
 void mgs_write_mark_data(char *prefix, char *tag, mkgr_mark_grid_t *gr)
   { 
-    char *fname = NULL;
-    asprintf(&fname, "%s_%s.txt", prefix, tag);
+    char *fname = jsprintf("%s_%s.txt", prefix, tag);
     FILE *wr = open_write(fname, TRUE);
     mkgr_mark_grid_write(wr, gr);
     fclose(wr);
@@ -419,7 +417,7 @@ void mgs_write_mark_data(char *prefix, char *tag, mkgr_mark_grid_t *gr)
 void mgs_get_grid_bounding_box(mkgr_mark_grid_t *gr, double mrg, r2_t *sMin, r2_t *sMax)
   {
     /* Include the backgroudn disk and add the margin: */
-    for (int32_t j = 0; j < 2; j++)
+    for (uint32_t j = 0;  j < 2; j++)
       { sMin->c[j] = gr->pMin.c[j] - mrg;
         sMax->c[j] = gr->pMax.c[j] + mrg;
       }
@@ -427,8 +425,7 @@ void mgs_get_grid_bounding_box(mkgr_mark_grid_t *gr, double mrg, r2_t *sMin, r2_
 
 void mgs_write_png_image(char *prefix, float_image_t *img)
   { 
-    char *fname = NULL;
-    asprintf(&fname, "%s.png", prefix);
+    char *fname = jsprintf("%s.png", prefix);
     double v0 = 0.0;
     double vM = 1.0;
     double gammaEnc = 1.0;

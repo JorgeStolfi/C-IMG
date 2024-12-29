@@ -1,7 +1,6 @@
 /* See fvw_paint_self_colored.h */
-/* Last edited on 2017-06-25 16:27:00 by stolfilocal */
+/* Last edited on 2024-12-23 09:06:33 by stolfi */
 
-#define _GNU_SOURCE
 #include <assert.h>
 #include <math.h>
 #include <GL/glu.h>
@@ -15,7 +14,7 @@
 
 void fvw_paint_self_colored_height_map
   ( float_image_t *ht, 
-    int c, 
+    uint32_t c, 
     double zscale, 
     float vmin,
     float vmax
@@ -25,7 +24,7 @@ void fvw_paint_self_colored_height_map
     
     /* Get  the height image dimensons: */
     assert(ht != NULL);
-    int HNC, HNX, HNY;
+    int32_t HNC, HNX, HNY;
     float_image_get_size(ht, &HNC, &HNX, &HNY);
 
     /* We need buffers for two rows of height map samples: */
@@ -39,14 +38,14 @@ void fvw_paint_self_colored_height_map
     float *m1 = mb; /* Height sample means for row {y+1/2}. */
     
     /* Get first row of samples: */
-    float_image_get_sample_row(ht, c, 0, HNX-1, 0, v0);
+    float_image_get_sample_row(ht, (int32_t)c, 0, HNX-1, 0, v0);
     
     /* Scan rows of height array: */
-    int x, y;
+    int32_t x, y;
     for(y = 0; y < HNY; y++)
       { if (y < HNY-1)
           { /* Get in {v1} the heights at ordinate {y+1}: */
-            float_image_get_sample_row(ht, c, 0, HNX-1, y+1, v1);
+            float_image_get_sample_row(ht, (int32_t)c, 0, HNX-1, y+1, v1);
             /* Compute the means {m1} for row {y+1/2}: */
             for(x = 0; x < HNX; x++)
               { /* Compute the mean height for vertical edge at {x}: */
@@ -148,7 +147,7 @@ void fvw_paint_self_colored_triangle
 #define Ymin (0.5333)
   /* Min brightness for positive values, when painting in grays. */
 
-void fvw_color_from_value(int NC, double v, double vdel, float clr[])
+void fvw_color_from_value(int32_t NC, double v, double vdel, float clr[])
   {
     /* Compute perceptual brightness {z} in {[0_1]}: */
     double z;
@@ -161,7 +160,7 @@ void fvw_color_from_value(int NC, double v, double vdel, float clr[])
     else 
       { z = v/vdel; }
       
-    int c;
+    uint32_t c;
     if (fabs(z) == 0.0)
       { /* Map to center gray: */
         for (c = 0; c < NC; c++) { clr[c] = 0.500; }

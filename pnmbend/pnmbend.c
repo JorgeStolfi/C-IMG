@@ -2,9 +2,10 @@
 #define PROG_DESC "apply a general deformation to a pixmap"
 #define PROG_VERS "1.0"
 
+/* Last edited on 2024-12-25 09:32:58 by stolfi */
+
 /* Copyright © 2000 by the State University of Campinas (UNICAMP).
-** See the copyright, authorship, and warranty notice at end of file.
-** Last edited on 2017-06-22 17:59:43 by stolfilocal
+** See the copyright, authorship, and warranty notice at end of file. 
 */
 
 /* !!! TO DO: Finish! */
@@ -56,6 +57,92 @@
   "  Copyright © 2000 by the State University of Campinas (UNICAMP).\n" \
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
+
+// .TH pnmbend 1 "11 mar 2000"
+// .IX pnmbend
+// .SH NAME
+// pnmbend - apply a general deformation to an anymap
+// .SH SYNOPSIS
+// .B pnmbend
+// .B -map
+// .I pnmfileDX pnmfileDY
+// .RB [ -offset
+// .IR float ]
+// .RB [ -scale
+// .IR float ]
+// .RI [ pnmfile ]
+// .PP
+// .B pnmbend
+// .R -shift
+// .I floatDX0 floatDY0
+// .RI [ 
+// .I floatDX1 floatDY1 floatDX2 floatDY2
+// .RI ]
+// .RI [ pnmfile ]
+// .SH DESCRIPTION
+// Reads a portable anymap 
+// .I A
+// from 
+// .IR pnmfile,
+// or from standard input if 
+// .I pnmfile
+// is not specified. Outputs a new image 
+// .I B
+// whose pixel
+// .IR B[x,y]
+// is a copy if pixel 
+// .IR A[x+DX[
+// .IR x,y],
+// .IR y+DY[
+// .IR x,y] 
+// ], where the displacement functions 
+// .IR DX , DY 
+// are specified by the other parameters.
+// .PP
+// In the 
+// .B -map 
+// variant, the displacement for each pixel is specified 
+// by two portable anymaps files
+// .IR pnmfileDX , pnmfileDY .
+// All three images must have the same width and height;
+// the map files will be promoted to pgm or ppm
+// format, as necessary, so as to match the input file.
+// In the case of a ppm file, the displacements for each channel of the 
+// input image
+// are taken from the corresponding channels of the map images.
+// .PP
+// The output image will have the same size, type and depth as
+// the input.  Note that there may be lost or undefined pixels
+// around the edges.
+// .PP
+// The
+// .B -offset
+// parameter (a pixel value, default 0) will be subtracted from the displacement map 
+// pixels; and the result will be divided by the 
+// .B -scale 
+// parameter (another pixel value, default 1).
+// .PP
+// In the 
+// .B -shift
+// variant, the displacement is the same for all pixels.
+// Following the keyword there must be 
+// either two numbers, 
+// which are taken to be the X and
+// Y displacements for all channels; or three pairs
+// of numbers, each pair being the displacement
+// for the corresponding channel.
+// .PP
+// Note that, in either case, the displacements may be fractional.
+// Non-integer pixel indices imply interpolation of neighboring pixels.
+// The interpolation assumes that the image was Gaussian-filtered before
+// sampling, and the displacements change very little from place to
+// place.
+// .PP
+// All flags can be abbreviated to their shortest unique prefix.
+// .SH "SEE ALSO"
+// pnmrotate(1), pnmcut(1), pnmshear(1), pnmscale(1), pnmbend(1), pnm(5)
+// .SH AUTHOR
+// Copyright (C) 2000 by Jorge Stolfi <stolfi@dcc.unicamp.br>.
 
 #include <stdio.h>
 #include <math.h>

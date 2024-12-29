@@ -2,7 +2,7 @@
 #define PROG_DESC "precisely locates matching image features in two images"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-10-14 23:06:26 by stolfi */
+/* Last edited on 2024-12-21 14:00:54 by stolfi */
 
 #define image_match_features_C_COPYRIGHT \
     "© 2020 by the State University of Campinas (UNICAMP)"
@@ -116,7 +116,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -310,7 +309,7 @@ int main(int argc, char **argv)
     imft_ftpair_vec_t fpv = imft_read_data(stdin, o->verbose);
     int np = fpv.ne; /* Number of point pairs. */
     
-    for (int32_t ip = 0; ip < np; ip++)
+    for (uint32_t ip = 0;  ip < np; ip++)
       { fprintf(stderr, "optimizing feature %d...\n", ip);
         imft_ftpair_t *fp = &(fpv.e[ip]);
         imft_optimize_ftpair
@@ -354,7 +353,7 @@ void imft_optimize_ftpair
     r2_t pix_ini[2];  /* Original centers (Pixel coords): */
     r2_aff_map_t aff[2];/* Affine maps to use for comparison: */
     double dtor = M_PI/180; /* Degree to radian conversion. */
-    for (int32_t k = 0; k < 2; k++)
+    for (uint32_t k = 0;  k < 2; k++)
       { ctr_ini[k] = fp->ft[k].ctr;
         pix_ini[k] = imft_pixel_from_user(&(ctr_ini[k]), &(L[k]), &(H[k]), img[k]->sz);
         aff[k] = r2_aff_map_rot_scale(fp->ft[k].ang*dtor, fp->ft[k].rad);
@@ -378,7 +377,7 @@ void imft_optimize_ftpair
     /* Update the feature pair with the optimal displacement {dp[0]}: */
     r2_t ctr_adj[2];
     r2_t pix_adj[2];
-    for (int32_t k = 0; k < 2; k++)
+    for (uint32_t k = 0;  k < 2; k++)
       { sign_t dir = (sign_t)(1 - 2*k);
         if (fix != k+1)
           { imft_apply_rel_adjustment
@@ -404,7 +403,7 @@ void imft_optimize_ftpair
       { assert(nit == 1);
         assert((isct.c[0] == 0) && (isct.c[1] == 0)); /* For now. */
         /* Apply {dpt[0]} to the original centers to obtain the tentative ones: */
-        for (int32_t k = 0; k < 2; k++)
+        for (uint32_t k = 0;  k < 2; k++)
           { r2_t pixt;
             sign_t dir = (sign_t)(1 - 2*k);
             if (fix != k+1)
@@ -460,9 +459,9 @@ imft_feature_t imft_read_feature(FILE *rd, bool_t verbose)
 void imft_write_data(FILE *wr, imft_ftpair_vec_t *fpv, bool_t verbose)
   {
     int32_t np = fpv->ne;
-    for (int32_t ip = 0; ip < np; ip++)
+    for (uint32_t ip = 0;  ip < np; ip++)
       { imft_ftpair_t *fp = &(fpv->e[ip]);
-        for (int32_t k = 0; k < 2; k++)
+        for (uint32_t k = 0;  k < 2; k++)
           { imft_feature_t *ft = &(fp->ft[k]);
             fprintf(wr, "( %.6f %.6f )", ft->ctr.c[0], ft->ctr.c[1]);
             fprintf(wr, " %.3f %.3f", ft->rad, ft->ang);
@@ -475,9 +474,9 @@ void imft_write_data(FILE *wr, imft_ftpair_vec_t *fpv, bool_t verbose)
 
 void imft_show_result(FILE *wr, r2_t ctr_ini[], r2_t ctr_adj[], r2_t pix_ini[], r2_t pix_adj[])
   {
-    for (int32_t k = 0; k < 2; k++)
+    for (uint32_t k = 0;  k < 2; k++)
       { fprintf(wr, "adjusted center on image %d:\n", k+1);
-        for (int32_t sys = 0; sys < 2; sys++) 
+        for (uint32_t sys = 0;  sys < 2; sys++) 
           { fprintf(wr, "  %s:", (sys == 0 ? "Client" : "Pixels"));
             r2_t ini = (sys == 0 ? ctr_ini[k] : pix_ini[k]);
             r2_t adj = (sys == 0 ? ctr_adj[k] : pix_adj[k]);
@@ -512,7 +511,7 @@ void imft_apply_rel_adjustment
   )
   {
     r2_t ctr_adj;
-    for (int32_t j = 0;  j < 2; j++)
+    for (uint32_t j = 0;   j < 2; j++)
       { /* Scale factor to convert pixel indices to Client coordinates: */
         double ptoc = (H->c[j] - L->c[j])/((double)sz[j+1]);
         /* Grab original Client coordinate: */
@@ -531,7 +530,7 @@ void imft_apply_rel_adjustment
 r2_t imft_pixel_from_user(r2_t *ctr, r2_t *L, r2_t *H, ix_size_t sz[])
   {
     r2_t pix;
-    for (int32_t j = 0;  j < 2; j++)
+    for (uint32_t j = 0;   j < 2; j++)
       { /* Scale factor to convert pixel indices to Client coordinates: */
         double ptoc = (H->c[j] - L->c[j])/((double)sz[j+1]);
         /* Grab original Client coordinate: */
@@ -554,7 +553,7 @@ void imft_write_feature_images
     /* Construct the affine maps: */
     double dtor = M_PI/180.0; /* Convert degrees to radians. */
     r2_aff_map_t aff[2];
-    for (int32_t k = 0; k < 2; k++) 
+    for (uint32_t k = 0;  k < 2; k++) 
       { r2_t ctrk = fp->ft[k].ctr;
         r2_t pixk = imft_pixel_from_user(&(ctrk), &(L[k]), &(H[k]), img[k]->sz);
         aff[k] = r2_aff_map_rot_scale(fp->ft[k].ang*dtor, fp->ft[k].rad);
@@ -570,16 +569,16 @@ void imft_write_feature_images
     int32_t NXF = size.c[0];
     int32_t NYF = size.c[1];
     float_image_t *res = float_image_new(NC, 3*NXF, NYF);
-    for (int32_t k = 0; k < 2; k++)
+    for (uint32_t k = 0;  k < 2; k++)
       { ftr[k] = float_image_aff_extract(img[k], &(aff[k]), step, size);
         int32_t xminA = 2*NXF*k, xmaxA = xminA + NXF - 1;
         float_image_assign_rectangle(res, xminA, xmaxA, 0,NYF-1, ftr[k], 0, 0);
       }
       
     /* Compute the difference image: */
-    for (int32_t iy = 0; iy < NYF; iy++)
-      { for (int32_t ix = 0; ix < NXF; ix++)
-          { for (int32_t ic = 0; ic < NC; ic++)
+    for (uint32_t iy = 0;  iy < NYF; iy++)
+      { for (uint32_t ix = 0;  ix < NXF; ix++)
+          { for (uint32_t ic = 0;  ic < NC; ic++)
               { float v0 = float_image_get_sample(ftr[0], ic, ix, iy);
                 float v1 = float_image_get_sample(ftr[1], ic, ix, iy);
                 float vdif = (float)(0.5 + (v1 - v0)/2);
@@ -587,11 +586,10 @@ void imft_write_feature_images
               }
           }
       }
-    for (int32_t k = 0; k < 2; k++) { float_image_free(ftr[k]); ftr[k] = NULL; }
+    for (uint32_t k = 0;  k < 2; k++) { float_image_free(ftr[k]); ftr[k] = NULL; }
     
     /* Write the composite image: */
-    char *fname = NULL; 
-    asprintf(&fname, "out/%s_%03d.png", prefix, ip);
+    char *fname = jsprintf("out/%s_%03d.png", prefix, ip);
     image_file_format_t ffmt = image_file_format_PNG;
     fprintf(stderr, "writing to file %s ...\n", fname);
     float_image_write_gen_named(fname, res, ffmt, 0.0, 1.0, NAN, NAN, FALSE);
@@ -612,7 +610,7 @@ imft_options_t *imft_parse_options(int argc, char **argv)
     imft_options_t *o = (imft_options_t *)notnull(malloc(sizeof(imft_options_t)), "no mem"); 
 
     /* Parse keyword-based arguments: */
-    for(int32_t k = 0; k < 2; k++)
+    for (uint32_t k = 0;  k < 2; k++)
       { char *key = (k == 0 ? "-image1" : "-image2" );
         argparser_get_keyword(pp, key);
         o->fname[k] = argparser_get_next(pp);

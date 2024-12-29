@@ -1,7 +1,6 @@
 /* See {multifok_analyze_compute_rel_similarities.h}. */
-/* Last edited on 2018-09-10 18:38:00 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:34 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
@@ -48,7 +47,7 @@ void multifok_analyze_compute_rel_similarities
     
     double *s2 = notnull(malloc(NP*sizeof(double)), "no mem");    /* The relative similarities, with {NP} elements. */
     double *un = notnull(malloc(NP*sizeof(double)), "no mem");   /* The estimated misfocus, with {NP} elements. */
-    for (int32_t d = 0; d < ND; d++)
+    for (uint32_t d = 0;  d < ND; d++)
       { double *e2f = &(e2[d*NF]); 
         double *s2f = &(s2[d*NF]); 
         double *unf = &(un[d*NF]); 
@@ -70,7 +69,7 @@ void multifok_analyze_compute_rel_simil_aux
   { /* Find maximum and minimum of {e2f[0..NF-1]}: */
     double e2max = -INF;
     double e2min = +INF;
-    for (int32_t f = 0; f < NF; f++)
+    for (uint32_t f = 0;  f < NF; f++)
       { if (e2f[f] > e2max) { e2max = e2f[f]; }
         if (e2f[f] < e2min) { e2min = e2f[f]; }
       }
@@ -82,13 +81,13 @@ void multifok_analyze_compute_rel_simil_aux
     /* Main iteration: */
     int32_t niter = 3;
     double favg = NAN;
-    for (int32_t iter = 0; iter < niter; iter++)
+    for (uint32_t iter = 0;  iter < niter; iter++)
       { 
         if (debug) { fprintf(stderr, "    --- iteration %d ---\n", iter); }
       
         /* Complement the discrepancies: */
         if (debug) { fprintf(stderr, "    complementing relative to [ %18.9f _ %18.9f ]\n", e2inf, e2sup); }
-        for (int32_t f = 0; f < NF; f++) 
+        for (uint32_t f = 0;  f < NF; f++) 
           { s2f[f] = (e2sup - e2f[f])/(e2sup - e2inf);
             if (s2f[f] < 0.0) { s2f[f] = 0.0; }
             if (s2f[f] > 1.0) { s2f[f] = 1.0; }
@@ -110,7 +109,7 @@ void multifok_analyze_compute_rel_simil_aux
         /* Compute the average {e2avg} of {e2f[f]} ignoring {favg ± frad}: */
         double sum_we2 = 0.0;
         double sum_w = 1.0e-200;
-        for (int32_t f = 0; f < NF; f++) 
+        for (uint32_t f = 0;  f < NF; f++) 
           { if (fabs(((double)f) - favg) > frad) 
               { sum_we2 += e2f[f];
                 sum_w += 1.0;
@@ -120,7 +119,7 @@ void multifok_analyze_compute_rel_simil_aux
 
         /* Compute the deviation {e2dev} about {e2avg} ignoring {favg ± frad}: */
         double sum_wd2 = 0.0;
-        for (int32_t f = 0; f < NF; f++) 
+        for (uint32_t f = 0;  f < NF; f++) 
           { if (fabs(((double)f) - favg) > frad) 
               { double d = e2f[f] - e2avg;
                 sum_wd2 += d*d;
@@ -140,6 +139,6 @@ void multifok_analyze_compute_rel_simil_aux
     if (debug) { fprintf(stderr, "\n"); }
 
     /* Estimate the misfocusings, assuming frame {favg} is the best focused one: */
-    for (int32_t f = 0; f < NF; f++) { unf[f] = ((double)f) - favg; }
+    for (uint32_t f = 0;  f < NF; f++) { unf[f] = ((double)f) - favg; }
   }
     

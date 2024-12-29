@@ -1,5 +1,5 @@
 # Tests of the pnmprojmap tool
-# Last edited on 2023-10-15 12:25:16 by stolfi
+# Last edited on 2024-10-31 22:30:55 by stolfi
 
 PROG := pnmprojmap
 PROGDIR := ../..
@@ -46,25 +46,34 @@ TESTS_OSCALE := \
   ident:ere-1:ppm:r:d:O:1.000:3.000:500:700
   
 TESTS_DEFAULT_OSIZE := \
-  ident:abi-1:ppm:r:d:C:1.000:1.000:DEF:DEF \
-  ident:flo-1:ppm:r:d:O:0.500:3.000:DEF_DEF
- 
+  ident:ere-1:ppm:r:d:C:1.000:1.000:DEF:DEF \
+  ident:ere-1:ppm:r:d:O:0.500:3.000:DEF:DEF
+
 TESTS_BASIC_MAPS := \
-  rot90:ere-1:ppm:r:d:C:1.000:4.000:500:700 \
-  shr45:ere-1:ppm:r:d:C:1.000:4.000:500:700 \
-  rot45:ere-1:ppm:r:d:C:1.000:4.000:500:700 \
-  shf05:ere-1:ppm:r:d:C:1.000:4.000:500:700
+  rot90:ere-1:ppm:r:u:C:1.000:4.000:500:700 \
+  shr45:ere-1:ppm:r:u:C:1.000:4.000:500:700 \
+  rot45:ere-1:ppm:r:u:C:1.000:4.000:500:700 \
+  shf05:ere-1:ppm:r:u:C:1.000:4.000:500:700 \
+  persp:ere-1:ppm:r:u:C:1.000:4.000:500:700
 
 TESTS_GRAY := \
   ident:ere-1:pgm:r:d:C:1.000:1.000:500:700 \
   shf05:ere-1:pgm:r:d:C:1.000:1.000:500:700 \
-  cubic:ere-1:pgm:r:d:C:1.000:1.000:500:700
-
-TESTS := ${TESTS_AXES} ${TESTS_ORIGIN} ${TESTS_OSCALE} ${TESTS_ISCALE} ${TESTS_BASIC_MAPS} ${TESTS_GRAY}
-# TESTS := ${TESTS_BASIC_MAPS} ${TESTS_OSCALE} ${TESTS_ISCALE}
-# TESTS := ${TESTS_BASIC_MAPS}
-# TESTS := ${TESTS_OSCALE} ${TESTS_ISCALE}
+  persp:ere-1:pgm:r:d:C:1.000:1.000:500:700
  
+TESTS_IDENT := \
+  ${TESTS_AXES} ${TESTS_ORIGIN} \
+  ${TESTS_OSCALE} ${TESTS_ISCALE} \
+  ${TESTS_DEFAULT_OSIZE}
+
+#TESTS := ${TESTS_AXES}
+#TESTS := ${TESTS_ORIGIN}
+
+# TESTS := ${TESTS_IDENT}
+# TESTS := ${TESTS_BASIC_MAPS}
+
+TESTS := ${TESTS_IDENT} ${TESTS_BASIC_MAPS} ${TESTS_GRAY}
+
 MAKEFILE := Makefile
 
 .PHONY:: \
@@ -111,7 +120,7 @@ IMG_ATTRS :=
 ifeq "${ORG}" "C"
   IMG_ATTRS := ${IMG_ATTRS} center
 else ifeq "${ORG}" "O"
-  IMG_ATTRS := ${IMG_ATTRS} org 30 40
+  IMG_ATTRS := ${IMG_ATTRS} org 50 120
 endif
 ifneq "${IUNIT}" "1.000"
   IMG_ATTRS := ${IMG_ATTRS} unit ${IUNIT}
@@ -139,15 +148,14 @@ INTER_TAG := int1
 TEST_PREF := ${IMG}-${MAP}-${USYS_TAG}-${OSIZE_TAG}-${INTER_TAG}
 
 # Output image and map files:
-IMG_OT_FILE := out/${TEST_PREF}-${IMG}.${EXT}
-MAP_OT_FILE := out/${TEST_PREF}-${MAP}.map
+IMG_OT_FILE := out/${TEST_PREF}.${EXT}
+MAP_OT_FILE := out/${TEST_PREF}.map
 
 # Reference files for comparison with output:
 IMG_EX_FILE := ${subst out/,ref/,${IMG_OT_FILE}}
 MAP_EX_FILE := ${subst out/,ref/,${MAP_OT_FILE}}
 
 IMG_OT_EX_DIF_FILE := out/${TEST_PREF}-dif.${EXT}
-MAP_OT_EX_DIF_FILE := out/${TEST_PREF}-dif.txt
 
 single-test: map-single compare-single
 
@@ -158,9 +166,6 @@ compare-single: ${IMG_OT_EX_DIF_FILE} ${MAP_OT_EX_DIF_FILE}
 
 ${IMG_OT_EX_DIF_FILE}: out/.tried-mapping
 	../compare_mapped_image.sh ${IMG_OT_FILE} ${IMG_EX_FILE} ${IMG_OT_EX_DIF_FILE} ${SHOW}
-
-${MAP_OT_EX_DIF_FILE}: out/.tried-mapping
-	../compare_output_points_map.sh ${MAP_OT_FILE} ${MAP_EX_FILE} ${MAP_OT_EX_DIF_FILE} ${SHOW}
 
 ${IMG_OT_FILE}: ${IMG_IN_FILE} ${MAP_IN_FILE} ${PROGDIR}/${PROG}
 	@echo "ISIZE_PIX = ${ISIZE_PIX}" 1>&2
@@ -177,7 +182,7 @@ ${IMG_OT_FILE}: ${IMG_IN_FILE} ${MAP_IN_FILE} ${PROGDIR}/${PROG}
             -oUnit ${OUNIT} \
             ${OSIZE_OP} \
             ${INTER_OP} \
-            -outPrefix "out/${TEST_PREF}-" \
+            -outPrefix "out/${TEST_PREF}" \
             ${DEBUG}
 
 endif

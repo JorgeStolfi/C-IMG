@@ -2,7 +2,7 @@
 #define PROG_DESC "quantize two PPM files into a partially transparent PPM"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2021-07-17 23:50:21 by jstolfi */
+/* Last edited on 2024-12-21 11:58:48 by stolfi */
 
 #define ppmoquant_C_COPYRIGHT \
   "Copyright © 1996 by the State University of Campinas (UNICAMP) - Rewritten version"  
@@ -130,7 +130,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <assert.h>
 
@@ -138,6 +137,7 @@
 #include <argparser.h>
 #include <bool.h>
 #include <jspnm.h>
+#include <jsrandom.h>
 #include <uint16_image.h>
 #include <uint16_image_RGB_hist.h>
 #include <uint16_image_RGB_medcut.h>

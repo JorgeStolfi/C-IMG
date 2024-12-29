@@ -2,7 +2,7 @@
 #define PROG_DESC "Multi-focus stereo microscopy"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-11-25 18:27:31 by stolfi */
+/* Last edited on 2024-12-21 13:59:43 by stolfi */
 
 #define multifok_analyze_C_COPYRIGHT \
     "© 2017 by the State University of Campinas (UNICAMP)"
@@ -172,7 +172,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -465,7 +464,7 @@ int32_t main(int32_t argc, char **argv)
 
 float_image_t **multifok_analyze_alloc_indicator_images(int32_t NF, int32_t NX, int32_t NY)
   { float_image_t **img = notnull(malloc(NF*sizeof(float_image_t *)), "no mem");
-    for (int32_t i = 0; i < NF; i++)
+    for (uint32_t i = 0;  i < NF; i++)
       { img[i] = float_image_new(1, NX, NY); }
     return img;
   }
@@ -519,12 +518,12 @@ void multifok_analyze_set_debug_images
   {
     demand(NP == ND*NF, "inconsistent counts of window positions, observations, and frames");
     
-    for(int32_t f = 0; f < NF; f++)
+    for (uint32_t f = 0;  f < NF; f++)
       { /* Non-significant positions are set to black: */
         float_image_fill_channel(dbimg[f], 0, 0.0f);
         double vmin = +INF;  /* Min signif value for this frame. */
         double vmax = -INF;  /* Max signif value for this frame. */
-        for (int32_t d = 0; d < ND; d++)
+        for (uint32_t d = 0;  d < ND; d++)
           { int32_t p = d*NF + f; /* Index of observation. */
             double indp = ind[p];
             if (indp < vmin) { vmin = indp; }
@@ -551,9 +550,8 @@ void multifok_analyze_write_debug_images
     double vM
   )
   {
-    for(int32_t f = 0; f < NF; f++)
-      { char *fname = NULL;
-        asprintf(&fname, "%s/%05d_%s.png", outDir, frameID[f], tag);
+    for (uint32_t f = 0;  f < NF; f++)
+      { char *fname = jsprintf("%s/%05d_%s.png", outDir, frameID[f], tag);
         image_file_format_t ffmt = image_file_format_PNG;
         double gammaEnc = 1.0;
         double bias = 0.0;
@@ -571,10 +569,9 @@ void multifok_analyze_write_quadratic_term_images
     float_image_t **qtimg
   )
   {
-    for(int32_t f = 0; f < NF; f++)
-      { for (int32_t q = 0; q < NQ; q++)
-          { char *fname = NULL;
-            asprintf(&fname, "%s/simil_%05d_q%02d.png", outDir, frameID[f], q);
+    for (uint32_t f = 0;  f < NF; f++)
+      { for (uint32_t q = 0;  q < NQ; q++)
+          { char *fname = jsprintf("%s/simil_%05d_q%02d.png", outDir, frameID[f], q);
             image_file_format_t ffmt = image_file_format_PNG;
             double v0 = 0.0;
             double vM = 1.0;
@@ -603,18 +600,17 @@ void multifok_analyze_write_observations
     double terms[]
   )
   {
-    char *fname = NULL;
-    asprintf(&fname, "%s/data.txt", outDir);
+    char *fname = jsprintf("%s/data.txt", outDir);
     FILE *wr = open_write(fname, TRUE);
 
     demand(NP == ND*NF, "inconsistent counts of window positions, observations, and frames");
 
     /* Write all observations: */
-    for (int32_t d = 0; d < ND; d++)
+    for (uint32_t d = 0;  d < ND; d++)
       { /* Insert a blank line before the observations of the same window, for {gnuplot}: */
         if (d > 0) { fprintf(wr, "\n"); }
         /* Write observations of window position {d}: */
-        for(int32_t f = 0; f < NF; f++)
+        for (uint32_t f = 0;  f < NF; f++)
           { int32_t p = d*NF + f; /* Index of observation. */
             /* Write observation: */
             fprintf(wr, "%8d  %5d %5d", d, ix[d], iy[d]);
@@ -625,7 +621,7 @@ void multifok_analyze_write_observations
             fprintf(wr, "  %18.8f", s2[p]);
             fprintf(wr, " %6.2f", un[p]);
             double *ts = &(terms[p*NQ]);
-            for(int32_t q = 0; q < NQ; q++)
+            for (uint32_t q = 0;  q < NQ; q++)
               { fprintf(wr, " %10.6f", ts[q]); }
             fprintf(wr, "\n");
           }
@@ -636,12 +632,11 @@ void multifok_analyze_write_observations
 
 void multifok_analyze_write_coeffs(char *outDir, int32_t NQ, char *tname[], double coeff[])
   {
-    char *fname = NULL;
-    asprintf(&fname, "%s/coeff.txt", outDir);
+    char *fname = jsprintf("%s/coeff.txt", outDir);
     FILE *wr = open_write(fname, TRUE);
     
     /* Write coefficients: */
-    for(int32_t q = 0; q < NQ; q++)
+    for (uint32_t q = 0;  q < NQ; q++)
       { fprintf(wr, "%8d %+18.8f %s\n", q, coeff[q], tname[q]); }
     fclose(wr);
     free(fname);

@@ -2,14 +2,14 @@
 #define fvw_paint_self_colored_H
 
 /* fvw_paint_self_colored.h - painting a grid terrain without texture. */
-/* Last edited on 2010-07-02 12:58:53 by stolfilocal */
+/* Last edited on 2024-12-23 09:01:23 by stolfi */
 
-#define _GNU_SOURCE
+#include <stdint.h>
 #include <float_image.h>
 
 void fvw_paint_self_colored_height_map
   ( float_image_t *ht, 
-    int c, 
+    uint32_t c, 
     double zscale, 
     float vmin,
     float vmax
@@ -33,7 +33,7 @@ void fvw_paint_self_colored_triangle
     Assumes that the triangle is CCW as seen from above.
     Should be called between {glBegin(GL_TRIANGLES)} and {glEnd()}. */
 
-void fvw_color_from_value(int NC, double v, double vdel, float clr[]);
+void fvw_color_from_value(int32_t NC, double v, double vdel, float clr[]);
   /* Computes artificial color {clr[0..NC-1]} for a pixel of value {v},
      whose nominal range is {[-vdel _ +vdel]}. */
 

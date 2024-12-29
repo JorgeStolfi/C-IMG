@@ -2,14 +2,13 @@
 #define fvw_paint_self_colored_hist_H
 
 /* fvw_paint_self_colored.h - painting a grid terrain without texture. */
-/* Last edited on 2010-07-02 12:58:53 by stolfilocal */
+/* Last edited on 2024-12-23 09:05:06 by stolfi */
 
-#define _GNU_SOURCE
 #include <float_image.h>
 
 void fvw_paint_self_colored_hist_height_map
   ( float_image_t *ht, 
-    int c, 
+    uint32_t c, 
     double zscale, 
     float vmin,
     float vmax,

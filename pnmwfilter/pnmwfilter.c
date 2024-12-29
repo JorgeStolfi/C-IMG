@@ -5,7 +5,7 @@
 #define pnmwfilter_C_COPYRIGHT \
   "Copyright © 2006 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2023-03-07 19:34:32 by stolfi */
+/* Last edited on 2024-12-21 11:59:26 by stolfi */
 
 /* !!! Replace the {RMAG} parameter by -scale and -offset options. !!! */
 
@@ -346,7 +346,6 @@
 #define stringify(x) strngf(x)
 #define strngf(x) #x
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -698,13 +697,13 @@ void filter_image_file
     
     /* Allocate and initialize the window permutation vectors: */
     int32_t *wperm[chns];
-    for (int32_t kc = 0; kc < chns; kc++) 
+    for (uint32_t kc = 0;  kc < chns; kc++) 
       { wperm[kc] = notnull(malloc(nw*sizeof(int32_t)), "no mem");
-        for (int32_t k = 0; k < nw; k++) { wperm[kc][k] = k; }
+        for (uint32_t k = 0;  k < nw; k++) { wperm[kc][k] = k; }
       }
    
     /* Loop on output image rows: */
-    for (int32_t y = 0; y < rows; y++)
+    for (uint32_t y = 0;  y < rows; y++)
       { int32_t yimin = y - wrady; /* Min input {y} needed to compute this row. */
         if (yimin < 0) { yimin = 0; }
         int32_t yimax = y + wrady; /* Max input {y} needed to compute this row. */
@@ -727,13 +726,13 @@ void filter_image_file
         double *msmp = (mstr == NULL ? NULL : float_image_buffer_get_row(mbuf, y));
         
         /* Compute row {y} of output image: */
-        for (int32_t x = 0; x < cols; x++)
+        for (uint32_t x = 0;  x < cols; x++)
           { /* Get the mask value for this input pixel: */
             double mval = (msmp == NULL ? 1 : msmp[x]);
             /* Get input pixel values and mask (if any) for the new window placement: */
             grab_input_pixels_and_mask(x, y, ibuf, mbuf, o->replicate, nw, wpix);
             /* Now loop on channels: */
-            for (int32_t kc = 0; kc < chns; kc++)
+            for (uint32_t kc = 0;  kc < chns; kc++)
               { /* Get the center sample {ival} of the input image (may be undefined): */
                 double ival = (mval == 0 ? NAN : ismp[x*chns + kc]);
                 /* Compute the floated output pixel value: */
@@ -772,7 +771,7 @@ void filter_image_file
       } 
 
     /* Release working storage: */
-    for (int32_t kc = 0; kc < chns; kc++) { free(wperm[kc]); }
+    for (uint32_t kc = 0;  kc < chns; kc++) { free(wperm[kc]); }
     float_pnm_stream_free(istr);
     if (mstr != NULL) { float_pnm_stream_free(mstr); }
     free(osmp);
@@ -848,7 +847,7 @@ void read_window_image
                 wpixel_t *wp = &(wpix[nw]);
                 wp->dx = dx; wp->dy = dy;
                 wp->wht = (double)s;
-                for (int32_t kc = 0; kc < MAX_CHNS; kc++) { wp->val[kc] = NAN; } /* Just in case. */
+                for (uint32_t kc = 0;  kc < MAX_CHNS; kc++) { wp->val[kc] = NAN; } /* Just in case. */
                 wp->msk = 1;   /* Just in case. */
                 nw++;
                 /* Update true extent: */
@@ -916,7 +915,7 @@ void show_window_weights_statistics(FILE *wr, int32_t nw, wpixel_t wpix[], uint1
     double sum_wy = 0;      /* Sum of weights times Y coordinate. */
     double sum_wx2 = 0;     /* Sum of weights times X^2. */
     double sum_wy2 = 0;     /* Sum of weights times Y^2. */
-    for (int32_t k = 0; k < nw; k++)
+    for (uint32_t k = 0;  k < nw; k++)
       { wpixel_t *wp = &(wpix[k]);
         double w = wp->wht;
         double dx = wp->dx;
@@ -979,7 +978,7 @@ void grab_input_pixels_and_mask
       }
    
     /* Scan the window pixels with non-zero weight: */
-    for (int32_t kw = 0; kw < nw; kw++)
+    for (uint32_t kw = 0;  kw < nw; kw++)
       { /* Get the pixel's entry in {wpix} table: */
         wpixel_t *wp = &(wpix[kw]);
         /* Compute pixel's indices {xp,yp} in input img, or -1 if non-existant: */
@@ -997,13 +996,13 @@ void grab_input_pixels_and_mask
         /* Get and set the value: */  
         if (yp < 0)
           { /* Pixel doesn't exist: */
-            for (int32_t kc = 0; kc < NC; kc++) { wp->val[kc] = NAN; }
+            for (uint32_t kc = 0;  kc < NC; kc++) { wp->val[kc] = NAN; }
             wp->msk = 0;
           }
         else
           { /* Pixel exists, get sample values from input image: */
             double *ismp = float_image_buffer_get_row(ibuf, yp);
-            for (int32_t kc = 0; kc < NC; kc++) { wp->val[kc] = ismp[xp*NC + kc]; }
+            for (uint32_t kc = 0;  kc < NC; kc++) { wp->val[kc] = ismp[xp*NC + kc]; }
             if (mbuf == NULL)
               { wp->msk = 1; }
             else
@@ -1102,7 +1101,7 @@ void compute_weight_below_above(double ival, int32_t kc, int32_t nw, wpixel_t wp
   {
     double sum_lo = 0; /* Weight below {ival}. */
     double sum_hi = 0; /* Weight above {ival}. */
-    for (int32_t k = 0; k < nw; k++) 
+    for (uint32_t k = 0;  k < nw; k++) 
       { wpixel_t *wp = &(wpix[k]);
         double s = wp->val[kc], w = wp->wht*wp->msk;
         if (! isnan(s))
@@ -1126,7 +1125,7 @@ void compute_weight_below_above(double ival, int32_t kc, int32_t nw, wpixel_t wp
 double compute_window_avg(int32_t kc, int32_t nw, wpixel_t wpix[])
   { if (nw == 0) { return NAN; }
     double sum_w = 0.0, sum_sw = 0.0;
-    for (int32_t k = 0; k < nw; k++) 
+    for (uint32_t k = 0;  k < nw; k++) 
       { wpixel_t *wp = &(wpix[k]);
         double s = wp->val[kc];
         if (! isnan(s))
@@ -1145,7 +1144,7 @@ double compute_window_var(int32_t kc, int32_t nw, wpixel_t wpix[], double avg, d
     double sum_w = 0.0;
     double sum_w2 = 0;
     double sum_wd2 = 0.0;
-    for (int32_t k = 0; k < nw; k++) 
+    for (uint32_t k = 0;  k < nw; k++) 
       { wpixel_t *wp = &(wpix[k]);
         double s = wp->val[kc];
         if (! isnan(s))
@@ -1246,7 +1245,7 @@ double find_percentile(int32_t kc, int32_t nw, wpixel_t wpix[], int32_t wperm[],
         double evp = (kp >= nw ? ((double)dir)*INF : (double)(wkp->val[kc] - dir*rv));
         if (! ((evp - v)*dir > 0)) 
           { fprintf(stderr, "evp = %23.15e  v = %23.15e dir = %+2d\n", evp, v, dir);
-            for (int32_t i = 0; i < nw; i++)
+            for (uint32_t i = 0;  i < nw; i++)
               { wpixel_t *wi = &(wpix[wperm[i]]); 
                 fprintf(stderr, "  %04d  dx = %+3d  dy = %+3d", i, wi->dx, wi->dy);
                 fprintf(stderr, "  val = %23.15e msk = %23.15e wht = %23.15e\n", wi->val[kc], wi->msk, wi->wht);
@@ -1288,7 +1287,7 @@ double find_percentile(int32_t kc, int32_t nw, wpixel_t wpix[], int32_t wperm[],
  
 double compute_total_weight(int32_t kc, int32_t nw, wpixel_t wpix[])
   { double wtot = 0; 
-    for (int32_t k = 0; k < nw; k++) 
+    for (uint32_t k = 0;  k < nw; k++) 
       { wpixel_t *wkp = &(wpix[k]); 
         if (! isnan(wkp->val[kc]))
           { double wk = wkp->wht*wkp->msk;
@@ -1461,7 +1460,7 @@ void wpixel_sort(int32_t kc, int32_t nw, wpixel_t wpix[], int32_t wperm[])
   
     qsort(wperm, nw, sizeof(int32_t), compare_indices);
     /* Paranoia check: */
-    for (int32_t i = 1; i < nw; i++) 
+    for (uint32_t i = 1;  i < nw; i++) 
       { wpixel_t *wap = &(wpix[wperm[i-1]]);
         wpixel_t *wbp = &(wpix[wperm[i]]);
         assert(compare_val(wap->val[kc], wap->wht*wap->msk, wbp->val[kc], wbp->wht*wbp->msk) <= 0);

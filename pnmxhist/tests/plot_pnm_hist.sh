@@ -1,0 +1,1 @@
+../../plot_pnm_hist.sh

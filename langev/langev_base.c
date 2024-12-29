@@ -1,7 +1,6 @@
 /* See {langev_move.h} */
-/* Last edited on 2023-02-25 16:04:29 by stolfi */
+/* Last edited on 2024-12-21 14:00:40 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -137,8 +136,7 @@ void output_frame
       }
 
     uint16_image_t *img = colorize_frame(frm, lang_color);
-    char *fileName = NULL;
-    asprintf(&fileName, "%s-%06d.ppm", prefix, iep);
+    char *fileName = jsprintf("%s-%06d.ppm", prefix, iep);
     FILE *wr = open_write(fileName, TRUE);
     bool_t forceplain = FALSE;
     bool_t verbose = TRUE;

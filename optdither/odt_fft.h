@@ -1,10 +1,9 @@
 /* Fourier tools for optimum dither seeking. */
-/* Last edited on 2023-03-18 09:42:43 by stolfi */
+/* Last edited on 2024-12-21 13:58:46 by stolfi */
 
 #ifndef odt_fft_H
 #define odt_fft_H
 
-#define _GNU_SOURCE
 #include <stdint.h>
 
 #include <float_image.h>

@@ -1,10 +1,9 @@
 /* Utilities */
-/* Last edited on 2017-06-20 20:32:12 by stolfilocal */ 
+/* Last edited on 2024-12-21 14:00:04 by stolfi */ 
 
 #ifndef langev_util_H
 #define langev_util_H
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <values.h>

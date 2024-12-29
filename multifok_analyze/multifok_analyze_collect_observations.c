@@ -1,7 +1,6 @@
 /* See {multifok_analyze_collect_observations.h}. */
-/* Last edited on 2018-09-10 18:35:41 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:40 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -85,8 +84,8 @@ void multifok_analyze_collect_observations
     
     /* Allocate the quadratic term images, fill them with zeros: */
     float_image_t **qtimg = notnull(malloc(NF*NQ*sizeof(float_image_t *)), "no mem");
-    for (int32_t f = 0; f < NF; f++)
-      { for (int32_t q = 0; q < NQ; q++)
+    for (uint32_t f = 0;  f < NF; f++)
+      { for (uint32_t q = 0;  q < NQ; q++)
           { float_image_t *img = float_image_new(1, NX, NY); 
             float_image_fill(img, 0.0f);
             qtimg[f*NQ + q] = img;
@@ -119,7 +118,7 @@ void multifok_analyze_collect_observations
                 /* Store the window position: */
                 ix[d] = dx; iy[d] = dy;
                 /* Extract observations from frame images: */
-                for (int32_t f = 0; f < NF; f++)
+                for (uint32_t f = 0;  f < NF; f++)
                   { assert(NP < NPmax);
                     int32_t p = NP;  /* Index of this observation. */
                     assert(p == d*NF + f);
@@ -134,7 +133,7 @@ void multifok_analyze_collect_observations
                     multifok_focus_op_remap_samples(NW, fr, phi, w, gr);
                     double *ts = &(terms[p*NQ]);  /* Quadratic terms from this frame window. */
                     /* Generate the quadratic terms from remapped samples, save in images: */
-                    for (int32_t q = 0; q < NQ; q++) 
+                    for (uint32_t q = 0;  q < NQ; q++) 
                       { ts[q] = compute_term_3x3(NS, gr, q);
                         float_image_t *img = qtimg[f*NQ + q];
                         float_image_set_sample(img, 0, dx, dy, (float)(ts[q]));

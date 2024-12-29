@@ -1,5 +1,5 @@
 #! /bin/bash 
-# Last edited on 2023-01-14 10:47:28 by stolfi
+# Last edited on 2024-11-07 18:49:41 by stolfi
  
 PROG_NAME=${0##*/}
 PROG_DESC="make a 3D Postscript plot of a selected channel of a FNI file"
@@ -223,3 +223,4 @@ EOF
 fi
 
 /bin/rm -f ${tmpdat} ${tmpfni}
+echo "done fni_plot.sh" 1>&2 

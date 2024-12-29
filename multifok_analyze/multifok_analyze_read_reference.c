@@ -1,7 +1,6 @@
 /* See {multifok_analyze_read_reference.h}. */
-/* Last edited on 2017-10-25 19:15:09 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:10 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

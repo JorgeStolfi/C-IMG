@@ -4,9 +4,8 @@
 
 #define langev_C_COPYRIGHT "Copyright © 2006 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2018-03-04 22:51:15 by stolfilocal */
+/* Last edited on 2024-12-21 14:00:42 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>

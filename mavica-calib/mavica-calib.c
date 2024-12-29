@@ -11,7 +11,6 @@
   PROG_NAME " \\\n" \
   "  { -r | --run } RATEFILE" 
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -221,7 +220,7 @@ void avalia_args (char** arg, char **nome_P)
 FILE* abre_arquivo (char *dir, char* nome, char *ext, char *modo)
 {
   char *nome_arq = NULL;
-  asprintf(&nome_arq, "%s/%s%s", dir, nome, ext);
+  char *nome_arq = jsprintf("%s/%s%s", dir, nome, ext);
   FILE *arq = fopen(nome_arq, modo);
   if (arq == NULL)
     {

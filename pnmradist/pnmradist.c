@@ -2,7 +2,7 @@
 #define PROG_DESC "applies radial distortion to a pbm/ppm/pgm file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-10-10 18:19:47 by stolfi */
+/* Last edited on 2024-11-23 05:59:25 by stolfi */
 
 /* Copyright © 2002 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
@@ -148,7 +148,7 @@
 
 #include <jspnm.h>
 #include <interval.h>
-#include <ix.h>
+#include <ix_reduce.h>
 #include <jsfile.h>
 #include <uint16_image.h>
 #include <uint16_image_read_pnm.h>
@@ -283,7 +283,7 @@ int32_t main(int32_t argc, char **argv)
       /* True if {*pP} is the watched pixel. */
       
     if (o->verbose) { fprintf(stderr, "transforming the image ...\n"); }
-    ix_reduction_t red = ix_reduction_SINGLE;
+    ix_reduce_mode_t red = ix_reduce_mode_SINGLE;
     float_image_transform_all(im_in, red, &map_point, 0.5, TRUE, o->interpolate, &debug_point, im_ot);
     
     /* Choose the output maxval: */

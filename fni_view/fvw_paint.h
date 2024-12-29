@@ -2,9 +2,7 @@
 #define fvw_paint_H
 
 /* fvw_paint.h - general painting tools. */
-/* Last edited on 2011-07-16 16:00:51 by stolfilocal */
-
-#define _GNU_SOURCE
+/* Last edited on 2024-12-21 14:01:20 by stolfi */
 
 #define fvw_debug_GL FALSE
   /* If TRUE, report calls to the GL event methods. */

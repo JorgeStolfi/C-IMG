@@ -1,4 +1,4 @@
-# Last edited on 2008-01-14 23:18:01 by stolfi
+# Last edited on 2024-12-21 02:53:27 by stolfi
 
 PROG := ausample
 PROGDIR := ../..
@@ -17,6 +17,9 @@ OTHER_TESTS := \
 
 ACTIONS := no-action
 
+IN_DIR := in
+OUT_DIR := out
+
 all: 
 	${MAKE} ACTIONS=single-run loop
         
@@ -25,6 +28,7 @@ clean::
 
 loop:
 	for tt in ${TESTS} ; do \
+          ${MAKE} TEST="$${tt}" single-clean ; \
           ${MAKE} TEST="$${tt}" ${ACTIONS} ; \
         done
 
@@ -40,38 +44,32 @@ TAKE     := ${word 2,${TESTARGS}}
 EVERY    := ${word 3,${TESTARGS}}
 SPLICE   := ${word 4,${TESTARGS}}
 
-INP_OGG_FILE := ${PREFIX}-inp.ogg
-INP_AU_FILE  := /tmp/${PREFIX}-inp.au
-INP_PNG_FILE := ${PREFIX}-inp.png
+INP_AU_FILE  := ${IN_DIR}/${PREFIX}-inp.au
+INP_OGG_FILE := ${IN_DIR}/${PREFIX}-inp.ogg
+INP_PNG_FILE := ${IN_DIR}/${PREFIX}-inp.png
 
-SMP_AU_FILE  := ${PREFIX}-smp.au
-SMP_PNG_FILE := ${PREFIX}-smp.png
-SMP_OGG_FILE := ${PREFIX}-smp.ogg
+SMP_AU_FILE  := ${OUT_DIR}/${PREFIX}-smp.au
+SMP_PNG_FILE := ${OUT_DIR}/${PREFIX}-smp.png
+SMP_OGG_FILE := ${OUT_DIR}/${PREFIX}-smp.ogg
 
 single-run: ${SMP_AU_FILE} ${SMP_PNG_FILE}
 
 .SUFFIXES:
 
-#----------------------------------------------------------------------
-# Sound file cleanup:
-
-%-inp.au: %-inp.ogg Makefile
-	sox -V $*-inp.ogg -s -w $*-inp.au
-	ls -l $*-inp.au
-
-%-smp.au: %-inp.au ${PROGDIR}/${PROG} Makefile
-	cat $*-inp.au \
+${SMP_AU_FILE}: ${INP_AU_FILE} ${PROGDIR}/${PROG} Makefile
+	cat ${INP_AU_FILE} \
           | ${PROGDIR}/${PROG} \
               -take ${TAKE} -every ${EVERY} \
               -splice ${SPLICE} \
               -unit second \
-          > $*-smp.au
+          > ${SMP_AU_FILE}
 
 #----------------------------------------------------------------------
-# OGG to AU conversion:
+# Sound file cleanup:
 
-%-inp.au: %-inp.ogg 
-	
+%-inp.au: %-inp.ogg Makefile
+	sox -V $*-inp.ogg -e signed -b 16 $*-inp.au
+	ls -l $*-inp.au
 
 #----------------------------------------------------------------------
 # Sound spectrograms:

@@ -2,7 +2,7 @@
 #define PROG_DESC "creates an EPS file with a simple reflectance chart"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2023-03-02 22:42:46 by stolfi */
+/* Last edited on 2024-12-21 13:59:53 by stolfi */
 
 #define make_light_chart_C_COPYRIGHT \
   "Copyright © 2009  by the State University of Campinas (UNICAMP)"
@@ -63,7 +63,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -120,7 +119,7 @@ int32_t main(int32_t argc, char **argv)
     double s30 = sin(M_PI/6);
     double c15 = cos(M_PI/12);
     double s15 = sin(M_PI/12);
-    for (int32_t j = 0; j < rings; j++)
+    for (uint32_t j = 0;  j < rings; j++)
       { if (j == 0)
           { r_spot[j] = o->radius;
             d_spot[j] = 0.0;
@@ -192,7 +191,7 @@ chart_t *compute_chart(int32_t rings, double d_spot[], double r_spot[], double r
     ch->spot_rad = double_vec_new(25);
     ch->spot_lum = double_vec_new(25);
     int32_t max_index = -1;
-    for (int32_t j = 0; j < rings; j++)
+    for (uint32_t j = 0;  j < rings; j++)
       { int32_t nsp;        /* Number of spots in ring. */
         int32_t k_base;     /* Lightness index of first spot. */
         int32_t k_step;     /* Increment in lightness index from spot to spot. */
@@ -209,7 +208,7 @@ chart_t *compute_chart(int32_t rings, double d_spot[], double r_spot[], double r
         else
           { assert(FALSE); }
         
-        for (int32_t i = 0; i < nsp; i++)
+        for (uint32_t i = 0;  i < nsp; i++)
           {
             double xc, yc;  /* Center of spot. */
             double rs;      /* Radius of spot. */
@@ -252,10 +251,9 @@ void draw_chart(epswr_figure_t *eps, chart_t *ch, bool_t showSpotNumbers)
     epswr_comment(eps, "background circle:");
     epswr_set_fill_color(eps, ch->bg_lum, ch->bg_lum, ch->bg_lum);
     epswr_circle(eps, 0.000, 0.000, ch->radius, TRUE, FALSE);
-    for (int32_t i = 0; i < ch->nspots; i++)
+    for (uint32_t i = 0;  i < ch->nspots; i++)
       {
-        char *cmt = NULL;
-        asprintf(&cmt, "spot number %d:", i);
+        char *cmt = jsprintf("spot number %d:", i);
         epswr_comment(eps, cmt);
         free(cmt);
         r2_t ctr = ch->spot_ctr.e[i];
@@ -268,7 +266,7 @@ void draw_chart(epswr_figure_t *eps, chart_t *ch, bool_t showSpotNumbers)
           { double txY = (spY > 0.50 ? 0.00 : 1.00);
             epswr_set_fill_color(eps, txY, txY, txY);
             char* lab = NULL;
-            asprintf(&lab, "%02d", i);
+            char *lab = jsprintf("%02d", i);
             epswr_label(eps, lab, "0", ctr.c[0],ctr.c[1],  0.0, TRUE, 0.5,0.5, TRUE, FALSE);
             free(lab);
           }
@@ -280,7 +278,7 @@ void write_chart_description(FILE *wr, chart_t *ch)
     fprintf(wr,"nspots = %d\n",ch->nspots);
     fprintf(wr,"radius = %f\n",ch->radius);
     fprintf(wr,"bg_lum = %6.4f\n",ch->bg_lum);
-    for (int32_t i = 0; i < ch->nspots; i++)
+    for (uint32_t i = 0;  i < ch->nspots; i++)
       { r2_t ctr = ch->spot_ctr.e[i];
         double rad = ch->spot_rad.e[i];
         double spY = ch->spot_lum.e[i];

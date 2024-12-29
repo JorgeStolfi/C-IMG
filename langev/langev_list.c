@@ -1,7 +1,6 @@
 /* See langev_list.h */
-/* Last edited on 2023-02-25 16:04:37 by stolfi */
+/* Last edited on 2024-12-21 14:00:21 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <assert.h>
 

@@ -1,4 +1,4 @@
-# Last edited on 2023-02-04 11:50:06 by stolfi
+# Last edited on 2024-08-30 23:40:53 by stolfi
 
 PROGS_BUG := \
   pnmpairtopng \
@@ -24,7 +24,6 @@ PROGS_TO_FINISH := \
   pnmhough \
   pnmmatch \
   pnmpralign \
-  pnmprojmap \
   pnmxhist \
   ppvip \
   stereo_adjust \
@@ -33,7 +32,6 @@ PROGS_TO_FINISH := \
 IGNOREDIRS := \
   ${PROGS_BUG} \
   ${PROGS_TO_FINISH}
-
    
 all: build install
 

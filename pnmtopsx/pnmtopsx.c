@@ -4,7 +4,7 @@
 
 /* Copyright © 1989 by Jef Poskanzer, modified by J. Stolfi. */
 /* See end of file for full copyright and (no)warranty notice. */
-/* Last edited on 2023-03-07 18:06:01 by stolfi */
+/* Last edited on 2024-12-21 11:59:30 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME " \\\n" \
@@ -55,7 +55,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -152,7 +151,7 @@ int32_t main(int32_t argc, char* argv[])
         if (maxval_img != maxval_eps)
           { /* Adjust scale from {maxval_img} to {maxval_eps}: */
             xP = smprow;
-            for (int32_t k = 0; k < sprw; k++)
+            for (uint32_t k = 0;  k < sprw; k++)
               { int32_t remap = (int32_t)floor(((double)(*xP))*scale + 0.5);
                 assert(remap <= maxval_eps);
                 (*xP) = (int16_t)remap; 
@@ -160,10 +159,10 @@ int32_t main(int32_t argc, char* argv[])
               }
           }
         /* Output row samples, one channel at a time: */
-        for (int32_t kc = 0; kc < chns; kc++)
+        for (uint32_t kc = 0;  kc < chns; kc++)
           { /* Output one every {chns} samples, starting with sample {kc}: */
             xP = smprow + kc;
-            for (int32_t col = 0; col < cols; col++)
+            for (uint32_t col = 0;  col < cols; col++)
               { if (o->rle)
                   { rle_put_sample(*xP); }
                 else

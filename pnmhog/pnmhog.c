@@ -1,7 +1,7 @@
 #define PROG_NAME "pnmhog"
 #define PROG_DESC "applies the T-HOG text detector to an image"
 #define PROG_VERS "1.0"
-/* Last edited on 2023-10-19 10:08:55 by stolfi */
+/* Last edited on 2024-11-23 06:00:34 by stolfi */
 
 /* Copyright © 2002 by the State University of Campinas (UNICAMP).
 ** See the copyright, authorship, and warranty notice at end of file.
@@ -208,7 +208,7 @@
 
 #include <jspnm.h>
 #include <interval.h>
-#include <ix.h>
+#include <ix_reduce.h>
 #include <jsfile.h>
 #include <uint16_image.h>
 #include <uint16_image_read_pnm.h>
@@ -374,7 +374,7 @@ int32_t main(int32_t argc, char **argv)
     auto bool_t debug_point(r2_t *pP);
       /* True if {*pP} is the watched pixel. */
       
-    ix_reduction_t red = ix_reduction_SINGLE;
+    ix_reduce_mode_t red = ix_reduce_mode_SINGLE;
     float_image_transform_all(im_in, red, &map_point, o->undef, TRUE, o->interpolate, &debug_point, im_ot);
     
     /* Choose output maxval: */

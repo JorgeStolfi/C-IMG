@@ -1,8 +1,7 @@
 #ifndef multifok_analyze_read_frames_H
 #define multifok_analyze_read_frames_H
-/* Last edited on 2018-01-03 14:20:54 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:13 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdint.h>
 
 #include <bool.h>

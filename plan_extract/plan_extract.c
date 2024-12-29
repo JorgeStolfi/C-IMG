@@ -2,7 +2,7 @@
 #define PROG_DESC "selects a sub-image with standard size and shape"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2011-06-09 13:33:29 by stolfi */
+/* Last edited on 2024-11-20 06:13:09 by stolfi */
 
 #define plan_extract_C_COPYRIGHT \
   "Copyright © 2007 by the State University of Campinas (UNICAMP)"
@@ -388,8 +388,7 @@ void ple_write_plan(i2_t *ISize, plan_t *pl, int r, int s, char *prefix)
     demand(abs(s) <= 49, "bad {s}");
     
     /* Construct file name: */
-    char *fname = NULL;
-    asprintf(&fname, "out/%s-%02d-%02d.txt", prefix, r+50, s+50);
+    char *fname = jsprintf("out/%s-%02d-%02d.txt", prefix, r+50, s+50);
     FILE *wr = open_write(fname, TRUE);
     
     /* Sizes of {C} and {P} sub-images: */

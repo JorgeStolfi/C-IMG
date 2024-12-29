@@ -1,7 +1,6 @@
 /* See fvw_paint.h */
-/* Last edited on 2013-10-21 03:33:39 by stolfilocal */
+/* Last edited on 2024-12-21 14:01:23 by stolfi */
 
-#define _GNU_SOURCE
 #include <math.h>
 #include <GL/glu.h>
 

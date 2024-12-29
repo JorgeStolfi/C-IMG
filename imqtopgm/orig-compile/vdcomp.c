@@ -497,7 +497,7 @@ void print_codes(NODE* np, char *pref)
 void print_queue(char *tag, uint32_t *fp, NODE **np, uint32_t num_freq)
   {
     fprintf(stderr, "%s ", tag);
-    for(int32_t i = 0; i < num_freq; i++)
+    for (uint32_t i = 0;  i < num_freq; i++)
       { if ((i < 3) || (i == num_freq-1))
           { if (i > 0) { fprintf(stderr, " "); }
             print_queue_entry(*(fp+i),*(np+i));

@@ -1,0 +1,35 @@
+#! /bin/csh -f
+#! Last edited on 2003-02-16 21:40:56 by stolfi
+
+set usage = "$0 EYE OPTIONS"
+
+set cmd = "$0"; set cmd = "${cmd:t}"
+set runargs = "$*"
+
+echo '====================================================================='
+echo '=== '"${cmd} ${runargs}"
+
+if ( $#argv < 1 ) then
+  echo ${usage}; exit 1
+endif
+
+set eye     = "$1" ; shift
+
+set parmfile = "eye-${eye}-parameters.inc"
+set cmtfile = "eye-${eye}.comments"
+
+/bin/rm -f ${parmfile}
+cat <<EOF > ${parmfile}
+// Empty for now...
+EOF
+
+# Create the ".comments" file:
+
+/bin/rm -f ${cmtfile}
+echo "${cmd} ${runargs}" > ${cmtfile}
+
+${STOLFIHOME}/posters/tools/run-povray $* eye-${eye}.pov
+
+echo '=== END '"${cmd} ${runargs}" 
+
+echo '====================================================================='

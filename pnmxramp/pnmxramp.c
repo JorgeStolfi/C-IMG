@@ -4,7 +4,7 @@
 
 /* Copyright © 2002 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2023-03-07 21:11:18 by stolfi */
+/* Last edited on 2024-12-21 11:59:12 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME " \\\n" \
@@ -90,7 +90,6 @@
   "\n" \
   argparser_help_info_STANDARD_RIGHTS
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -182,7 +181,7 @@ int32_t main(int32_t argc, char **argv)
 
         /* Compute the mean {B} of the corner colors: */
         frgb_t B;
-        for (int32_t chn = 0; chn < chns; chn++)
+        for (uint32_t chn = 0;  chn < chns; chn++)
           { B.c[chn] = (float)(((double)v0->c[chn] + (double)v1->c[chn] + (double)v2->c[chn])/3.0); }
 
         for (int32_t row = 0; row < o->rows; ++row)
@@ -190,10 +189,10 @@ int32_t main(int32_t argc, char **argv)
             for (int32_t col = 0; col < o->cols; ++col)
               { cart_to_bary(col, row, alpha);
                 frgb_t S;
-                for (int32_t chn = 0; chn < chns; chn++)
+                for (uint32_t chn = 0;  chn < chns; chn++)
                   { S.c[chn] = (float)(alpha[0]*v0->c[chn] + alpha[1]*v1->c[chn] + alpha[2]*v2->c[chn]); }
                 frgb_clip_rgb_towards(&S, &B);
-                for (int32_t chn = 0; chn < chns; chn++)
+                for (uint32_t chn = 0;  chn < chns; chn++)
                   { int32_t q = (int32_t)floor(S.c[chn]*o->maxval + 0.5);
                     (*sp) = (uint16_t)q; sp++;
                   }
@@ -243,7 +242,7 @@ options_t *get_options(int32_t argc, char **argv)
     /* Parse positional arguments: */
     argparser_skip_parsed(pp);
  
-    for (int32_t i = 0; i < 3; i++)
+    for (uint32_t i = 0;  i < 3; i++)
       { o->x[i] = argparser_get_next_double(pp, -1.0e+100, +1.0e+100);
         o->y[i] = argparser_get_next_double(pp, -1.0e+100, +1.0e+100);
         o->v[i] = frgb_parse_color(pp);

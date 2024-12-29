@@ -1,10 +1,9 @@
 /* Site-value tables with fast lookup. */
-/* Last edited on 2008-01-10 02:33:09 by stolfi */ 
+/* Last edited on 2024-12-21 14:00:19 by stolfi */ 
 
 #ifndef langev_list_H
 #define langev_list_H
 
-#define _GNU_SOURCE
 #include <stdio.h>
 
 #include <bool.h>

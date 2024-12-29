@@ -1,7 +1,6 @@
 /* See {multifok_analyze_extract_window.h}. */
-/* Last edited on 2018-01-01 23:26:31 by stolfilocal */
+/* Last edited on 2024-12-21 13:59:28 by stolfi */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -36,7 +35,7 @@ double multifok_analyze_extract_window
     /* Compute weighted sample average in window: */
     double sum_w = 1.0e-200;
     double sum_w_v = 0.0;
-    for (int32_t s = 0; s < NS; s++)
+    for (uint32_t s = 0;  s < NS; s++)
       { double vs = (double)va[s];
         double ws = w[s];
         demand(ws > 0, "invalid weight");
@@ -48,7 +47,7 @@ double multifok_analyze_extract_window
     
     /* Compute weighted sample deviation in window, accounting for noise: */
     double sum_w_d2 = 0.0;
-    for (int32_t s = 0; s < NS; s++)
+    for (uint32_t s = 0;  s < NS; s++)
       { double ds = ((double)va[s]) - avg;
         double ws = w[s];
         sum_w_d2 += ws*(ds*ds + noise*noise);
@@ -57,7 +56,7 @@ double multifok_analyze_extract_window
     assert(dev >= 0.99999*noise);
     
     /* Normalize samples: */
-    for (int32_t s = 0; s < NS; s++) { fr[s] = ((va[s] - avg)/dev); }
+    for (uint32_t s = 0;  s < NS; s++) { fr[s] = ((va[s] - avg)/dev); }
     
     return dev;
   }

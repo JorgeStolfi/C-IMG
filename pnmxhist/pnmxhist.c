@@ -5,7 +5,7 @@
 #define pnmxhist_C_COPYRIGHT \
   "Copyright © 2010 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2023-03-07 20:40:57 by stolfi */
+/* Last edited on 2024-12-25 21:36:09 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME " \\\n" \
@@ -183,7 +183,7 @@ int32_t main(int32_t argc, char **argv)
     { pnm_format_t in_format;
       pnm_read_header(in_file, &cols, &rows, &chns, &in_maxval, &in_raw, &in_bits, &in_format);
     }
-    uint64_t pixs = ((uint64_t)cols)*rows;
+    uint64_t pixs = (uint64_t)(cols*rows);
     if (o->verbose)
       { fprintf(stderr, "input image has %d colums, %d rows, %ld pixels\n", cols, rows, pixs); 
         fprintf(stderr, "input samples range in 0..%d\n", in_maxval);
@@ -212,7 +212,7 @@ int32_t main(int32_t argc, char **argv)
       }
       
     /* Check for possible overflow: */
-    if ((((MAX_WT_COUNT / cols) / rows) / wt_maxval) == 0)
+    if (((MAX_WT_COUNT / pixs) / (uint64_t)wt_maxval) == 0)
       { pnm_error("too many pixels and/or too large weights, counts may overflow"); }
     
     /* Check whether the "-ignore" values are all valid: */
@@ -242,18 +242,18 @@ int32_t main(int32_t argc, char **argv)
 
     /* Allocate histogram: */
     uint64_t count[in_maxval+1];
-    for (int32_t v = 0; v <= in_maxval; v++) { count[v] = 0; }
+    for (int32_t v = 0;  v <= in_maxval; v++) { count[v] = 0; }
     
     /* Count pixels: */
-    for (int32_t y = 0; y < rows; y++)
+    for (int32_t y = 0;  y < rows; y++)
       { pnm_read_pixels(in_file, in_pix, cols, chns, in_maxval, in_raw, in_bits);
         if (wt_file != NULL)
           { pnm_read_pixels(wt_file, wt_pix, cols, 1, wt_maxval, wt_raw, wt_bits); }
-        for (int32_t x = 0; x < cols; x++)
+        for (int32_t x = 0;  x < cols; x++)
           { int32_t vxy = in_pix[x*chns + chn];
             int32_t wxy = (wt_file == NULL ? 1 : wt_pix[x]);
             if (o->ignore.e[vxy]) { wxy = 0; }
-            count[vxy] += wxy;
+            count[vxy] += (uint64_t)wxy;
           }
       } 
     
@@ -283,7 +283,7 @@ void print_histogram
     uint64_t tot_wt_count = 0; /* Sum of all {count}s. */
     uint64_t max_wt_count = 0; /* Max {count} entry. */
     uint16_t most_pop_value = 0; /* Sample value with hightest count. */
-    for (int32_t v = 0; v <= in_maxval; v++)
+    for (int32_t v = 0;  v <= in_maxval; v++)
       { tot_wt_count += count[v];
         if (count[v] > max_wt_count) { max_wt_count = count[v]; most_pop_value = (uint16_t)v; }
         if (! ignore.e[v]) { num_values++; }
@@ -317,7 +317,7 @@ void print_histogram
     int32_t gtr_num = num_values;  /* Number of higher non-ignored values. */
     uint64_t lss_wt_count = 0;             /* Sum of {count}s for all smaller values */
     uint64_t gtr_wt_count = tot_wt_count;  /* Sum of {count}s for all higher values. */
-    for (int32_t v = 0; v <= in_maxval; v++) 
+    for (uint32_t v = 0;  v <= in_maxval; v++) 
       { if (ignore.e[v]) { assert(count[v] == 0); }
         /* Update {gtr_num,gtr_wt_count}: */
         if (! ignore.e[v]) { gtr_num--; }
@@ -370,33 +370,33 @@ void choose_output_format
   )
   {
     /* Determine the output field width for {VALUE}: */
-    fmt->sz_value = digits(in_maxval);
+    fmt->sz_value = (int32_t)digits(in_maxval);
 
     /* Determine the output precision and field width for {COUNT}: */
     uint64_t max_count = (max_wt_count / wt_maxval); /* Max count, truncated to int32_t. */
-    fmt->pr_count_abs = ((wt_maxval == 1) || (tot_wt_count == 0) ? 0 : digits(wt_maxval - 1)); 
-    fmt->sz_count_abs = digits(max_count) + (fmt->pr_count_abs > 0) + fmt->pr_count_abs; 
+    fmt->pr_count_abs = ((wt_maxval == 1) || (tot_wt_count == 0) ? 0 : (int32_t)digits(wt_maxval - 1)); 
+    fmt->sz_count_abs = (int32_t)digits(max_count) + (int32_t)(fmt->pr_count_abs > 0) + (int32_t)fmt->pr_count_abs; 
     
     /* Determine the output precision and field width for {COUNT_REL}: */
-    fmt->pr_count_rel = (tot_wt_count == max_wt_count ? 0 : digits(tot_wt_count - 1));
-    fmt->sz_count_rel = 1 + (fmt->pr_count_rel > 0) + fmt->pr_count_rel;
+    fmt->pr_count_rel = (tot_wt_count == max_wt_count ? 0 : (int32_t)digits(tot_wt_count - 1));
+    fmt->sz_count_rel = 1 + (int32_t)(fmt->pr_count_rel > 0) + fmt->pr_count_rel;
     
     /* Determine the output precision and field width for {ACCUM,MUCCA}: */
     /* The cumulative counts are half-integers divided by {wt_maxval}: */
     uint64_t tot_count = (tot_wt_count / wt_maxval); /* Total count, truncated to int32_t. */
-    fmt->pr_accum_abs = (wt_maxval == 1 ? 1 : digits(2*wt_maxval - 1));
-    fmt->sz_accum_abs = digits(tot_count) + (fmt->pr_accum_abs > 0) + fmt->pr_accum_abs;
+    fmt->pr_accum_abs = (wt_maxval == 1 ? 1 : (int32_t)digits((uint64_t)(2*wt_maxval - 1)));
+    fmt->sz_accum_abs = (int32_t)digits(tot_count) + (int32_t)(fmt->pr_accum_abs > 0) + fmt->pr_accum_abs;
     
     /* Determine the output precision and field width for {ACCUM_REL,MUCCA_REL}: */
     if (tot_wt_count == 0)
       { /* The cumulative counts are half-integers divided by {num_values}: */
-        fmt->pr_accum_rel = (num_values <= 1 ? 1 : digits(2*num_values - 1));
+        fmt->pr_accum_rel = (num_values <= 1 ? 1 : (int32_t)digits((uint64_t)(2*num_values - 1)));
         fmt->sz_accum_rel = 1 + (fmt->pr_accum_rel > 0) + fmt->pr_accum_rel;
       }
     else
       { /* The cumulative counts are half-integers divided by {tot_wt_count}: */
-        fmt->pr_accum_rel = (tot_wt_count <= 1 ? 1 : digits(2*tot_wt_count - 1));
-        fmt->sz_accum_rel = 1 + (fmt->pr_accum_rel > 0) + fmt->pr_accum_rel;
+        fmt->pr_accum_rel = (tot_wt_count <= 1 ? 1 : (int32_t)digits(2*tot_wt_count - 1));
+        fmt->sz_accum_rel = 1 + (int32_t)(fmt->pr_accum_rel > 0) + fmt->pr_accum_rel;
       }
   }
 
@@ -439,7 +439,7 @@ options_t *get_options(int32_t argc, char **argv)
     
     /* Allocate and parse ignored values: */
     o->ignore = bool_vec_new(PNM_FILE_MAX_MAXVAL);
-    for (int32_t v = 0; v < o->ignore.ne; v++) { o->ignore.e[v] = FALSE; }
+    for (uint32_t v = 0;  v < o->ignore.ne; v++) { o->ignore.e[v] = FALSE; }
     while (argparser_keyword_present(pp, "-ignore"))
       { int32_t v = (int32_t)argparser_get_next_int(pp, 0, PNM_FILE_MAX_MAXVAL);
         if (o->ignore.e[v])

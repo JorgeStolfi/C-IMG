@@ -1,8 +1,7 @@
 /* See ple_find.h */
-/* Last edited on 2007-05-09 08:27:07 by stolfi */
+/* Last edited on 2024-12-21 14:18:51 by stolfi */
 
-/* We need This to get {asprintf}. */
-#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <math.h>
 #include <values.h>
