@@ -1,5 +1,5 @@
 #! /bin/bash
-# Last edited on 2024-12-25 23:48:18 by stolfi
+# Last edited on 2024-12-31 07:36:54 by stolfi
 
 # Tests of ppmvquant
 
@@ -60,7 +60,7 @@ for space in rgb yuv; do
           fi
           floyd_op=( "-floyd" ${floyd} )
         fi
-        tag="${mode}-${space}-${palette}-${prog}"
+        tag="${space}-fs${floyd}-${palette}-${prog}"
         oname="out/${tag}"
         
         echo '===' ${tag} '===' 1>&2
@@ -73,7 +73,7 @@ for space in rgb yuv; do
         fi
       done
       
-      jtag="${mode}-${space}-${palette}"
+      jtag="${space}-fs${floyd}-${palette}"
       jout="out/${jtag}"
       pnmcat -td ${jout}-{pbm,old,new}.ppm > ${jout}.ppm
       pnmcat -td ${jout}-{pbm,old,new}-dif.pgm > ${jout}-dif.pgm
