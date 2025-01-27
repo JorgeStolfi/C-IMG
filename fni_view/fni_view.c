@@ -4,7 +4,7 @@
 
 #define PROG_C_COPYRIGHT "Copyright © 2005 Universidade Estadual Fluminense (UFF)."
 
-/* Last edited on 2024-12-23 09:09:26 by stolfi */
+/* Last edited on 2025-01-23 14:21:29 by stolfi */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
@@ -13,7 +13,9 @@
   "    [ -isMask {ISMASK} ] \\\n" \
   "    [ -colorize {VMIN} {VMAX} | -colorize auto ] \\\n" \
   "    [ -channel {CHAN} ] \\\n" \
-  "    [ -texture {TEXTURE_FILE} | -hist {HISTFLAG}  ] \\\n" \
+  "    [ -txFile {TXFILE} | -hist {HISTFLAG}  ] \\\n" \
+  "    [ -txChannels {TXCHAN}... ] \\\n" \
+  "    [ -verbose ] \\\n" \
   "    [ < ] {HEIGHT_FILE}"
 
 #define PROG_INFO \
@@ -28,9 +30,6 @@
   " height map.  Displays a selected channel of it" \
   " as a terrain in 3D or as a 3D bar histogram.\n" \
   "\n" \
-  "  If \"-texture\" is specified, reads also a second image from" \
-  " {TEXTURE_FILE}, and uses it asa texture map to colorize the terrain.\n" \
-  "\n" \
   "  The interface allows the user to move the camera around with the" \
   " mouse, and modify the view by typing single-charater commands to the window.\n" \
   "\n" \
@@ -43,8 +42,20 @@
   " values may be optionally magnified" \
   " by a scale factor before displaying.\n" \
   "\n" \
-  "  The texture image may have either the same dimensions as the" \
-  " height image, or exactly one column and one row less than it.  In the" \
+  "COLORIZATION\n" \
+  "  The terrain or histogram is colorized either by otaining, for each height" \
+  " value, either an RGB texture" \
+  " value, or a gray texture value and converting it" \
+  " to an RGB color by an internal colorizing" \
+  " palette.   The texture values (RGB or gray) can be" \
+  " obtained from specific channels of" \
+  " a separate texture image or from the" \
+  " currently displayed channel of the input image.  See" \
+  " the \"-txFile\" and \"-txChannels\" options below.\n" \
+  "\n" \
+  "  If a separate texture image is specified, it must have the same" \
+  " size as the input image, image, or (in terrain mode only) exactly one column" \
+  " and one row less than it.  In the" \
   " first case, the texture pixel in column {x}, row {y} is taken" \
   " as the color of the terrain above the unit square with" \
   " diagonal {(x-1/2,y-1/2)} and {(x+1/2,y+1/2)}.  In the" \
@@ -52,11 +63,9 @@
   " taken as the color of the unit-side square whose diagonal" \
   " corners are {(x,y)} and {(x+1,y+1)}.\n" \
   "\n" \
-  " If no texture map is specified, the terrain is colorized" \
-  " with colors computed from the sample values.\n" \
-  "\n" \
-  "  The input files may be in the PNM (PBM/PGM/PPM) format" \
-  " (see {uint16_image.h}) or in the  float-valued multi-channel" \
+  "  The input file (and the texture file, if any) may" \
+  " be in the PNM (PBM/PGM/PPM) format" \
+  " (see {uint16_image.h}) or in the float-valued multi-channel" \
   " image format (FNI) (see {float_image.h}).  If the" \
   " argument {HEIGHT_FILE} is \"-\" or omitted, the program reads it" \
   " from standard input, assuming the FNI format.\n" \
@@ -80,19 +89,27 @@
   " " sample_conv_0_1_isMask_false_INFO "  The default is \"-isMask F\". This" \
   " option does not affect the reading of PNM texture files.\n" \
   "\n" \
-  "  -texture {TEXTURE_FILE}\n" \
+  "  -txFile {TXFILE}\n" \
   "    Specifies the name of the FNI file containing the texture" \
-  " map.  If {TEXTURE_FILE} is \"-\", reads the texture map from" \
-  " standard input too (after the height map, if applicable).  See" \
-  " also the interactive keyboard command 't'.\n" \
+  " map.  See also the interactive keyboard command 't'.  If {TXFILE}" \
+  " is \"-\", reads the texture map from standard input too (after the height" \
+  " map, if applicable).  If omitted, the input image itself is used as the texture image.\n" \
   "\n" \
-  "    The texture map should have one column and one row" \
-  " less than the height map.\n" \
+  "  -txChannels {TX_CHAN}\n" \
+  "  -txChannels {TX_CHAN0} {TX_CHAN1} {TX_CHAN2}\n" \
+  "    This optional parameter specifies either one or three channels of the" \
+  " texture file (or of the input file, if no \"-txFile\" was specified).  If only" \
+  " one channel is specified, its sample values are converted to RGB colors using" \
+  " an internal colorizing palette.  If \"-txFile\" is given but \"-txChannels\" is" \
+  " omitted, assumes \"-txChannels 0 1 2\" if the texture file has three or more" \
+  " channels, and \"-txChannels 0\" if it has fewer than three.  If" \
+  " both \"-txFile\" and \"-txChannels\" are omitted, uses the channel" \
+  " of the input image that is currently being displayed.\n" \
   "\n" \
   "  -hist {HISTFLAG}\n" \
   "    If {HISTFLAG} is true (\"T\" or 1), the map is to be drawn" \
   " as an histogram, with each pixel as a horizontal square and vertical" \
-  " walls between adjacent pixels. In this case the \"-texture\" option" \
+  " walls between adjacent pixels. In this case the \"-txFile\" option" \
   " is ignored. If {HISTFLAG} is false (\"F\" or 0), draws values as a continuous" \
   " triangle mesh.  The default is \"-hist F\".  See" \
   " also the interactive keyboard command 'h'.\n" \
@@ -121,7 +138,7 @@
   "  -colorize auto\n" \
   "    Specifies the range of sample values to assume when computing" \
   " pseudocolors.  This argument is used only if the texture map is" \
-  " omitted or turned off.  In the first option, samples" \
+  " omitted or turned off, or has a single channel.  In the first option, samples" \
   " in the range {[VMIN _ VMAX]} are mapped to colors of an appropriate" \
   " pseudocolor scale; samples outside that range are mapped to the end" \
   " points of the scale.  The \"auto\" option will set {VMIN} and {VMAX} to" \
@@ -129,6 +146,9 @@
   " samples in the current channel.  The default is \"-colorize auto\".  The" \
   " color mapping is not affected by the \"-range\" and \"-scale\" arguments" \
   " or the 's' and 'S' command keys.\n" \
+  "\n" \
+  "  -verbose\n" \
+  "    If present, the program writes details of the file input and processing.\n" \
   "\n" \
   "VIEWING INTERACTION\n" \
   "  The viewing direction can be changed by dragging with the" \
@@ -168,6 +188,8 @@
   "  aug/2010 by Jorge Stolfi: Added \"-isMask\" option.\n" \
   "  jan/2011 by Jorge Stolfi: Added \"-hist\" option.\n" \
   "  oct/2022 by Jorge Stolfi: Added \"-range\" option.\n" \
+  "  jan/2025 by Jorge Stolfi: Added \"-txChannels\" option.\n" \
+  "  jan/2025 by Jorge Stolfi: Added \"-verbose\" option.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \
@@ -178,6 +200,7 @@
   argparser_help_info_STANDARD_RIGHTS
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
 #include <values.h>
@@ -189,21 +212,18 @@
 #include <GL/glut.h>
 
 #include <argparser.h>
+#include <affirm.h>
 #include <float_image.h>
 #include <float_image_read_pnm.h>
 #include <sample_conv.h>
 #include <frgb.h>
-#include <frgb_path.h>
 #include <bool.h>
 #include <jsfile.h>
 #include <r3.h>
 
 #include <fvw_GL.h>
 #include <fvw_paint.h>
-#include <fvw_paint_node_colored.h>
-#include <fvw_paint_cell_colored.h>
-#include <fvw_paint_self_colored.h>
-#include <fvw_paint_self_colored_hist.h>
+#include <fvw_paint_height_map.h>
 
 #define INF INFINITY
 
@@ -221,8 +241,6 @@ typedef struct options_range_t
     float vmax;     /* Max user-specified sample value, or {NAN}. */
   } options_range_t;
   /* User options for heights caling or colormapping pixel ranges. */
- 
-options_range_t fvw_parse_options_range(argparser_t *pp, char *keyword);
 
 typedef struct options_t
   { char* height_file;        /* Name of height map. */
@@ -230,12 +248,14 @@ typedef struct options_t
     options_range_t range;    /* Height range options for scaling. */
     double scale;             /* Additional height scale factor. */
     /* Colorizing options: */
-    char* texture_file;       /* Name of texture map, or NULL if not specified. */
+    char* txFile;             /* Name of texture map, or NULL if not specified. */
+    int32_t txChannels[3];    /* Texture map channels to use, or {-1} if not specified. */
     options_range_t colorize; /* Height range options for color mapping. */
     /* Other options: */
-    uint32_t channel;          /* Initial channel to display. */
-    bool_t isMask;        /* TRUE if input samples are to be converted as in a mask. */
-    bool_t hist;          /* TRUE specifies histogram-like plot. */
+    uint32_t channel;         /* Initial channel to display. */
+    bool_t isMask;            /* True if input samples are to be converted as in a mask. */
+    bool_t hist;              /* True specifies histogram-like plot. */
+    bool_t verbose;           /* True asks for diagnostics of files etc. */
   } options_t;
 
 /* GLOBAL VARIABLES USED BY GL METHODS */
@@ -247,17 +267,6 @@ typedef struct fvw_state_range_t
     float_vec_t vmax;      /* Low pix values per channel or {NAN} if undef (mutable). */
   } fvw_state_range_t;
   /* Specifies range parameters for height scaling or colormapping. */
-
-fvw_state_range_t fvw_state_range_make(options_range_t *orn, int32_t NC);
-  /* Creates a {fvw_state_range_t} from the user options {orn} for
-    a height map image with {NC} channels. */
-  
-void fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP);  
-  /* Obtains the height scaling or colormapping pixel range {*vminP} and {*vmaxP} for channel {c}
-    of the image {ht}.  If the range has been previously computed and saved in the record {srn},
-    takes it from there.  Otherwise, if {srn} has a user-specified range, uses that range.
-    Otherwise recomputes the range from the pixel values of {ht}. Either way, saves these
-    values in the {srn} record for future use. */
 
 typedef struct fvw_state_t 
   { 
@@ -279,9 +288,7 @@ typedef struct fvw_state_t
     double_vec_t ht_mag;      /* Current extra scale factor per channel, or NAN if undefined (mutable). */
     
     /* Texture map: */
-    float_image_t *tx;   /* Texture image (const). */
-    bool_t node_tx;      /* TRUE if {tx} is suitable for node-painting (const). */
-    bool_t cell_tx;      /* TRUE if {tx} is suitable for cell-painting (const). */
+    fvw_texture_t *tx;   /* Texture information. */
     bool_t texturize;    /* When TRUE, use texture map (mutable). */
     
     /* Reference pixel values for colormapping: */
@@ -302,24 +309,50 @@ typedef struct fvw_state_t
     
     /* Mouse state: */
     int32_t mouse_x,mouse_y; /* Position of last mouse event (mutable). */
+    
+    /* Verbosity and diagnostics: */
+    bool_t verbose; /* Print informative messages. */
   } fvw_state_t;
 
 static fvw_state_t *fvw_state = NULL; /* The state displayed in the GL window. */
 
 /* INTERNAL PROTOTYPES */
+ 
+options_range_t fvw_parse_options_range(argparser_t *pp, char *keyword);
+
+fvw_state_range_t fvw_state_range_make(options_range_t *orn, int32_t NC);
+  /* Creates a {fvw_state_range_t} from the user options {orn} for
+    a height map image with {NC} channels. */
 
 fvw_state_t *fvw_create_state(options_t *o);
   /* Creates and initializes a window data record, suitable for use
     used by the methods {fvw_display_method} etc. */
 
-float_image_t *fvw_read_image(char *name, bool_t isMask, int32_t *NCP, int32_t *NXP, int32_t *NYP);
+fvw_texture_t* fvw_make_texture_record(options_t *o, float_image_t *ht);
+  /* Creates a {fvw_texture_t} from options including {o.txFile}, {o.txChannels}, {o.colorize}.
+    If a texture file was specified, checks if its size is compatible with the height map {ht}.
+    If no texture file was specified, but texture channels were, uses the height map {ht}.
+    If neither texture file nor texture channels were specified, returns {NULL}. */
+  
+void fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP);  
+  /* Obtains the height scaling or colormapping pixel range {*vminP} and {*vmaxP} for channel {c}
+    of the image {ht}.  If the range has been previously computed and saved in the record {srn},
+    takes it from there.  Otherwise, if {srn} has a user-specified range, uses that range.
+    Otherwise recomputes the range from the pixel values of {ht}. Either way, saves these
+    values in the {srn} record for future use. */
+
+void  fvw_get_sample_range_from_image(float_image_t *timg, int32_t c, float *vmin_P, float *vmax_P);
+  /* Gets the min and max sample values in channel {c} of {timg}, fudging
+    it if is trivial or empty. */
+
+float_image_t *fvw_read_image(char *name, bool_t isMask, int32_t *NCP, int32_t *NXP, int32_t *NYP, bool_t verbose);
   /* Reads a float image, in the format of {float_image_write} (if the
     {name} ends in ".fni") or in PBM/PGM/PPM format (if {name} ends in
     ".pbm", ".pgm", ".ppm", ".pnm"). If {name} is "-", reads from
     {stdin} assuming {float_image_write} format. The procedure also
     sets {*NCP,*NXP,*NYP} to the number of channels, columns, and rows.*/
 
-float_image_t *fvw_read_float_image(char *name);
+float_image_t *fvw_read_float_image(char *name, bool_t verbose);
   /* Reads a float image, in the format of {float_image_write}, from
     the named file (or {stdin} if {name} is "-"). */
 
@@ -343,24 +376,6 @@ void fvw_set_lights(fvw_state_t *w);
 
 /* MEDIUM-LEVEL PAINTING */
 
-void fvw_paint_height_map
-  ( float_image_t *ht, 
-    uint32_t c, 
-    double ht_scale, 
-    float cm_vmin,
-    float cm_vmax,
-    bool_t hist,
-    float_image_t *tx,
-    bool_t node_tx,
-    bool_t cell_tx
-  );
-  /* Paints the height map consisting of channel {c} of image {ht},
-    with the Z coordinate being the sample values scaled by {ht_scale}.
-    If {tx} is not null, it must have either the same size as {ht}, or
-    one pixel less in both axes; in either case, paints the terrain
-    with color {tx}. If {tx} is NULL, paints with colors based on the
-    unscaled sample values relative to the unscaled sample range {[cm_vmin _ cm_vmax]}.
-    If {hist} is true, paints as a histogram (and ignores {tx}). */
 
 void fvw_paint_reference_plane(fvw_state_t *w, float z);
   /* Paints a horizontal rectangle at height {z} 
@@ -419,52 +434,37 @@ fvw_state_t *fvw_create_state(options_t *o)
     w->window_VSize = fvw_GL_default_window_VSize;
 
     /* Read height map, check and save the channel index: */
-    int32_t ht_NC, ht_NX, ht_NY;
-    w->ht = fvw_read_image(o->height_file, o->isMask, &ht_NC, &ht_NX, &ht_NY);
-    fprintf(stderr, "height map has %d channels, %d columns, %d rows\n", ht_NC, ht_NX, ht_NY); 
-    demand(ht_NC > 0, "invalid num of channels in height map");
+    int32_t NC_ht, NX_ht, NY_ht;
+    w->ht = fvw_read_image(o->height_file, o->isMask, &NC_ht, &NX_ht, &NY_ht, o->verbose);
+    if (o->verbose) { fprintf(stderr, "height map has %d channels, %d columns, %d rows\n", NC_ht, NX_ht, NY_ht); }
+    demand(NC_ht > 0, "invalid num of channels in height map");
     
     /* The initial channel is user-specified: */
     w->channel = o->channel;
-    if ((w->channel < 0) || (w->channel >= ht_NC))
+    if ((w->channel < 0) || (w->channel >= NC_ht))
       { fprintf(stderr, "invalid height map channel %d, using 0\n", w->channel);
         w->channel = 0;
       }
 
     /* Pixel ranges for height scaling: */
-    w->ht_range = fvw_state_range_make(&(o->range), ht_NC);
+    w->ht_range = fvw_state_range_make(&(o->range), NC_ht);
 
     /* Extra height scaling factors: */
     w->def_ht_mag = o->scale;
-    w->ht_mag = double_vec_new((uint32_t)ht_NC);
-    for (uint32_t c = 0;  c < ht_NC; c++) { w->ht_mag.e[c] = NAN; }
+    w->ht_mag = double_vec_new((uint32_t)NC_ht);
+    for (uint32_t c = 0;  c < NC_ht; c++) { w->ht_mag.e[c] = NAN; }
 
-    /* Pixel ranges for color mapping: */
-    w->cm_range = fvw_state_range_make(&(o->colorize), ht_NC);
+    /* Pixel ranges for color mapping, if not texturized: */
+    w->cm_range = fvw_state_range_make(&(o->colorize), NC_ht);
     
     /* The histogram-style flag is initially obtained from the command line: */
     w->hist = o->hist;
-     
-    /* Read texture map, if any,and check its size: */
-    int32_t tx_NC, tx_NX, tx_NY; /* Channels, columns and rows of texture map. */
-    if (o->texture_file != NULL)
-      { bool_t tx_isMask = FALSE; /* Assume that texture has smooth pixel distr. */
-        w->tx = fvw_read_image(o->texture_file, tx_isMask, &tx_NC, &tx_NX, &tx_NY);
-        fprintf(stderr, "texture map has %d channels, %d columns, %d rows\n", tx_NC, tx_NX, tx_NY); 
-        demand((tx_NC == 1) || (tx_NC == 3), "invalid num of channels in texture map");
-        w->node_tx = (tx_NX == ht_NX) && (tx_NY == ht_NY);
-        w->cell_tx = (tx_NX == ht_NX-1) && (tx_NY == ht_NY-1);
-        demand(w->node_tx || w->cell_tx, "texture file has wrond size");
-        w->texturize = TRUE;
-      }
-    else
-      { w->tx = NULL; 
-        w->texturize = w->node_tx = w->cell_tx = FALSE;
-      }
+    w->tx = fvw_make_texture_record(o, w->ht);
+    w->texturize = (w->tx != NULL); /* If there is texture, start texturized. */
     
     /* Nominal radius of data: */
-    double SZX = (double)ht_NX;
-    double SZY = (double)ht_NY;
+    double SZX = (double)NX_ht;
+    double SZY = (double)NY_ht;
     w->RAD = sqrt((SZX*SZX + SZY*SZY)/2);
     
     /* Do not show reference planes initially: */
@@ -476,7 +476,115 @@ fvw_state_t *fvw_create_state(options_t *o)
     w->elevation = 30;
     w->distance = (GLfloat)(2*w->RAD);
     
+    w->verbose = o->verbose;
+    
     return w;
+  }
+    
+fvw_texture_t* fvw_make_texture_record(options_t *o, float_image_t *ht)
+  { 
+    /* Get size of height map: */
+    int32_t NC_ht, NX_ht, NY_ht;
+    float_image_get_size(ht, &NC_ht, &NX_ht, &NY_ht);
+
+    fvw_texture_t *tx = NULL;
+    int32_t NC_tx, NX_tx, NY_tx; /* Channels, cols and rows of texture map. */
+    
+    if (o->txFile != NULL)
+      { /* A texture file was specified: */
+        tx = talloc(1, fvw_texture_t);
+        /* Read texture map, if any,and check its size: */
+        bool_t tx_isMask = FALSE; /* Assume that texture has smooth pixel distr. */
+        tx->timg = fvw_read_image(o->txFile, tx_isMask, &NC_tx, &NX_tx, &NY_tx, o->verbose);
+        if (o->verbose) { fprintf(stderr, "texture map has %d channels, %d columns, %d rows\n", NC_tx, NX_tx, NY_tx); }
+        if ((NX_tx == NX_ht) && (NY_tx == NY_ht))
+          { tx->cell = FALSE; }
+        else if ((NX_tx == NX_ht-1) && (NY_tx == NY_ht-1))
+          { tx->cell = TRUE; }
+        else
+          { demand(FALSE, "texture file has wrong size"); }
+      }
+    else if (o->txChannels[0] != -1)
+      { /* Texture channels were specified but no texture file was, use height map: */
+        if (o->verbose) { fprintf(stderr, "using the height map as texture image\n"); }
+        tx = talloc(1, fvw_texture_t);
+        tx->timg = ht; 
+        NC_tx = NC_ht; NX_tx = NX_ht; NY_tx = NY_ht;
+        tx->cell = FALSE;
+      }
+    else
+      { /* Neither a texture file not texture channels were specified, no texture: */
+        tx = NULL; 
+        NC_tx = -1; NX_tx = -1; NY_tx = -1;
+      }
+      
+    if (tx != NULL)
+      { /* Set the texture channels to use: */
+        for (int32_t k = 0; k < 3; k++)
+          { int32_t ch = o->txChannels[k];
+            demand((ch == -1) || ((ch >= 0) && (ch < NC_tx)), "invalid texture channel");
+            tx->chans[k] = ch;
+          }
+
+        if (tx->chans[0] == -1)
+          { /* There is a tx image but channels were not specified, provide defaults: */
+            tx->chans[0] = 0;
+            if (NC_tx >= 3) { tx->chans[1] = 1; tx->chans[2] = 2; }
+          }
+          
+        demand(tx->chans[0] != -1, "must specify at least 1 texture channel");
+        demand((tx->chans[1] == -1) == (tx->chans[2] == -1), "must specify 1 or 3 texture channels");
+        
+        if (tx->chans[1] == -1)
+          { /* Define {tx.vmin,tx.vmax} for pseudocolor generation: */
+            if (o->colorize.vauto)
+              { fvw_get_sample_range_from_image(tx->timg, tx->chans[0], &(tx->vmin), &(tx->vmax)); }
+            else
+              { tx->vmin = o->colorize.vmin;
+                tx->vmax = o->colorize.vmax;
+              }
+            if (o->verbose) { fprintf(stderr, "texture map colorization range = [ %15.7e _ %15.7e ]\n", tx->vmin, tx->vmax); }
+          }
+        else
+          { /* NO need for {tx.vmin,tx.vmax} */ }
+      }
+    return tx;
+  }
+    
+void fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP)
+  { float vmin = srn->vmin.e[c];
+    float vmax = srn->vmax.e[c];
+    if (isnan(vmin) || isnan(vmax))
+      { if (isnan(srn->def_vmin) || isnan(srn->def_vmax))
+          { fvw_get_sample_range_from_image(ht, (int32_t)c, &vmin, &vmax); }
+        else
+          { vmin = srn->def_vmin;
+            vmax = srn->def_vmax;
+          }
+        srn->vmin.e[c] = vmin; 
+        srn->vmax.e[c] = vmax; 
+      }
+    assert(! isnan(vmin));
+    assert(! isnan(vmax));
+    (*vminP) = vmin;
+    (*vmaxP) = vmax;
+  }
+              
+void  fvw_get_sample_range_from_image(float_image_t *timg, int32_t c, float *vmin_P, float *vmax_P)
+  { 
+    float vmin = +INF;
+    float vmax = -INF;
+    float_image_update_sample_range(timg, c, &(vmin), &(vmax));
+    if (vmin > vmax)
+      { vmin = -1.0; vmax = +1.0; }
+    else 
+      { float vdel = vmax - vmin;
+        float vmag = fmaxf(fabsf(vmax), fabsf(vmin));
+        float eps = (float)(fmax(1.0e-5*vmag, 1.0e-5));
+        if (vdel < 2*eps) { vmin -= eps; vmax += eps; }
+      }
+    (*vmin_P) = vmin;
+    (*vmax_P) = vmax;
   }
 
 fvw_state_range_t fvw_state_range_make(options_range_t *orn, int32_t NC)
@@ -491,44 +599,18 @@ fvw_state_range_t fvw_state_range_make(options_range_t *orn, int32_t NC)
       }
     return srn;
   }
-    
-void fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP)
-  { float vmin = srn->vmin.e[c];
-    float vmax = srn->vmax.e[c];
-    if (isnan(vmin) || isnan(vmax))
-      { if (isnan(srn->def_vmin) || isnan(srn->def_vmax))
-          { vmin = +INF;
-            vmax = -INF;
-            float_image_update_sample_range(ht, (int32_t)c, &vmin, &vmax);
-            if (vmin > vmax)
-              { /* There are no valid samples: */
-                vmin = 0; vmax = 0;
-              }
-          }
-        else
-          { vmin = srn->def_vmin;
-            vmax = srn->def_vmax;
-          }
-        srn->vmin.e[c] = vmin; 
-        srn->vmax.e[c] = vmax; 
-      }
-    assert(! isnan(vmin));
-    assert(! isnan(vmax));
-    (*vminP) = vmin;
-    (*vmaxP) = vmax;
-  }
 
-float_image_t *fvw_read_image(char *name, bool_t isMask, int32_t *NCP, int32_t *NXP, int32_t *NYP)
+float_image_t *fvw_read_image(char *name, bool_t isMask, int32_t *NCP, int32_t *NXP, int32_t *NYP, bool_t verbose)
   { float_image_t *fim = NULL;
     /* Decide type by file name: */
     uint32_t len = (uint32_t)strlen(name);
     if ((strcmp(name,"-") == 0) || ((len > 4) && (strcmp(name+len-4,".fni") == 0)))
       { /* Float image file: */
-        fim = fvw_read_float_image(name);
+        fim = fvw_read_float_image(name, verbose);
       }
     else if ((len > 4) && (name[len-4] == '.') && (name[len-3] == 'p') && (name[len-1] == 'm'))
       { /* PBM/PGM/PPM file: */
-        fim = float_image_read_pnm_named(name, isMask, 1.0, 0.0, TRUE, TRUE, TRUE);
+        fim = float_image_read_pnm_named(name, isMask, 1.0, 0.0, TRUE, verbose, verbose);
       }
     else
       { fprintf(stderr, "file name = \"%s\"\n", name);
@@ -541,8 +623,8 @@ float_image_t *fvw_read_image(char *name, bool_t isMask, int32_t *NCP, int32_t *
     return fim;
   }
 
-float_image_t *fvw_read_float_image(char *name)
-  { FILE *rd = open_read(name, TRUE);
+float_image_t *fvw_read_float_image(char *name, bool_t verbose)
+  { FILE *rd = open_read(name, verbose);
     float_image_t *fim = float_image_read(rd);
     if (rd != stdin) { fclose(rd); }
     return fim;
@@ -556,8 +638,8 @@ void fvw_paint_everything(fvw_state_t *w)
     glEnable(GL_DEPTH_TEST);
     
     /* Get  the height image dimensons: */
-    int32_t ht_NC, ht_NX, ht_NY;
-    float_image_get_size(w->ht, &ht_NC, &ht_NX, &ht_NY);
+    int32_t NC_ht, NX_ht, NY_ht;
+    float_image_get_size(w->ht, &NC_ht, &NX_ht, &NY_ht);
     
     /* Get the channel {c} to display: */
     uint32_t c = w->channel;
@@ -565,6 +647,7 @@ void fvw_paint_everything(fvw_state_t *w)
     /* Recompute the height scale range if needed: */
     float ht_vmin, ht_vmax;
     fvw_get_vrange(c, &(w->ht_range), w->ht, &(ht_vmin), &(ht_vmax));
+    if (w->verbose) { fprintf(stderr, "channel range = [ %15.7e _ %15.7e ]\n", ht_vmin, ht_vmax); }
     double ht_vdif = ((double)ht_vmax) - ((double)ht_vmin);
     double ht_vmid = (((double)ht_vmin) + ((double)ht_vmax))/2;
     
@@ -581,14 +664,15 @@ void fvw_paint_everything(fvw_state_t *w)
     
     /* Compute the total height scale factor: */
     double ht_scale = (ht_vdif == 0.0 ? 1.0 : ht_mag/ht_vdif);
+    if (w->verbose) { fprintf(stderr, "height scale factor = %15.7e\n", ht_scale); }
     
     /* Recompute the color scale range if needed: */
     float cm_vmin, cm_vmax;
-    fvw_get_vrange(c, &(w->cm_range), w->ht, &(cm_vmin), &(cm_vmax));
+    fvw_get_sample_range_from_image(w->ht, (int32_t)c, &(cm_vmin), &(cm_vmax));
     
     /* Compute the center of attention: */
-    GLfloat ctrx = (GLfloat)((double)ht_NX/2);
-    GLfloat ctry = (GLfloat)((double)ht_NY/2);
+    GLfloat ctrx = (GLfloat)((double)NX_ht/2);
+    GLfloat ctry = (GLfloat)((double)NY_ht/2);
     GLfloat ctrz = (GLfloat)(ht_scale * ht_vmid);
 
     /* Compute observer's position: */
@@ -625,8 +709,10 @@ void fvw_paint_everything(fvw_state_t *w)
 
     /* Paint the terrain: */
     fvw_paint_height_map
-      ( w->ht, c, ht_scale, cm_vmin, cm_vmax, w->hist,
-        (w->texturize ? w->tx : NULL), w->node_tx, w->cell_tx
+      ( w->ht, c, ht_scale,
+        w->hist, 
+        (w->texturize ? w->tx : NULL),
+        cm_vmin, cm_vmax
       );
     
     glPopMatrix();
@@ -690,62 +776,18 @@ void fvw_set_lights(fvw_state_t *w)
     glLightfv(GL_LIGHT0, GL_POSITION, pos);
   }
 
-void fvw_paint_height_map
-  ( float_image_t *ht, 
-    uint32_t c, 
-    double ht_scale, 
-    float cm_vmin,
-    float cm_vmax,
-    bool_t hist,
-    float_image_t *tx,
-    bool_t node_tx,
-    bool_t cell_tx
-  )
-  {
-    if (ht == NULL) { return; }
-    if (fvw_debug_paint) { fprintf(stderr, "+ %s\n", __FUNCTION__); }
-
-    /* Get  the height image dimensons: */
-    int32_t ht_NC, ht_NX, ht_NY;
-    float_image_get_size(ht, &ht_NC, &ht_NX, &ht_NY);
-
-    /* Set surface finish: */
-    glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
-    glEnable(GL_COLOR_MATERIAL);
-    
-    if (hist)
-      { /* Histogram style, paint with height-derived colors, no skirt: */
-        fvw_paint_self_colored_hist_height_map(ht, c, ht_scale, cm_vmin, cm_vmax, FALSE);
-      }
-    else if (tx == NULL)
-      { /* No texture map, paint with height-derived colors: */
-        fvw_paint_self_colored_height_map(ht, c, ht_scale, cm_vmin, cm_vmax);
-      }
-    else if (cell_tx)
-      { /* Texture colors are associated with grid cells: */
-        fvw_paint_cell_colored_height_map(ht, c, ht_scale, tx);
-      }
-    else if (node_tx)
-      { /* Texture colors are associated with grid corners: */ 
-        fvw_paint_node_colored_height_map(ht, c, ht_scale, tx);
-      }
-    else
-      { assert(FALSE); }
-    glDisable(GL_COLOR_MATERIAL);
-    if (fvw_debug_paint) { fprintf(stderr, "- %s\n", __FUNCTION__); }
-  }
 
 void fvw_paint_reference_plane(fvw_state_t *w, float z)
   {
     /* Get the height image dimensons: */
-    int32_t ht_NC, ht_NX, ht_NY;
-    float_image_get_size(w->ht, &ht_NC, &ht_NX, &ht_NY);
+    int32_t NC_ht, NX_ht, NY_ht;
+    float_image_get_size(w->ht, &NC_ht, &NX_ht, &NY_ht);
     
     /* X and Y extents are those of the bitmap: */
     float xmin = 0.0;
-    float xmax = (float)ht_NX;
+    float xmax = (float)NX_ht;
     float ymin = 0.0;
-    float ymax = (float)ht_NY;
+    float ymax = (float)NY_ht;
     
     glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
     glEnable(GL_COLOR_MATERIAL);
@@ -839,24 +881,28 @@ void fvw_keyboard_method(unsigned char key, int32_t x, int32_t y)
         case 'Z':
           /* Zoom in, down to a limit: */
           w->distance = (GLfloat)fmax(w->distance*fvw_zoom_step_ratio, w->RAD/16);
+          if (w->verbose) { fprintf(stderr, "viewing distance = %15.7e\n", w->distance); }
           glutPostRedisplay();
           break;
 
         case 'z':
           /* Zoom out, up to a limit: */
           w->distance = (GLfloat)fmin(w->distance/fvw_zoom_step_ratio, w->RAD*16);
+          if (w->verbose) { fprintf(stderr, "viewing distance = %15.7e\n", w->distance); }
           glutPostRedisplay();
           break;
 
         case 'S':
           /* Increase extra height scale factor: */
           w->ht_mag.e[w->channel] *= fvw_ht_scale_step_ratio;
+          if (w->verbose) { fprintf(stderr, "extra scale factor = %15.7e\n", w->ht_mag.e[w->channel]); }
           glutPostRedisplay();
           break;
 
         case 's':
           /* Reduce extra height scale factor: */
           w->ht_mag.e[w->channel] /= fvw_ht_scale_step_ratio;
+          if (w->verbose) { fprintf(stderr, "extra scale factor = %15.7e\n", w->ht_mag.e[w->channel]); }
           glutPostRedisplay();
           break;
 
@@ -864,6 +910,7 @@ void fvw_keyboard_method(unsigned char key, int32_t x, int32_t y)
           /* Cycle through channels of height map: */
           { uint32_t NC = (uint32_t)w->ht->sz[0]; 
             w->channel = (w->channel + 1) % NC;
+            if (w->verbose) { fprintf(stderr, "showing channel %d\n", w->channel); }
           }
           glutPostRedisplay();
           break;
@@ -883,6 +930,7 @@ void fvw_keyboard_method(unsigned char key, int32_t x, int32_t y)
             assert((c >= 0) && (c <= 9));
             int32_t NC = (int32_t)w->ht->sz[0];
             w->channel = (uint32_t)(c < NC ? c : NC-1);
+            if (w->verbose) { fprintf(stderr, "showing channel %d\n", w->channel); }
           }
           glutPostRedisplay();
           break;
@@ -961,44 +1009,47 @@ options_t *fvw_parse_options(int32_t argc, char **argv)
     argparser_set_info(pp, PROG_INFO);
     argparser_process_help_info_options(pp);
     
-    /* Allocate the program's option record: */
     options_t *o = (options_t *)malloc(sizeof(options_t)); 
     
-    /* Parse the texture map name: */
-    if (argparser_keyword_present(pp, "-texture"))
-      { o->texture_file = argparser_get_next(pp); }
+    if (argparser_keyword_present(pp, "-txFile"))
+      { o->txFile = argparser_get_next(pp); }
     else
-      { o->texture_file = NULL; }
+      { o->txFile = NULL; }
+    
+    for (int32_t k = 0; k < 3; k++) { o->txChannels[k] = -1; }
+    if (argparser_keyword_present(pp, "-txChannels"))
+      { o->txChannels[0] = (int32_t)argparser_get_next_int(pp, 0, INT32_MAX);
+        if (argparser_next_is_number(pp))
+          { o->txChannels[1] = (int32_t)argparser_get_next_int(pp, 0, INT32_MAX);
+            o->txChannels[2] = (int32_t)argparser_get_next_int(pp, 0, INT32_MAX);
+          }
+      }
 
-    /* Parse the initial channel index to display: */
     if (argparser_keyword_present(pp, "-channel"))
       { o->channel = (uint32_t)argparser_get_next_int(pp, 0, float_image_max_size-1); }
     else
       { o->channel = 0; }
 
-    /* Parse the reference scaling range: */
     o->range = fvw_parse_options_range(pp, "-range");
     
-    /* Parse the initial scale to display: */
     if (argparser_keyword_present(pp, "-scale"))
       { o->scale = argparser_get_next_double(pp, -DBL_MAX, +DBL_MAX); }
     else
       { o->scale = 1.00; }
 
-    /* Parse the integer decoding options: */
     if (argparser_keyword_present(pp, "-isMask"))
       { o->isMask = argparser_get_next_bool(pp); }
     else
       { o->isMask = FALSE; }
     
-    /* Parse the histogram style option: */
     if (argparser_keyword_present(pp, "-hist"))
       { o->hist = argparser_get_next_bool(pp); }
     else
       { o->hist = FALSE; }
     
-    /* Parse the colormapping range: */
     o->colorize = fvw_parse_options_range(pp, "-colorize");
+    
+    o->verbose = argparser_keyword_present(pp, "-verbose");
 
     /* Go to the positional arguments: */
     argparser_skip_parsed(pp);

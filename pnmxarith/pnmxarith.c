@@ -2,9 +2,9 @@
 #define PROG_DESC "perform arithmetic on two PBM/PGM/PPM image files"
 #define PROG_VERS "2.0"
 
+/* Last edited on 2025-01-17 08:50:39 by stolfi */
 /* Copyright © 1989, 1991 by Jef Poskanzer.
 ** See end of file for full copyright and (no)warranty notice.
-** Last edited on 2017-10-26 18:48:56 by stolfilocal
 */
 
 #define PROG_HELP \
@@ -112,6 +112,7 @@
   argparser_help_info_STANDARD_RIGHTS
 
 #include <stdio.h>
+#include <stdint.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <math.h>
@@ -144,10 +145,10 @@ typedef struct options_t
 
 /* INTERNAL PROTOTYPES */
 
-options_t *parse_options(int argc, char **argv);
+options_t *parse_options(int32_t argc, char **argv);
   /* Parses the command line arguments and packs them as an {options_t}. */
 
-int main(int argc,char** argv);
+int32_t main(int32_t argc,char** argv);
 
 /* Compute "a/b" scaled by "maxv". */
 #define XELDIV(a,b,maxv) \
@@ -157,13 +158,13 @@ extern double strtod(const char *, char **);
 
 /* IMPLEMENTATIONS */
 
-int main(int argc, char** argv)
+int32_t main(int32_t argc, char** argv)
   {
     options_t *o = parse_options(argc, argv);
 
     /* Parameters of image file 1: */
     FILE* ifp1; 
-    int rows1, cols1, chns1;
+    uint32_t rows1, cols1, chns1;
     uint16_t maxval1;
     bool_t raw1, bits1;
     pnm_format_t format1;
@@ -172,7 +173,7 @@ int main(int argc, char** argv)
     
     /* Parameters of image file 2: */
     FILE* ifp2;
-    int rows2, cols2, chns2;
+    uint32_t rows2, cols2, chns2;
     uint16_t maxval2;
     bool_t raw2, bits2;
     pnm_format_t format2;
@@ -205,9 +206,9 @@ int main(int argc, char** argv)
 
     /* Select output maxval and format: */
     FILE *ifp3;
-    int cols3 = cols1;
-    int rows3 = rows1;
-    int chns3 = (chns1 > chns2 ? chns1 : chns2);
+    uint32_t cols3 = cols1;
+    uint32_t rows3 = rows1;
+    uint32_t chns3 = (chns1 > chns2 ? chns1 : chns2);
     uint16_t maxval3 = (maxval1 > maxval2 ? maxval1 : maxval2);
     bool_t raw3, bits3;
     pnm_format_t format3;
@@ -238,78 +239,78 @@ int main(int argc, char** argv)
     double fscale = o->scale;
     double foffset = o->offset;
     
-    int row, col, c;
-    uint16_t *x1P;
-    uint16_t *x2P;
-    uint16_t *x3P;
-    for (row = 0; row < rows3; ++row)
+    for (uint32_t row = 0; row < rows3; ++row)
       {
         pnm_read_pixels(ifp1, smp1, cols1, chns1, maxval1, raw1, bits1);
         if (ifp2 != NULL)
           { pnm_read_pixels(ifp2, smp2, cols2, chns2, maxval2, raw2, bits2); }
 
-        for (col = 0, x1P = smp1, x2P = smp2, x3P = smp3; col < cols1; ++col)
+        uint16_t *x1P = smp1;
+        uint16_t *x2P = smp2;
+        uint16_t *x3P = smp3;
+    
+        for (uint32_t col = 0; col < cols1; ++col)
           {
             /* Get samples from image 1 and promote to {chns3} channels: */
-            for (c = 0; c < chns1; c++) { v1[c] = (*x1P)/scale1; x1P++; }
-            for (c = chns1; c < chns3; c++) { v1[c] = v1[0]; }
+            for (uint32_t c = 0; c < chns1; c++) { v1[c] = (*x1P)/scale1; x1P++; }
+            for (uint32_t c = chns1; c < chns3; c++) { v1[c] = v1[0]; }
 
             /* Get samples from image 2 and promote to {chns3} channels: */
-            for (c = 0; c < chns2; c++) { v2[c] = (*x2P)/scale2; x2P++; }
-            for (c = chns2; c < chns3; c++) { v2[c] = v2[0]; }
+            for (uint32_t c = 0; c < chns2; c++) { v2[c] = (*x2P)/scale2; x2P++; }
+            for (uint32_t c = chns2; c < chns3; c++) { v2[c] = v2[0]; }
             
             /* Apply operation: */
             switch (o->function)
               {
                 case '+':
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { v3[c] = v1[c] + v2[c]; }
                   break;
 
                 case '-':
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { v3[c] = v1[c] - v2[c]; }
                   break;
 
                 case 'M':  /* alpha-beta mix */
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { v3[c] = falpha*v1[c] + fbeta*v2[c]; }
                   break;
 
                 case '*':
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { v3[c] = v1[c] * v2[c]; }
                   break;
 
                 case '/':
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { v3[c] = (v2[c] == 0 ? NAN : v1[c] / v2[c]); }
                   break;
 
                 case 'D': /* Absolute difference: */
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { v3[c] = fabs(v1[c] - v2[c]); }
                   break;
 
                 case '2': /* Diff squared: */
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { double d = v1[c] - v2[c]; v3[c] = d*d; }
                   break;
 
                 case 'R':
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { double d = v1[c] + v2[c];
                       v3[c] = (d == 0 ? 0.5 : v1[c] / d);
                     }
                   break;
 
                 case 'X':
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { v3[c] = (v1[c] > v2[c] ? v1[c] : v2[c]); }
                   break;
 
                 case 'N':
-                  for (c = 0; c < chns3; c++) 
+                  for (uint32_t c = 0; c < chns3; c++) 
                     { v3[c] = (v1[c] < v2[c] ? v1[c] : v2[c]); }
                   break;
 
@@ -318,16 +319,16 @@ int main(int argc, char** argv)
               }
 
             /* Apply user scale-factor and offset: */
-            for (c = 0; c < chns3; c++) { v3[c] = v3[c] * fscale + foffset; }
+            for (uint32_t c = 0; c < chns3; c++) { v3[c] = v3[c] * fscale + foffset; }
             
             /* Clip to [0_1] range, quantize and store: */
-            for (c = 0; c < chns3; c++) 
+            for (uint32_t c = 0; c < chns3; c++) 
               { if (v3[c] <= 0) 
                   { (*x3P) = 0; }
                 else if (v3[c] >= 1.0) 
                   { (*x3P) = maxval3; }
                 else
-                  { int iv = (int)floor(v3[c] * scale3 + 0.5);
+                  { int32_t iv = (int32_t)floor(v3[c] * scale3 + 0.5);
                     assert(iv <= maxval3);
                     assert(iv >= 0);
                     (*x3P) = (uint16_t)iv;
@@ -346,7 +347,7 @@ int main(int argc, char** argv)
     exit(0);
   }
 
-options_t *parse_options(int argc, char **argv)
+options_t *parse_options(int32_t argc, char **argv)
   {
     /* Initialize argument parser: */
     argparser_t *pp = argparser_new(stderr, argc, argv);

@@ -1,6 +1,7 @@
 /* See fvw_GL.h */
-/* Last edited on 2024-12-21 14:01:28 by stolfi */
+/* Last edited on 2025-01-20 14:25:17 by stolfi */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <values.h>

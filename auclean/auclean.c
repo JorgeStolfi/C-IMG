@@ -4,7 +4,7 @@
 
 /* Copyright © 2006 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2024-12-24 17:24:15 by stolfi */
+/* Last edited on 2025-01-21 16:00:37 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME "\\\n" \
@@ -820,14 +820,14 @@ options_t* get_options(int32_t argc, char **argv)
       { argparser_error(pp, "overlap count must divide frame size"); }
     
     o->noiseFile = string_vec_new(10);
-    uint32_t nnoi = 0;
+    int32_t nnoi = 0;
     while (argparser_keyword_present(pp, "-noiseFile"))
       { char *fn = argparser_get_next_non_keyword(pp);
         string_vec_expand(&(o->noiseFile), nnoi);
         o->noiseFile.e[nnoi] = fn;
         nnoi++;
       }
-    string_vec_trim(&(o->noiseFile), nnoi);
+    string_vec_trim(&(o->noiseFile), (vec_size_t)nnoi);
     
     if (argparser_keyword_present(pp, "-voice"))
       { o->voice = argparser_get_next_double(pp, 0.0, DBL_MAX); }

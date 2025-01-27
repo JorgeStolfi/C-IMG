@@ -2,7 +2,7 @@
 #define PROG_DESC "Creates a synthetic multi-focus image stack"
 #define PROG_VERS "1.0"
 
-// Last edited on 2024-12-21 13:59:03 by stolfi
+// Last edited on 2025-01-18 13:05:29 by stolfi
 
 #define multifok_make_stack_C_COPYRIGHT \
     "© 2018 by the State University of Campinas (UNICAMP)"
@@ -215,7 +215,7 @@ int32_t main(int32_t argc, char **argv)
     /* Get the height map: */
     if (o->verbose) { fprintf(stderr, "reading height map...\n"); }
     float_image_t *zimg = multifok_make_stack_read_image(o->heightMap, o->imageFormat, o->verbose);
-    float_image_check_size(zimg, 1, NX, NY);
+    float_image_check_size(zimg, 2, NX, NY, "bad height map");
 
     /* Allocate the output frames and masks, fill with zeros: */
     if (o->verbose) { fprintf(stderr, "allocating the output images...\n"); }
@@ -282,7 +282,7 @@ void multifok_make_stack_compute_blurred_image
     float_image_get_size(timg, &NC, &NX, &NY);
     /* Paranoia: */
     demand(NC == 1, "input image must be monochromatic");
-    float_image_check_size(zimg, 1, NX, NY);
+    float_image_check_size(zimg, 2, NX, NY, "bad normal map");
     
     /* Clear the images: */
     float_image_fill(frame, 0.0f);

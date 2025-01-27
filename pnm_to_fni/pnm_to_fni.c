@@ -2,16 +2,16 @@
 #define PROG_DESC "convert a PGM or PPM image file to float-valued FNI file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2024-12-25 09:11:34 by stolfi */
+/* Last edited on 2025-01-21 18:38:31 by stolfi */
 
 #define PROG_C_COPYRIGHT "Copyright © 2005 State University of Campinas (UNICAMP). Run \"" PROG_NAME " -info\" for details"
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
-  "    [ " pst_scaling_parse_min_any_HELP " ] \\\n" \
-  "    [ " pst_scaling_parse_max_any_HELP " ] \\\n" \
-  "    [ " pst_scaling_parse_center_any_HELP " ] \\\n" \
-  "    [ " pst_scaling_parse_width_any_HELP " ] \\\n" \
+  "    [ " sample_scaling_parse_min_HELP " ] \\\n" \
+  "    [ " sample_scaling_parse_max_HELP " ] \\\n" \
+  "    [ " sample_scaling_parse_center_HELP " ] \\\n" \
+  "    [ " sample_scaling_parse_width_HELP " ] \\\n" \
   "    " argparser_help_info_HELP " \\\n" \
   "    " imgc_parse_y_axis_HELP " \\\n" \
   "    [ -isMask {ISMASK} ] \\\n" \
@@ -43,38 +43,38 @@
   "\n" \
   "SPECIFYING THE SAMPLE SCALING\n" \
   "  The output scaling range [{VMIN} _ {VMAX}] is specified by" \
-  " the options " pst_scaling_option_list_INFO ".  Exactly two" \
+  " the options " sample_scaling_option_list_INFO ".  Exactly two" \
   " of the four values {VMIN}, {VMAX}, {VCTR} and {VWID} must" \
-  " be specified.  " pst_scaling_complete_params_INFO "\n" \
+  " be specified.  " sample_scaling_complete_params_INFO "\n" \
   "\n" \
   "OPTIONS\n" \
-  "  " pst_scaling_parse_min_one_HELP "\n" \
-  "  " pst_scaling_parse_min_RGB_HELP "\n" \
-  "    " pst_scaling_parse_min_INFO \
+  "  " sample_scaling_parse_min_one_HELP "\n" \
+  "  " sample_scaling_parse_min_RGB_HELP "\n" \
+  "    " sample_scaling_parse_min_INFO \
   " of the output scaling range.  " \
   pst_double_vec_spec_den_INFO "  " \
-  pst_scaling_num_values_INFO "\n" \
+  sample_scaling_num_values_INFO "\n" \
   "\n" \
-  "  " pst_scaling_parse_max_one_HELP "\n" \
-  "  " pst_scaling_parse_max_RGB_HELP "\n" \
-  "    " pst_scaling_parse_max_INFO \
+  "  " sample_scaling_parse_max_one_HELP "\n" \
+  "  " sample_scaling_parse_max_RGB_HELP "\n" \
+  "    " sample_scaling_parse_max_INFO \
   " of the output scaling range.  " \
   pst_double_vec_spec_den_INFO "  " \
-  pst_scaling_num_values_INFO "\n" \
+  sample_scaling_num_values_INFO "\n" \
   "\n" \
-  "  " pst_scaling_parse_center_one_HELP "\n" \
-  "  " pst_scaling_parse_center_RGB_HELP "\n" \
-  "    " pst_scaling_parse_center_INFO \
+  "  " sample_scaling_parse_center_one_HELP "\n" \
+  "  " sample_scaling_parse_center_RGB_HELP "\n" \
+  "    " sample_scaling_parse_center_INFO \
   " of the output scaling range.  " \
   pst_double_vec_spec_den_INFO "  " \
-  pst_scaling_num_values_INFO "\n" \
+  sample_scaling_num_values_INFO "\n" \
   "\n" \
-  "  " pst_scaling_parse_width_one_HELP "\n" \
-  "  " pst_scaling_parse_width_RGB_HELP "\n" \
-  "    " pst_scaling_parse_width_INFO \
+  "  " sample_scaling_parse_width_one_HELP "\n" \
+  "  " sample_scaling_parse_width_RGB_HELP "\n" \
+  "    " sample_scaling_parse_width_INFO \
   " of the output scaling range.  " \
   pst_double_vec_spec_den_INFO "  " \
-  pst_scaling_num_values_INFO "\n" \
+  sample_scaling_num_values_INFO "\n" \
   "\n" \
   imgc_parse_y_axis_INFO_OPTS(imgc_parse_y_axis_INFO_OPTS_default_pbm) "\n" \
   "\n" \
@@ -125,7 +125,7 @@
 #include <image_coords.h>
 #include <bool.h>
 
-#include <pst_scaling.h>
+#include <sample_scaling.h>
 #include <pst_basic.h>
 
 #define INF INFINITY
@@ -195,7 +195,7 @@ int32_t main(int32_t argc, char** argv)
       ); 
     
     /* Complete the output scaling parameters: */
-    pst_scaling_fix_params
+    sample_scaling_fix_params
       ( NC, FALSE,
         &(o->min), &(o->max), &(o->ctr), &(o->wid),
         NULL, NULL
@@ -253,10 +253,10 @@ options_t *parse_options(int32_t argc, char **argv)
       { o->isMask = FALSE; }
     
     /* Parse the output range specs: */
-    o->min = pst_scaling_parse_range_option(pp, "-min",    &(o->NC));
-    o->max = pst_scaling_parse_range_option(pp, "-max",    &(o->NC));
-    o->ctr = pst_scaling_parse_range_option(pp, "-center", &(o->NC));
-    o->wid = pst_scaling_parse_range_option(pp, "-width",  &(o->NC));
+    o->min = sample_scaling_parse_range_option(pp, "-min",    &(o->NC));
+    o->max = sample_scaling_parse_range_option(pp, "-max",    &(o->NC));
+    o->ctr = sample_scaling_parse_range_option(pp, "-center", &(o->NC));
+    o->wid = sample_scaling_parse_range_option(pp, "-width",  &(o->NC));
     
     o->yUp = FALSE;
     imgc_parse_y_axis(pp, &(o->yUp));

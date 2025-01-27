@@ -2,8 +2,9 @@
 #define fvw_GL_H
 
 /* fvw_GL.h - model-independent graphics routines for fni_view(1). */
-/* Last edited on 2024-12-21 14:01:26 by stolfi */
+/* Last edited on 2025-01-20 14:25:08 by stolfi */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <values.h>

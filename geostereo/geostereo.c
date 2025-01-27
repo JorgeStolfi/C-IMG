@@ -268,7 +268,7 @@ void geostereo_compute_displacement_map
     /* Check image sizes: */
     int32_t NC, NX, NY;
     float_image_get_size(img1 ,&NC, &NX, &NY);
-    float_image_check_size(img2, NC, NX, NY);
+    float_image_check_size(img2, NC, NX, NY, "mismatched images");
 
     /* Image pyramids: */
     
@@ -290,8 +290,8 @@ void geostereo_compute_displacement_map
       );
     
     /* Check dimensions of returned images: */
-    float_image_check_size(imgd, ncands, NX, NY);
-    float_image_check_size(imgs, ncands, NX, NY);
+    float_image_check_size(imgd, ncands, NX, NY, "mismatched images");
+    float_image_check_size(imgs, ncands, NX, NY, "mismatched images");
     
     /* Return images: */
     (*imgdP) = imgd;

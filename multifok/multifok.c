@@ -2,7 +2,7 @@
 #define PROG_DESC "Multi-focus stereo microscopy"
 #define PROG_VERS "1.0"
 
-// Last edited on 2024-12-21 13:59:45 by stolfi
+// Last edited on 2025-01-18 13:06:14 by stolfi
 
 #define multifok_C_COPYRIGHT \
     "© 2017 by the State University of Campinas (UNICAMP)"
@@ -348,11 +348,11 @@ void multifok_merge_images
     
     /* Check image sizes: */
     for (int k = 0; k < NI; k++) 
-      { float_image_check_size(img[k], NC, NX, NY); 
-        float_image_check_size(foc[k], 1, NX, NY); 
+      { float_image_check_size(img[k], NC, NX, NY, "mismatched images"); 
+        float_image_check_size(foc[k], 1, NX, NY, "mismatched images"); 
       }
-    float_image_check_size(mrg, NC, NX, NY);
-    float_image_check_size(zmp, 2, NX, NY);
+    float_image_check_size(mrg, NC, NX, NY, "mismatched images");
+    float_image_check_size(zmp, 2, NX, NY, "mismatched images");
         
     /* Data for one pixel: */
     float *fxy = notnull(malloc(NI*sizeof(float)), "no mem"); /* Focus scores of 1 pixel. */

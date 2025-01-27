@@ -2,7 +2,7 @@
 #define PROG_DESC "convert a float-valued FNI image file to a PNG file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2024-12-25 09:20:56 by stolfi */
+/* Last edited on 2025-01-21 16:16:34 by stolfi */
 
 #define PROG_C_COPYRIGHT "  Run \"" PROG_NAME " -info\" for details"
 
@@ -11,11 +11,11 @@
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
   "    [ -channels {CHAN}... ] \\\n" \
-  "    [ " pst_scaling_parse_min_any_HELP " ] \\\n" \
-  "    [ " pst_scaling_parse_max_any_HELP " ] \\\n" \
-  "    [ " pst_scaling_parse_center_any_HELP " ] \\\n" \
-  "    [ " pst_scaling_parse_width_any_HELP " ] \\\n" \
-  "    [ " pst_scaling_parse_uniform_HELP " ] \\\n" \
+  "    [ " sample_scaling_parse_min_any_HELP " ] \\\n" \
+  "    [ " sample_scaling_parse_max_any_HELP " ] \\\n" \
+  "    [ " sample_scaling_parse_center_any_HELP " ] \\\n" \
+  "    [ " sample_scaling_parse_width_any_HELP " ] \\\n" \
+  "    [ " sample_scaling_parse_uniform_HELP " ] \\\n" \
   "    [ -maxval {MAXVAL} ] \\\n" \
   "    [ -isMask {ISMASK} ] \\\n" \
   "    [ -nanval {NANVAL} ] \\\n" \
@@ -90,13 +90,13 @@
   "\n" \
   "SPECIFYING THE SAMPLE SCALING\n" \
   "  The input scaling range [{VMIN} _ {VMAX}] is specified by" \
-  " the options " pst_scaling_option_list_INFO ".\n" \
+  " the options " sample_scaling_option_list_INFO ".\n" \
   "\n" \
-  "  " pst_scaling_use_actual_range_INFO "  " \
-  pst_scaling_use_actual_range_with_uniform_INFO "\n" \
+  "  " sample_scaling_use_actual_range_INFO "  " \
+  sample_scaling_use_actual_range_with_uniform_INFO "\n" \
   "\n" \
   "  In any case, at most two of these four parameters may be specified. " \
-  " " pst_scaling_complete_params_INFO ""
+  " " sample_scaling_complete_params_INFO ""
   
 #define PROG_INFO_OPTS \
   "  -channel {CHAN}\n" \
@@ -108,35 +108,35 @@
   " the input must have at most 4 channels.  The channel" \
   " indices need not be distinct.\n" \
   "\n" \
-  "  " pst_scaling_parse_min_one_HELP "\n" \
-  "  " pst_scaling_parse_min_RGB_HELP "\n" \
-  "    " pst_scaling_parse_min_INFO \
+  "  " sample_scaling_parse_min_one_HELP "\n" \
+  "  " sample_scaling_parse_min_RGB_HELP "\n" \
+  "    " sample_scaling_parse_min_INFO \
   " of the input scaling range.  " \
   pst_double_vec_spec_den_INFO "  " \
-  pst_scaling_num_values_INFO "\n" \
+  sample_scaling_num_values_INFO "\n" \
   "\n" \
-  "  " pst_scaling_parse_max_one_HELP "\n" \
-  "  " pst_scaling_parse_max_RGB_HELP "\n" \
-  "    " pst_scaling_parse_max_INFO \
+  "  " sample_scaling_parse_max_one_HELP "\n" \
+  "  " sample_scaling_parse_max_RGB_HELP "\n" \
+  "    " sample_scaling_parse_max_INFO \
   " of the input scaling range.  " \
   pst_double_vec_spec_den_INFO "  " \
-  pst_scaling_num_values_INFO "\n" \
+  sample_scaling_num_values_INFO "\n" \
   "\n" \
-  "  " pst_scaling_parse_center_one_HELP "\n" \
-  "  " pst_scaling_parse_center_RGB_HELP "\n" \
-  "    " pst_scaling_parse_center_INFO \
+  "  " sample_scaling_parse_center_one_HELP "\n" \
+  "  " sample_scaling_parse_center_RGB_HELP "\n" \
+  "    " sample_scaling_parse_center_INFO \
   " of the input scaling range.  " \
   pst_double_vec_spec_den_INFO "  " \
-  pst_scaling_num_values_INFO "\n" \
+  sample_scaling_num_values_INFO "\n" \
   "\n" \
-  "  " pst_scaling_parse_width_one_HELP "\n" \
-  "  " pst_scaling_parse_width_RGB_HELP "\n" \
-  "    " pst_scaling_parse_width_INFO \
+  "  " sample_scaling_parse_width_one_HELP "\n" \
+  "  " sample_scaling_parse_width_RGB_HELP "\n" \
+  "    " sample_scaling_parse_width_INFO \
   " of the input scaling range.  " \
   pst_double_vec_spec_den_INFO "  " \
-  pst_scaling_num_values_INFO "\n" \
+  sample_scaling_num_values_INFO "\n" \
   "\n" \
-  pst_scaling_parse_uniform_HELP_INFO ".\n" \
+  sample_scaling_parse_uniform_HELP_INFO ".\n" \
   "\n" \
   imgc_parse_y_axis_INFO_OPTS(imgc_parse_y_axis_INFO_OPTS_default_pbm) "\n" \
   "\n" \
@@ -180,7 +180,7 @@
 #include <image_coords.h>
 #include <bool.h>
 
-#include <pst_scaling.h>
+#include <sample_scaling.h>
 #include <pst_basic.h>
 
 #define INF INFINITY
@@ -188,15 +188,15 @@
 /* COMMAND-LINE OPTIONS */
 
 typedef struct options_t
-  { int32_t NC;            /* Number of channels to output, or -1 if unknown. */
+  { int32_t NC;              /* Number of channels to output, or -1 if unknown. */
     uint16_t maxval;         /* Maximum output sample value. */
     bool_t isMask;           /* Interpretation of integer sample values. */
-    int32_vec_t channels;      /* Indices of input channels to convert; empty vec if not given. */
+    int32_vec_t channels;    /* Indices of input channels to convert; empty vec if not given. */
     double_vec_t min;        /* Low endpoint of scaling range; empty vec if not given. */
     double_vec_t max;        /* High endpoint of scaling range; empty vec if not given. */
     bool_t uniform;          /* Obtains default scaling args from all unspec channels rather than each channel. */
     float nanval;            /* Value to be substituted for {NAN} samples, or {NAN} if none. */
-    bool_t yUp;          /* If true, row 0 of the FNI image is bottom of PNM. */
+    bool_t yUp;              /* If true, row 0 of the FNI image is bottom of PNM. */
     bool_t verbose;          /* True to print image stats and conversion info. */
   } options_t;
 
@@ -212,8 +212,10 @@ int32_vec_t ftp_parse_int32_vec(argparser_t *pp, char *key);
   /* If keyword {key} is present, parses one or more numbers after it. */
 
 void ftp_fix_scaling_param_vec(int32_t nc, double_vec_t *vex);
-  /* If {vex} has {nc} elements, does nothing. If {vex} is an empty vector, provides a vector of {nc} {NAN}s.
-    If {vex} has one value and {nc>1}, replicates that value to all other elements. Fails othewise. */
+  /* If {vex} has {nc} elements, does nothing. If {vex} is an empty
+    vector, provides a vector of {nc} {NAN}s. If {vex} has one value and
+    {nc>1}, replicates that value to all other elements. Fails
+    othewise. */
     
 void ftp_fill_missing_range_params(float_image_t *fim, int32_t nc, int32_t ch[], bool_t uniform, double_vec_t *vmin, double_vec_t *vmax);
   /* If any of the elements of {vmin} and/or {vmax} is {NAN}, supplies a value from the actual range
@@ -391,13 +393,13 @@ options_t *ftp_parse_options(int32_t argc, char **argv)
       { o->channels = ftp_parse_int32_vec(pp, "-channels"); }
 
     /* Parse input range specs: */
-    o->min = pst_scaling_parse_range_option(pp, "-min",    &(o->NC));
-    o->max = pst_scaling_parse_range_option(pp, "-max",    &(o->NC));
-    o->ctr = pst_scaling_parse_range_option(pp, "-center", &(o->NC));
-    o->wid = pst_scaling_parse_range_option(pp, "-width",  &(o->NC));
+    o->min = sample_scaling_parse_range_option(pp, "-min",    &(o->NC));
+    o->max = sample_scaling_parse_range_option(pp, "-max",    &(o->NC));
+    o->ctr = sample_scaling_parse_range_option(pp, "-center", &(o->NC));
+    o->wid = sample_scaling_parse_range_option(pp, "-width",  &(o->NC));
 
     /* Uniform scaling option: */
-    o->uniform = pst_scaling_parse_uniform(pp, FALSE);
+    o->uniform = sample_scaling_parse_uniform(pp, FALSE);
 
     o->yUp = FALSE;
     imgc_parse_y_axis(pp, &(o->yUp));

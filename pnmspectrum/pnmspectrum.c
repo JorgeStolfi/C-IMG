@@ -2,7 +2,7 @@
 #define PROG_DESC "computes the power spectrum of a PBM/PGM/PPM image"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2024-12-21 11:59:39 by stolfi */
+/* Last edited on 2025-01-18 13:04:31 by stolfi */
 
 #define pnmspectrum_C_COPYRIGHT \
   "Copyright © 2008 by the State University of Campinas (UNICAMP)"
@@ -405,7 +405,7 @@ int32_t main(int32_t argc, char **argv)
         if (i == 0)
           { float_image_get_size(img_in, &NC, &NX, &NY); }
         else
-          { float_image_check_size(img_in, NC, NX, NY); }
+          { float_image_check_size(img_in, NC, NX, NY, "mismatched input images"); }
 
         /* Allocate output image if needed: */
         if (img_ot == NULL)
@@ -497,7 +497,7 @@ void accum_image(float_image_t *img_in, float_image_t *img_ot)
     /* Get image dimensions: */
     int32_t NC, NX, NY;
     float_image_get_size(img_in, &NC, &NX, &NY);
-    float_image_check_size(img_ot, NC, NX, NY);
+    float_image_check_size(img_ot, NC, NX, NY, "mismatched images");
 
     /* Accumulate power spectrum on output image: */
     for (uint32_t c = 0;  c < NC; c++) 

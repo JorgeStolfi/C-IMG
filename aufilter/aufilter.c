@@ -4,7 +4,7 @@
 
 /* Copyright © 2006 by the State University of Campinas (UNICAMP). */
 /* See the copyright, authorship, and warranty notice at end of file. */
-/* Last edited on 2024-12-21 14:01:50 by stolfi */
+/* Last edited on 2025-01-21 16:01:02 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME "\\\n" \
@@ -566,7 +566,7 @@ options_t* get_options(int32_t argc, char **argv)
     o->gctr = double_vec_new(0);
     o->fctr = double_vec_new(0);
     o->fdev = double_vec_new(0);
-    uint32_t nk = 0;
+    int32_t nk = 0;
     while(argparser_keyword_present(pp, "-kill"))
       { double_vec_expand(&(o->gctr), nk);
         o->gctr.e[nk] = argparser_get_next_double(pp, 0, DBL_MAX);
@@ -576,9 +576,9 @@ options_t* get_options(int32_t argc, char **argv)
         o->fdev.e[nk] = argparser_get_next_double(pp, 1.0e-100, 1.0e+100);
         nk++;
       }
-    double_vec_trim(&(o->gctr), nk);
-    double_vec_trim(&(o->fctr), nk);
-    double_vec_trim(&(o->fdev), nk);
+    double_vec_trim(&(o->gctr), (vec_size_t)nk);
+    double_vec_trim(&(o->fctr), (vec_size_t)nk);
+    double_vec_trim(&(o->fdev), (vec_size_t)nk);
     
     o->chaff = argparser_keyword_present(pp, "-chaff");
     
