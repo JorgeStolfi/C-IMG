@@ -2,7 +2,7 @@
 #define PROG_DESC "precisely locates matching image features in two images"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2024-11-20 06:12:53 by stolfi */
+/* Last edited on 2025-01-30 05:03:09 by stolfi */
 
 #define image_match_features_C_COPYRIGHT \
     "© 2020 by the State University of Campinas (UNICAMP)"
@@ -494,8 +494,9 @@ void imft_show_result(FILE *wr, r2_t ctr_ini[], r2_t ctr_adj[], r2_t pix_ini[], 
 
 float_image_t *imft_read_image(char*fname, bool_t verbose)
   { image_file_format_t ffmt = image_file_format_from_name(fname);
+    bool_t yUp = FALSE;
     float_image_t *img = float_image_read_gen_named
-      ( fname, ffmt, 0.0f, 1.0f, NULL, NULL, NULL, verbose);
+      ( fname, ffmt, yUp, 0.0f, 1.0f, NULL, NULL, NULL, verbose);
     return img;
   }
     
@@ -591,9 +592,10 @@ void imft_write_feature_images
     
     /* Write the composite image: */
     char *fname = jsprintf("out/%s_%03d.png", prefix, ip);
+    bool_t yUp = FALSE;
     image_file_format_t ffmt = image_file_format_PNG;
     fprintf(stderr, "writing to file %s ...\n", fname);
-    float_image_write_gen_named(fname, res, ffmt, 0.0, 1.0, NAN, NAN, FALSE);
+    float_image_write_gen_named(fname, res, ffmt, yUp, 0.0, 1.0, NAN, NAN, FALSE);
     free(fname);
     float_image_free(res); res = NULL;
     

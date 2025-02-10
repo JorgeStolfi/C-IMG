@@ -2,7 +2,7 @@
 #define PROG_DESC "creates a Postscript and/or PNG file with a grid of dots and crosses"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2024-12-21 13:59:56 by stolfi */
+/* Last edited on 2025-01-30 07:42:17 by stolfi */
 
 #define make_grid_sheet_C_COPYRIGHT \
   "Copyright © 2018  by the State University of Campinas (UNICAMP)"
@@ -426,12 +426,13 @@ void mgs_get_grid_bounding_box(mkgr_mark_grid_t *gr, double mrg, r2_t *sMin, r2_
 void mgs_write_png_image(char *prefix, float_image_t *img)
   { 
     char *fname = jsprintf("%s.png", prefix);
+    bool_t yUp = FALSE;
     double v0 = 0.0;
     double vM = 1.0;
     double gammaEnc = 1.0;
     double bias = 0.0;
     bool_t verbose = FALSE;
-    float_image_write_gen_named(fname, img, image_file_format_PNG, v0, vM, gammaEnc, bias, verbose);
+    float_image_write_gen_named(fname, img, image_file_format_PNG, yUp, v0, vM, gammaEnc, bias, verbose);
     free(fname);
   }
 

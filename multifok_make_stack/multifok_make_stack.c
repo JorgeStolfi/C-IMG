@@ -2,7 +2,7 @@
 #define PROG_DESC "Creates a synthetic multi-focus image stack"
 #define PROG_VERS "1.0"
 
-// Last edited on 2025-01-18 13:05:29 by stolfi
+// Last edited on 2025-01-30 07:38:39 by stolfi
 
 #define multifok_make_stack_C_COPYRIGHT \
     "© 2018 by the State University of Campinas (UNICAMP)"
@@ -330,6 +330,7 @@ void multifok_make_stack_write_frame_images
     for (uint32_t f = 0;  f < NF; f++)
       { char *name = jsprintf("%s/frame_%05d", outDir, f);
         image_file_format_t ffmt = image_file_format_PNG;
+        bool_t yUp = TRUE;
         double v0 = 0.0;
         double vM = 1.0;
         double gammaEnc = 1.0;
@@ -341,13 +342,13 @@ void multifok_make_stack_write_frame_images
         fprintf(stderr, "writing %s\n", fname);
         fprintf(stderr, "channel ranges before gamma encoding:\n");
         multifok_make_stack_analyze_image(frame[f]);
-        float_image_write_gen_named(fname, frame[f], ffmt, v0, vM, gammaEnc, bias, verbose);
+        float_image_write_gen_named(fname, frame[f], ffmt, yUp, v0, vM, gammaEnc, bias, verbose);
         free(fname);
         
         /* Write the mask: */
         char *maskname = jsprintf("%s_mask.png", name);
         fprintf(stderr, "writing %s\n", maskname);
-        float_image_write_gen_named(maskname, fMask[f], ffmt, v0, vM, gammaEnc, bias, verbose);
+        float_image_write_gen_named(maskname, fMask[f], ffmt, yUp, v0, vM, gammaEnc, bias, verbose);
         free(maskname);
         free(name);
       }

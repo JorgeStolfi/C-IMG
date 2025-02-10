@@ -1,6 +1,6 @@
 #ifndef multifok_make_stack_read_image_H
 #define multifok_make_stack_read_image_H
-/* Last edited on 2024-12-21 13:58:56 by stolfi */
+/* Last edited on 2025-01-30 05:04:31 by stolfi */
 
 #include <stdint.h>
 
@@ -11,6 +11,7 @@
 float_image_t *multifok_make_stack_read_image
   ( char *fname, 
     image_file_format_t ffmt, 
+    bool_t yUp, 
     bool_t verbose
   );
   /* Reads the reference image file whose name is {fname}, converting it

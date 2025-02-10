@@ -2,7 +2,7 @@
 #define PROG_DESC "Multi-focus stereo microscopy"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2024-12-21 13:59:43 by stolfi */
+/* Last edited on 2025-01-30 07:40:25 by stolfi */
 
 #define multifok_analyze_C_COPYRIGHT \
     "© 2017 by the State University of Campinas (UNICAMP)"
@@ -553,10 +553,11 @@ void multifok_analyze_write_debug_images
     for (uint32_t f = 0;  f < NF; f++)
       { char *fname = jsprintf("%s/%05d_%s.png", outDir, frameID[f], tag);
         image_file_format_t ffmt = image_file_format_PNG;
+        bool_t yUp = TRUE;
         double gammaEnc = 1.0;
         double bias = 0.0;
         bool_t verbose = FALSE;
-        float_image_write_gen_named(fname, dbimg[f], ffmt, v0, vM, gammaEnc, bias, verbose);
+        float_image_write_gen_named(fname, dbimg[f], ffmt, yUp, v0, vM, gammaEnc, bias, verbose);
         free(fname);
       }
   }
@@ -573,12 +574,13 @@ void multifok_analyze_write_quadratic_term_images
       { for (uint32_t q = 0;  q < NQ; q++)
           { char *fname = jsprintf("%s/simil_%05d_q%02d.png", outDir, frameID[f], q);
             image_file_format_t ffmt = image_file_format_PNG;
+            bool_t yUp = TRUE;
             double v0 = 0.0;
             double vM = 1.0;
             double gammaEnc = 1.0;
             double bias = 0.0;
             bool_t verbose = FALSE;
-            float_image_write_gen_named(fname, qtimg[f*NQ + q], ffmt, v0, vM, gammaEnc, bias, verbose);
+            float_image_write_gen_named(fname, qtimg[f*NQ + q], ffmt, yUp, v0, vM, gammaEnc, bias, verbose);
             free(fname);
           }
       }

@@ -1,5 +1,5 @@
 /* See {multifok_analyze_read_frames.h}. */
-/* Last edited on 2024-12-21 13:59:16 by stolfi */
+/* Last edited on 2025-01-30 07:39:44 by stolfi */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,10 +33,11 @@ float_image_t **multifok_analyze_read_frames
     for (uint32_t f = 0;  f < NF; f++)
       { char *fname = jsprintf(framePattern, frameID[f]);
         if (verbose) { fprintf(stderr, "reading frame[%3d]  from file \"%s\"\n", f, fname); }
+        bool_t yUp = TRUE;
         float v0 = 0.0;
         float vM = 1.0;
         double gammaDec, bias; /* Enconding gammaDec and bias specified or implied by file. */
-        float_image_t *fimgf = float_image_read_gen_named(fname, ffmt, v0, vM, NULL, &gammaDec, &bias, verbose);
+        float_image_t *fimgf = float_image_read_gen_named(fname, ffmt, yUp, v0, vM, NULL, &gammaDec, &bias, verbose);
         demand (fimgf->sz[0] == NC, "inconsistent frame channel count");
         demand (fimgf->sz[1] == NX, "inconsistent frame width");
         demand (fimgf->sz[2] == NY, "inconsistent frame height");

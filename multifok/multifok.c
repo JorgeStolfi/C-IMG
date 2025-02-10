@@ -2,7 +2,7 @@
 #define PROG_DESC "Multi-focus stereo microscopy"
 #define PROG_VERS "1.0"
 
-// Last edited on 2025-01-18 13:06:14 by stolfi
+// Last edited on 2025-01-30 07:41:42 by stolfi
 
 #define multifok_C_COPYRIGHT \
     "© 2017 by the State University of Campinas (UNICAMP)"
@@ -468,11 +468,12 @@ float_image_t **multifok_read_images
     
     for (uint32_t k = 0;  k < NI; k++)
       { char *fname = iname->e[k];
+        bool_t yUp = TRUE;
         float v0 = 0.0;
         float vM = 1.0;
         double gammaDecFile, biasFile; /* Enconding gammaDec and bias specified or implied by file. */
         float_image_t *fimg = float_image_read_gen_named
-          ( fname, ffmt, v0, vM, NULL, &gammaDecFile, &biasFile, verbose );
+          ( fname, ffmt, yUp, v0, vM, NULL, &gammaDecFile, &biasFile, verbose );
         int32_t NC = (int32_t)fimg->sz[0]; /* Num channels. */
         int32_t NX = (int32_t)fimg->sz[1]; /* Num columns. */
         int32_t NY = (int32_t)fimg->sz[2]; /* Num rows. */
@@ -523,12 +524,13 @@ void multifok_write_merged_image
     char *fname = jsprintf("%s-final.png", prefix);
     double vmax = 1.0;
     if (verbose) { fprintf(stderr, "writing %s ...\n", fname); }
+    bool_t yUp = TRUE;
     float v0 = 0.0;
     float vM = 1.0;
     image_file_format_t ffmt = image_file_format_PNG;
     double gammaEnc  = sample_conv_BT709_ENC_GAMMA;
     double bias = sample_conv_BT709_BIAS;
-    float_image_write_gen_named(fname, fimg, ffmt, v0, vM, gammaEnc, bias, vmax);
+    float_image_write_gen_named(fname, fimg, ffmt, yUp, v0, vM, gammaEnc, bias, vmax);
     free(fname);
   }
 
@@ -574,12 +576,13 @@ void multifok_write_mask_image
         vmax = ( sMin >= 0.0 ? sMax : fmax(-(double)sMin, (double)sMax) );
       }
     if (verbose) { fprintf(stderr, "writing %s ...\n", fname); }
+    bool_t yUp = TRUE;
     float v0 = 0.0;
     float vM = (float)vmax;
     image_file_format_t ffmt = image_file_format_PNG;
     double gammaEnc = 1.0; /* Use linear encoding. */
     double bias = 0.0;
-    float_image_write_gen_named(fname, fimg, ffmt, v0, vM, gammaEnc, bias, verbose);
+    float_image_write_gen_named(fname, fimg, ffmt, yUp, v0, vM, gammaEnc, bias, verbose);
     free(fname);
   }
 
@@ -602,12 +605,13 @@ void multifok_write_height_map
     /* Write the PNG version: */
     char *fname = jsprintf("%s-height.png", prefix);
     if (verbose) { fprintf(stderr, "writing %s ...\n", fname); }
+    bool_t yUp = TRUE;
     float v0 = zmin;
     float vM = zmax;
     image_file_format_t ffmt = image_file_format_PNG;
     double gammaEnc = 1.0; /* Use linear encoding. */
     double bias = 0.0;
-    float_image_write_gen_named(fname, fimg, ffmt, v0, vM, gammaEnc, bias, verbose);
+    float_image_write_gen_named(fname, fimg, ffmt, yUp, v0, vM, gammaEnc, bias, verbose);
     free(fname);
  }
 

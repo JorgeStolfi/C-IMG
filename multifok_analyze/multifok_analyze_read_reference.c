@@ -1,5 +1,5 @@
 /* See {multifok_analyze_read_reference.h}. */
-/* Last edited on 2024-12-21 13:59:10 by stolfi */
+/* Last edited on 2025-01-30 07:39:20 by stolfi */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,10 +23,11 @@ float_image_t *multifok_analyze_read_reference
     bool_t verbose
   )
   {
+    bool_t yUp = TRUE;
     float v0 = 0.0;
     float vM = 1.0;
     double gammaDec, bias; /* Enconding gammaDec and bias specified or implied by file. */
-    float_image_t *fimg = float_image_read_gen_named(fname, ffmt, v0, vM, NULL, &gammaDec, &bias, verbose);
+    float_image_t *fimg = float_image_read_gen_named(fname, ffmt, yUp, v0, vM, NULL, &gammaDec, &bias, verbose);
     demand(fimg->sz[0] == 1, "reference image should be monochromatic");
     return fimg;
 
