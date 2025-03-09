@@ -1,1 +1,1 @@
-../../plot_pnm_hist.sh
+../../pnmxhist/tests/plot_pnm_hist.sh

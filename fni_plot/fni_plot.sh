@@ -1,16 +1,19 @@
 #! /bin/bash 
-# Last edited on 2024-11-07 18:49:41 by stolfi
+# Last edited on 2025-02-18 22:53:39 by stolfi
  
 PROG_NAME=${0##*/}
 PROG_DESC="make a 3D Postscript plot of a selected channel of a FNI file"
 PROG_HELP=(
   "${PROG_NAME} \\"
   "\n    [ -channel {CHNUM} ] \\"
+  "\n    [ -size {NX} {NY} ] \\"
   "\n    [ -title {TITLESRING} ] \\"
   "\n    [ -rows ] [ -kodak ] [ -kodakLog ] \\"
   "\n    [ -range {VMIN} {VMAX} ] \\"
   "\n    [ -ztics {VTICS} ] \\"
-  "\n    < {INFILE}.fni > {OUTFILE}.eps"
+  "\n    [ -show ] \\"
+  "\n    [ -verbose ] \\"
+  "\n    < {INFILE}.fni > {OUTFILE}.png"
 )
 PROG_INFO=(
   "\nNAME"
@@ -21,8 +24,7 @@ PROG_INFO=(
   "\n"
   "\nDESCRIPTION"
   "\n  Reads a multichannel float-valued image (\".fni\") file,"
-  "\n generates an Encapsulated Postscript 3D plot of a"
-  "\n selected channel using gnuplot(1)."
+  "\n generates a PNG 3D plot of a selected channel using gnuplot(1)."
   "\n"
   "\n  The \"-range\" option specifies the nominal range of values"
   "\n for vertical scale setting."
@@ -30,8 +32,15 @@ PROG_INFO=(
   "\n  The \"-ztics\" option specifies the value interval"
   "\n for vertical axis tics."
   "\n"
+  "\n  The \"-size\" option specifies the width and height"
+  "\n of the plot in pixels."
+  "\n"
   "\n  If \"-rows\" is used, outputs a 2D plot where each"
   "\n row is treated as a curve."
+  "\n"
+  "\n  If \"-show\" is present, displays the resulting plot."
+  "\n"
+  "\n  If \"-verbose\" is present, mumbles while working."
   "\n"
   "\n  If \"-kodak\" is used with a 2D plot, adds a plot of"
   "\n the KODAK Q-13 gray calibration scale."
@@ -60,11 +69,18 @@ vtics=0
 vstep=
 kodak=0
 kodakLog=0
+nx_png=600
+ny_png=600
+verbose=0
 while [[ ( $# -ge 1 ) && ( "/$1" =~ ^[/][-]. ) ]]; do
   if [[ ( $# -ge 2 ) && ( "$1" == "-channel" ) ]]; then 
     channel="$2"; shift; shift;
   elif [[ ( $# -ge 1 ) && ( "$1" == "-rows" ) ]]; then 
     rows=1; shift;
+  elif [[ ( $# -ge 1 ) && ( "$1" == "-verbose" ) ]]; then 
+    verbose=1; shift;
+  elif [[ ( $# -ge 3 ) && ( "$1" == "-size" ) ]]; then 
+    nx_png=$2; ny_png=$3; shift; shift; shift;
   elif [[ ( $# -ge 1 ) && ( "$1" == "-kodakLog" ) ]]; then 
     kodakLog=1; shift;
   elif [[ ( $# -ge 1 ) && ( "$1" == "-kodak" ) ]]; then 
@@ -125,6 +141,8 @@ cat ${tmpfni} \
       ' \
   > ${tmpdat}
 
+tmppng=${tmp}.png
+
 # Preparations for vertical range:
 if [[ ${vrange} -ne 0 ]]; then
   RangeVars="vmin=(${vmin}); vmax=(${vmax}); dv=0.02*(vmax-vmin)"
@@ -145,7 +163,7 @@ fi
 if [[ $rows -ne 0 ]]; then
   
   # Two-dimensional plot
-  echo "making two-dimensional plot..." 1>&2
+  if [[ ${verbose} -ne 0 ]] ; then echo "making two-dimensional plot ..." 1>&2 ; fi
   if [[ ${vrange} -ne 0 ]]; then
     SetRange="set yrange [(vmin-dv):(vmax+dv)]"
   else
@@ -168,8 +186,8 @@ if [[ $rows -ne 0 ]]; then
   fi
   
 gnuplot <<EOF
-set terminal postscript eps color 
-set output
+set term png medium size (2*${nx_png}),(2*${ny_png}) font "arial,20"
+set output "${tmppng}"
 set size 2,1.5
 set xrange [-2:(${nx}+2)]
 ${RangeVars}
@@ -181,14 +199,14 @@ set mytics 5
 set grid ytics lt 3, lt 0
 #set grid mytics lt 3, lt 0
 set title "${title}"
-plot "${tmpdat}" using 1:(column(3+${channel})) with lines ${KodakPlot} ${KodakLogPlot}
+plot "${tmpdat}" using 1:(column(3+${channel})) with lines lw 2 ${KodakPlot} ${KodakLogPlot}
 quit
 EOF
 
 else
 
   # Three-dimensional plot
-  echo "making three-dimensional plot..." 1>&2
+  if [[ ${verbose} -ne 0 ]] ; then echo "making three-dimensional plot..." 1>&2; fi
   if [[ ${vrange} -ne 0 ]]; then
     SetRange="set zrange [(vmin-dv):(vmax+dv)]"
   else
@@ -201,10 +219,9 @@ else
   fi
   
 gnuplot <<EOF
-set terminal postscript eps color "TimesRoman" 28
-set output
-set view 30,330,1,1.25
-set size 2,2
+set term png medium size (2*${nx_png}),(2*${ny_png}) font "arial,20"
+set output "${tmppng}"
+set view 60,330,1,1.25
 nx=${nx}; ny=${ny}
 sz = (nx>ny?nx:ny)
 set xrange [-2:(sz+2)]
@@ -216,11 +233,21 @@ ${SetZTics}
 set nokey
 set title "${title}"
 set hidden3d
-splot "${tmpdat}" using 1:2:(column(3+${channel})) with lines linetype 0 linecolor rgb '#0000ff'
+splot "${tmpdat}" using 1:2:(column(3+${channel})) with lines lw 2
 quit
 EOF
 
 fi
 
-/bin/rm -f ${tmpdat} ${tmpfni}
-echo "done fni_plot.sh" 1>&2 
+finpng=${tmp}-fin.png
+if [[ -s ${tmppng} ]]; then
+  convert ${tmppng} -resize '50%'  ${finpng}
+  if [[ ${show} -ne 0 ]]; then display ${finpng} ; fi
+  rm -f ${tmppng}
+  cat ${finpng}
+else
+  echo "** plot failed" 1>&2; exit 1
+fi
+
+/bin/rm -f ${tmpdat} ${tmpfni} ${tmppng} ${finpng}
+if [[ ${verbose} -ne 0 ]] ; then echo "done fni_plot.sh" 1>&2 ; fi

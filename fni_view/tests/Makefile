@@ -1,4 +1,4 @@
-# Last edited on 2025-01-22 20:20:30 by stolfi
+# Last edited on 2025-03-02 13:29:29 by stolfi
 
 PROG := fni_view
 
@@ -6,7 +6,7 @@ PROGDIR := ..
 
 include ${STOLFIHOME}/programs/c/GENERIC-PROGS-TEST.make
 
-# ${HTNAME}:${TXNAME}:${SCALE}
+# ${HTNAME}:${SCALE}:${TXNAME}:${TXCHANS}
 
 BUG_TESTS := \
   7-G-0256x0192.fni:200.000:NONE:NONE
@@ -29,7 +29,10 @@ ALL_TESTS := \
   5-G-0064x0048.fni:200.000:NONE:NONE \
    \
   6-G-0064x0048.fni:200.000:NONE:NONE \
-  
+   \
+  7-G-0256x0192.fni:200.000:NONE:NONE \
+   \
+  8-G-0064x0048.fni:200.000:NONE:NONE \
 
 NON_TESTS :=
 
@@ -79,6 +82,7 @@ run-single: ${PROGDIR}/${PROG} ${HTFILE} ${TXFILE}
             ${TX_OPS} ${TXCHANS_OPS} \
             -channel 0 \
             -scale ${SCALE} \
+            -title "FOO ${HTFILE}" \
             ${HTFILE}
 
 endif

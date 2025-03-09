@@ -2,7 +2,7 @@
 #define PROG_DESC "convert a float-valued FNI image file to a PGM or PPM file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2025-01-22 18:48:41 by stolfi */
+/* Last edited on 2025-03-04 12:08:30 by stolfi */
 
 #define PROG_C_COPYRIGHT "Copyright © 2005 State University of Campinas (UNICAMP).  Run \"" PROG_NAME " -info\" for details"
 
@@ -313,7 +313,7 @@ options_t *ftp_parse_options(int32_t argc, char **argv)
       { o->channel = int32_vec_new(0); }
 
     /* Parse input range specs: */
-    o->scaling = sample_scaling_parse_options(pp, &(o->NC));
+    o->scaling = sample_scaling_options_parse(pp, &(o->NC));
 
     o->yUp = FALSE;
     imgc_parse_y_axis(pp, &(o->yUp));

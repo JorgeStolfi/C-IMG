@@ -1,5 +1,5 @@
 # Makefile for generic C program
-# Last edited on 2023-03-29 13:23:25 by stolfi
+# Last edited on 2025-02-16 22:46:34 by stolfi
 
 PROG := fni_plot.sh
 
@@ -28,7 +28,7 @@ all: runalltests
 # Cleanup
 
 clean::
-	-/bin/rm -f out/*.eps
+	-/bin/rm -f out/*.png
 
 # ====================================================================
 # Running tests
@@ -49,17 +49,16 @@ NAME    := ${word 1,${TESTFIELDS}}
 CHANNEL := ${word 2,${TESTFIELDS}}
 
 IN_FNI := in/${NAME}.fni
-OUT_EPS := out/${NAME}-${CHANNEL}.eps
-
-PSVIEW := evince
+OUT_PNG := out/${NAME}-${CHANNEL}.eps
 
 runtest: ${PROGDIR}/${PROG} ${IN_FNI}
 	${PROGDIR}/${PROG} \
             -channel ${CHANNEL} \
+            -size 600 600 \
             -title "${NAME}:${CHANNEL}" \
           < ${IN_FNI} \
-          > ${OUT_EPS}
-	${PSVIEW} ${OUT_EPS}
+          > ${OUT_PNG}
+	display -title "${NAME}:${CHANNEL}" ${OUT_PNG}
 
 # 
 # End make ${TESTARGS}

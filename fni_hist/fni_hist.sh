@@ -1,5 +1,5 @@
 #! /bin/bash 
-# Last edited on 2012-12-08 21:39:12 by stolfilocal
+# Last edited on 2025-02-12 14:03:51 by stolfi
  
 PROG_NAME=${0##*/}
 PROG_DESC="make a Postscript histogram of a selected channel of a FNI file"
@@ -7,6 +7,8 @@ PROG_HELP=(
   "${PROG_NAME} \\"
   "\n    [ -channel {CHNUM} ] \\"
   "\n    [ -range {VMIN} {VMAX} ] \\"
+  "\n    [ -excludeRange {EMIN} {EMAX} ] \\"
+  "\n    [ -logScale ] \\"
   "\n    [ -title {TITLESTRING} ] \\"
   "\n    -step {STEP} \\"
   "\n    < {INFILE}.fni > {OUTFILE}.eps"
@@ -28,8 +30,17 @@ PROG_INFO=(
   "\n  If the \"-range\" option is given, the program ignores"
   "\n  any data values outside the range [{VMIN} _ {VMAX}]."
   "\n"
+  "\n  If the \"-excludeRange\" option is given, the program ignores"
+  "\n  any data values inside the range [{EMIN} _ {EMAX}]."
+  "\n"
+  "\n  If the \"-logScale\" option is given, the"
+  "\n  plot uses log scale in the {Y} axis."
+  "\n"
   "\nAUTHOR"
   "\n  Created 2006-04-02 by Jorge Stolfi, Unicamp"
+  "\nMODIFICATION HISTORY"
+  "\n  By J.Stolfi if not said otherwise"
+  "\n  2025-02-12 Added \"-excludeRange\" and \"-logScale\""
 )
 
 # ----------------------------------------------------------------------
@@ -42,7 +53,10 @@ PROG_INFO=(
 channel=0
 vmin="+1.0"
 vmax="-1.0"
+emin="+1.0"
+emax="-1.0"
 step="0.0"
+logScale=0
 title=""
 while [[ ( $# -ge 1 ) && ( "/$1" =~ /-.* ) ]]; do
   if [[ ( $# -ge 2 ) && ( $1 == "-channel" ) ]]; then 
@@ -51,6 +65,10 @@ while [[ ( $# -ge 1 ) && ( "/$1" =~ /-.* ) ]]; do
     step="$2"; shift; shift;
   elif [[ ( $# -ge 3 ) && ( $1 == "-range" ) ]]; then 
     vmin="$2"; vmax="$3"; shift; shift; shift;
+  elif [[ ( $# -ge 3 ) && ( $1 == "-excludeRange" ) ]]; then 
+    emin="$2"; emax="$3"; shift; shift; shift;
+  elif [[ ( $# -ge 1 ) && ( $1 == "-logScale" ) ]]; then 
+    logScale=1; shift;
   elif [[ ( $# -ge 2 ) && ( $1 == "-title" ) ]]; then 
     title="$2"; shift; shift;
   elif [[ ( $# -ge 1 ) && ( ( "/$1" == "/-help" ) || ( "/$1" == "/--help" ) ) ]]; then 
@@ -98,12 +116,16 @@ gawk \
   -v step="${step}" \
   -v vmin="${vmin}" \
   -v vmax="${vmax}" \
+  -v emin="${emin}" \
+  -v emax="${emax}" \
   ' BEGIN {
       abort = -1;
-      chan += 0; step += 0; vmin += 0; vmax += 0;
+      chan += 0; step += 0; vmin += 0; vmax += 0; emin += 0; emax += 0;
       if (step == 0) { arg_error("must specify a numeric \"-step\""); }
       split("", ct);
-      kmin = +1.0e+100; kmax = -1.0e+100; nout = 0;
+      kmin = +1.0e+100; kmax = -1.0e+100;
+      nout = 0; # Samples outside {[vmin _ vmax]}
+      nexc = 0; # Samples inside {[emin _ emax]}
       koff = int(vmin/step);
       voff = koff*step;
       maxbins = 10001;
@@ -115,6 +137,7 @@ gawk \
     /^[ ]*[-+]?[0-9]/ { 
       z = ((chan < 0) || (chan >= NC) ? 0.0 : $(3+chan));
       if ((vmin < vmax) && ((z < vmin) || (z > vmax))) { nout++; next; }
+      if ((emin < emax) && (z >= emin) && (z <= emax)) { nexc++; next; }
       zz = (z - voff)/step; 
       k = int(zz);
       if (k < kmin) { kmin = k; }
@@ -126,8 +149,8 @@ gawk \
     }
     END { 
       if (abort >= 0) { exit abort; }
-      if (nout > 0) 
-        { printf "%d values outside the given range\n", nout > "/dev/stderr"; }
+      if (nout > 0) { printf "%d values outside the valid range\n", nout > "/dev/stderr"; }
+      if (nexc > 0) { printf "%d values inside the exclusion range\n", nexc > "/dev/stderr"; }
       if (kmin > kmax) { kmin = 0; kmax = 0; }
       for (k = kmin-1;  k <= kmax+1; k++)
         { md = voff + k*step; lo = md - step/2; hi = md + step/2;
@@ -158,9 +181,13 @@ gnuplot <<EOF
 set terminal postscript eps color 
 set output
 set size 1.50,0.75
-set nokey
+set nokey 
 ymax=${ymax}
-set yrange[(-0.02*ymax):(1.02*ymax)]
+if (${logScale} != 0) {
+  set yrange [ 0.80:(1.02*ymax)]; set logscale y 
+} else { 
+  set yrange[(-0.02*ymax):(1.02*ymax)]; unset logscale y
+}
 set title "${title}"
 plot "${hisfile}" using 2:4 with histeps
 quit

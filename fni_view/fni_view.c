@@ -4,7 +4,7 @@
 
 #define PROG_C_COPYRIGHT "Copyright © 2005 Universidade Estadual Fluminense (UFF)."
 
-/* Last edited on 2025-01-23 14:21:29 by stolfi */
+/* Last edited on 2025-03-02 13:10:54 by stolfi */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
@@ -15,6 +15,7 @@
   "    [ -channel {CHAN} ] \\\n" \
   "    [ -txFile {TXFILE} | -hist {HISTFLAG}  ] \\\n" \
   "    [ -txChannels {TXCHAN}... ] \\\n" \
+  "    [ -title {TITLE} ] \\\n" \
   "    [ -verbose ] \\\n" \
   "    [ < ] {HEIGHT_FILE}"
 
@@ -147,6 +148,10 @@
   " color mapping is not affected by the \"-range\" and \"-scale\" arguments" \
   " or the 's' and 'S' command keys.\n" \
   "\n" \
+  "  -title {TITLE}\n" \
+  "    If present, sets the window title to {TITLE}.  Otherwise the window" \
+  " title will be the input file name.\n" \
+  "\n" \
   "  -verbose\n" \
   "    If present, the program writes details of the file input and processing.\n" \
   "\n" \
@@ -190,6 +195,7 @@
   "  oct/2022 by Jorge Stolfi: Added \"-range\" option.\n" \
   "  jan/2025 by Jorge Stolfi: Added \"-txChannels\" option.\n" \
   "  jan/2025 by Jorge Stolfi: Added \"-verbose\" option.\n" \
+  "  mar/2025 by Jorge Stolfi: Added \"-title\" option.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \
@@ -256,6 +262,7 @@ typedef struct options_t
     bool_t isMask;            /* True if input samples are to be converted as in a mask. */
     bool_t hist;              /* True specifies histogram-like plot. */
     bool_t verbose;           /* True asks for diagnostics of files etc. */
+    char *title;              /* Window title, or {NULL}. */
   } options_t;
 
 /* GLOBAL VARIABLES USED BY GL METHODS */
@@ -411,8 +418,11 @@ int32_t main(int32_t argc, char** argv)
 
     fvw_state = fvw_create_state(o);
     
+    char *title = o->title;
+    if (title == NULL) { title = o->height_file; }
+    
     fvw_GL_initialize_window
-      ( o->height_file,
+      ( title,
         fvw_display_method,
         fvw_reshape_method,
         fvw_keyboard_method,
@@ -580,7 +590,7 @@ void  fvw_get_sample_range_from_image(float_image_t *timg, int32_t c, float *vmi
     else 
       { float vdel = vmax - vmin;
         float vmag = fmaxf(fabsf(vmax), fabsf(vmin));
-        float eps = (float)(fmax(1.0e-5*vmag, 1.0e-5));
+        float eps = (float)(fmax(1.0e-4*vmag, 1.0e-10));
         if (vdel < 2*eps) { vmin -= eps; vmax += eps; }
       }
     (*vmin_P) = vmin;
@@ -1048,6 +1058,11 @@ options_t *fvw_parse_options(int32_t argc, char **argv)
       { o->hist = FALSE; }
     
     o->colorize = fvw_parse_options_range(pp, "-colorize");
+    
+    if (argparser_keyword_present(pp, "-title"))
+      { o->title = argparser_get_next(pp); }
+    else
+      { o->title = NULL; }
     
     o->verbose = argparser_keyword_present(pp, "-verbose");
 

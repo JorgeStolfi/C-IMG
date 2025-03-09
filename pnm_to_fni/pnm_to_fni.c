@@ -2,16 +2,13 @@
 #define PROG_DESC "convert a PGM or PPM image file to float-valued FNI file"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2025-01-21 18:38:31 by stolfi */
+/* Last edited on 2025-03-04 12:13:16 by stolfi */
 
 #define PROG_C_COPYRIGHT "Copyright © 2005 State University of Campinas (UNICAMP). Run \"" PROG_NAME " -info\" for details"
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
-  "    [ " sample_scaling_parse_min_HELP " ] \\\n" \
-  "    [ " sample_scaling_parse_max_HELP " ] \\\n" \
-  "    [ " sample_scaling_parse_center_HELP " ] \\\n" \
-  "    [ " sample_scaling_parse_width_HELP " ] \\\n" \
+  "    " sample_scaling_options_parse_HELP " \\\n" \
   "    " argparser_help_info_HELP " \\\n" \
   "    " imgc_parse_y_axis_HELP " \\\n" \
   "    [ -isMask {ISMASK} ] \\\n" \
@@ -41,40 +38,8 @@
   "  The \"-yAxis\" option determines whether row 0 of the" \
   " FNI image is the top or bottom row of the PNM image.\n" \
   "\n" \
-  "SPECIFYING THE SAMPLE SCALING\n" \
-  "  The output scaling range [{VMIN} _ {VMAX}] is specified by" \
-  " the options " sample_scaling_option_list_INFO ".  Exactly two" \
-  " of the four values {VMIN}, {VMAX}, {VCTR} and {VWID} must" \
-  " be specified.  " sample_scaling_complete_params_INFO "\n" \
-  "\n" \
   "OPTIONS\n" \
-  "  " sample_scaling_parse_min_one_HELP "\n" \
-  "  " sample_scaling_parse_min_RGB_HELP "\n" \
-  "    " sample_scaling_parse_min_INFO \
-  " of the output scaling range.  " \
-  pst_double_vec_spec_den_INFO "  " \
-  sample_scaling_num_values_INFO "\n" \
-  "\n" \
-  "  " sample_scaling_parse_max_one_HELP "\n" \
-  "  " sample_scaling_parse_max_RGB_HELP "\n" \
-  "    " sample_scaling_parse_max_INFO \
-  " of the output scaling range.  " \
-  pst_double_vec_spec_den_INFO "  " \
-  sample_scaling_num_values_INFO "\n" \
-  "\n" \
-  "  " sample_scaling_parse_center_one_HELP "\n" \
-  "  " sample_scaling_parse_center_RGB_HELP "\n" \
-  "    " sample_scaling_parse_center_INFO \
-  " of the output scaling range.  " \
-  pst_double_vec_spec_den_INFO "  " \
-  sample_scaling_num_values_INFO "\n" \
-  "\n" \
-  "  " sample_scaling_parse_width_one_HELP "\n" \
-  "  " sample_scaling_parse_width_RGB_HELP "\n" \
-  "    " sample_scaling_parse_width_INFO \
-  " of the output scaling range.  " \
-  pst_double_vec_spec_den_INFO "  " \
-  sample_scaling_num_values_INFO "\n" \
+  "  " sample_scaling_options_parse_HELP_INFO "\n" \
   "\n" \
   imgc_parse_y_axis_INFO_OPTS(imgc_parse_y_axis_INFO_OPTS_default_pbm) "\n" \
   "\n" \
@@ -96,9 +61,12 @@
   "  Created 2005-12-10 by Jorge Stolfi, UNICAMP.\n" \
   "\n" \
   "MODIFICATION HISTORY\n" \
+  "  By J.Stolfi unless otherwise noted.\n" \
+  "\n" \
   "  2005-12-10 created.\n" \
   "  2010-08-14 added the \"-isMask\" flag.\n" \
-  "  2024-12-24 J.Stolfi Added \"-yAxis\".\n" \
+  "  2024-12-24 Added \"-yAxis\".\n" \
+  "  2025-03-04 Using {sample_scaling_options_t}.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \
@@ -133,14 +101,10 @@
 /* COMMAND-LINE OPTIONS */
 
 typedef struct options_t
-  { int32_t NC;              /* Number of channels expected in input, or -1 if unknown. */
-    bool_t isMask;       /* Interpretation of integer sample values. */
-    /* Output channel data: */
-    double_vec_t min;    /* Low endpoint of scaling range; empty vec if not given. */
-    double_vec_t max;    /* High endpoint of scaling range; empty vec if not given. */
-    double_vec_t ctr;    /* Center of scaling range; empty vec if not given. */
-    double_vec_t wid;    /* Width of scaling range; empty vec if not given. */
-    bool_t yUp;          /* If true, row 0 of the FNI image is bottom of PNM. */
+  { int32_t NC;                     /* Number of channels expected in input, or -1 if unknown. */
+    bool_t isMask;                  /* Interpretation of integer sample values. */
+    sample_scaling_options_t sop;   /* Output channel data. */
+    bool_t yUp;                     /* If true, row 0 of the FNI image is bottom of PNM. */
   } options_t;
     
 /* !!! Add {nanval} option !!! */
@@ -187,7 +151,7 @@ int32_t main(int32_t argc, char** argv)
     uint16_image_t *pim = uint16_image_read_pnm_file(stdin);
 
     /* Check the number of channels {NC}: */
-    int32_t NC = pim->chns;
+    int32_t NC = (int32_t)pim->chns;
     demand((NC == 1) || (NC == 3), "input image must be PGM or PPM"); 
     demand
       ( (o->NC == -1) || (o->NC == 1) || (o->NC == NC), 
@@ -195,17 +159,15 @@ int32_t main(int32_t argc, char** argv)
       ); 
     
     /* Complete the output scaling parameters: */
-    sample_scaling_fix_params
-      ( NC, FALSE,
-        &(o->min), &(o->max), &(o->ctr), &(o->wid),
-        NULL, NULL
-      );
+    int32_vec_t channel = int32_vec_new(0);
+    sample_scaling_fix_channels(NC, &channel);
+    sample_scaling_fix_params(&(o->sop), &channel, NC, NULL);
 
     /* Convert the PGM or PPM image {pim} to FNI and write the result: */
     if (NC == 1)
-      { write_uint16_image_as_float_image(pim, o->isMask, o->min.e[0], o->max.e[0], o->yUp); }
+      { write_uint16_image_as_float_image(pim, o->isMask, o->sop.min.e[0], o->sop.max.e[0], o->yUp); }
     else
-      { write_ppm_image_as_float_image(pim, o->isMask, &(o->min), &(o->max), o->yUp); }
+      { write_ppm_image_as_float_image(pim, o->isMask, &(o->sop.min), &(o->sop.max), o->yUp); }
  
     return 0;
   }
@@ -253,10 +215,7 @@ options_t *parse_options(int32_t argc, char **argv)
       { o->isMask = FALSE; }
     
     /* Parse the output range specs: */
-    o->min = sample_scaling_parse_range_option(pp, "-min",    &(o->NC));
-    o->max = sample_scaling_parse_range_option(pp, "-max",    &(o->NC));
-    o->ctr = sample_scaling_parse_range_option(pp, "-center", &(o->NC));
-    o->wid = sample_scaling_parse_range_option(pp, "-width",  &(o->NC));
+    o->sop = sample_scaling_options_parse(pp, &(o->NC));
     
     o->yUp = FALSE;
     imgc_parse_y_axis(pp, &(o->yUp));
