@@ -2,7 +2,7 @@
 #define PROG_DESC "Finds projective map between two images, given corresponding points"
 #define PROG_VERS "1.0"
 
-// Last edited on 2024-11-20 06:12:36 by stolfi
+// Last edited on 2025-04-01 09:17:59 by stolfi
 
 #define image_stitch_C_COPYRIGHT \
     "© 2002 by the State University of Campinas (UNICAMP)"
@@ -123,6 +123,7 @@
 #include <r2_aff_map.h>
 #include <jsfile.h>
 #include <sve_minn.h>
+#include <sve_minn_iterate.h>
 #include <minn_plot.h>
 #include <interval.h>
 #include <interval_io.h>
@@ -407,6 +408,7 @@ hr2_pmap_t image_stitch_optimize_pmap
       
     double x[nx]; /* Initial guess and final optimum parameters. */ 
     pack_parameters(M0, nx, x);
+    double dCtr[n]; rn_copy(nx, x, dCtr); /* Search domain center. */
     if (verbose) 
       { char *fname = jsprintf("%s-f2-plot.txt", outPrefix);
         FILE *wr = open_write(fname, TRUE);
@@ -417,7 +419,7 @@ hr2_pmap_t image_stitch_optimize_pmap
     if (verbose) { fprintf(stderr, "optimizing\n"); }
     double Fx = goalf(nx, x);
     if (verbose) { fprintf(stderr, "initial rms error = %13.6f\n", Fx); }
-    sve_minn_iterate(nx, &goalf, &is_ok, x, &Fx, dir, dMax, dBox, rIni, rMin, rMax, stop, maxIter, verbose);
+    sve_minn_iterate(nx, &goalf, &is_ok, x, &Fx, dir, dCtr, dMax, dBox, rIni, rMin, rMax, stop, maxIter, verbose);
     if (verbose) { fprintf(stderr, "final rms error = %13.6f\n", Fx); }
     
     /* Unpack projective map: */

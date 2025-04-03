@@ -2,7 +2,7 @@
 #define PROG_DESC "Finds projective map between two images, given corresponding points"
 #define PROG_VERS "1.0"
 
-// Last edited on 2024-12-21 14:00:51 by stolfi
+// Last edited on 2025-04-01 09:14:17 by stolfi
 
 #define image_stitch_C_COPYRIGHT \
     "© 2002 by the State University of Campinas (UNICAMP)"
@@ -122,6 +122,7 @@
 #include <r2_aff_map.h>
 #include <jsfile.h>
 #include <sve_minn.h>
+#include <sve_minn_iterate.h>
 #include <minn_plot.h>
 #include <interval.h>
 #include <interval_io.h>
@@ -391,7 +392,7 @@ hr2_pmap_t image_stitch_optimize_pmap
     
     double esq = image_stitch_mean_err_sqr(p1, &(M0->dir), p2, &(M0->inv));
     double dMax = 20*sqrt(esq);      /* Search radius around initial guess. */
-    bool_t dBox = FALSE;             /* Search in ball, not in box. ??? */
+    bool_t dBox = FALSE;             /* Search in ball, not in box. */
     double rIni = 0.250*dMax;        /* Initial probe radius. */
     double rMin = 0.5;               /* Minimum probe radius. */
     double rMax = 0.500*dMax;        /* Maximum probe radius. */
@@ -420,13 +421,13 @@ hr2_pmap_t image_stitch_optimize_pmap
     if (verbose) { fprintf(stderr, "optimizing\n"); }
     double Fx = goalf(nx, x);
     if (verbose) { fprintf(stderr, "initial rms error = %13.6f\n", Fx); }
-    double ctr[nx]; rn_copy(nx, x, ctr);
+    double dCtr[nx]; rn_copy(nx, x, dCtr);
     bool_t sve_debug = verbose;
     bool_t sve_debug_probes = FALSE; 
     sve_minn_iterate
       ( nx, &goalf, &is_ok, NULL, 
         x, &Fx, dir, 
-        ctr, dMax, dBox, rIni, rMin, rMax, 
+        dCtr, dMax, dBox, rIni, rMin, rMax, 
         minStep, maxIter, sve_debug, sve_debug_probes
       );
     if (verbose) { fprintf(stderr, "final rms error = %13.6f\n", Fx); }

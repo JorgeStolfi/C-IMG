@@ -212,7 +212,7 @@ alignment_t optimize_alignment
     int nv = 2*ni;    /* Number of variables in optimization. */
     
     int maxiter = 1;
-    /* Do {maxiter} iterations of the {sve_minn_step} quadratic minimizer. */
+    /* Do {maxiter} iterations of the {sve_minn_single_step} quadratic minimizer. */
     
     
     for (k = 0; k < av->ne; k++) 

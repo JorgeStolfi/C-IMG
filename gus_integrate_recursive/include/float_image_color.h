@@ -1,0 +1,1 @@
+/home/stolfi/programs/c/C-IMG/gus_integrate_recursive/lib-src/float_image_color.h

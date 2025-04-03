@@ -2,7 +2,7 @@
 #define PROG_DESC "Finds projective map between N images, given corresponding points"
 #define PROG_VERS "1.0"
 
-// Last edited on 2024-12-21 14:00:49 by stolfi
+// Last edited on 2025-03-19 12:45:49 by stolfi
 
 #define image_stitch_n_C_COPYRIGHT \
     "© 2002 by the State University of Campinas (UNICAMP)"
@@ -217,6 +217,7 @@
 #include <interval.h>
 #include <interval_io.h>
 #include <sve_minn.h>
+#include <sve_minn_iterate.h>
 #include <argparser.h>
 
 /* !!! Make sure that there is at most one -match for each pair of images !!! */
@@ -1147,12 +1148,12 @@ void imsn_read_point_pair_list(char *fname, r2_vec_t *pA, r2_vec_t *pB, bool_t v
     while (TRUE)
       { /* Skip comments, if any: */
         fget_skip_formatting_chars(rd);
-        if (fget_skip_and_test_char(rd, '#')) 
+        if (fget_skip_spaces_and_test_char(rd, '#')) 
           { int c; 
             do { c = fgetc(rd); } while ((c != EOF) && (c != '\n'));
             continue;
           }
-        if (fget_skip_and_test_char(rd, EOF)) { break; }
+        if (fget_skip_spaces_and_test_char(rd, EOF)) { break; }
         /* Try to read another point pair: */
         double xA, yA, xB, yB;
         int nscan = fscanf(rd, " ( %lf %lf ) = ( %lf %lf )", &xA, &yA, &xB, &yB);
