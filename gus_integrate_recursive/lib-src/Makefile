@@ -1,10 +1,12 @@
-# Last edited on 2025-04-03 17:14:04 by stolfi
+# Last edited on 2025-04-12 08:15:59 by stolfi
 
 SHELL := /bin/bash
 
 LIBNAME := libgus
 
 IGNORE :=
+
+.PHONY: debug-make uninstall compare-libs build-lib install
 
 # ----------------------------------------------------------------------
 # Install folders for derived files and precompiled foreign libs:
@@ -33,13 +35,13 @@ X11_I_FLAGS := -I${X11_INC_DIR}
 # OpenGL headers:
 GL_INC_DIR := /usr/include/GL
 GL_I_FLAGS := \
-  -I ${GUS_INC_DIR}/GL \
-  -I ${GL_INC_DIR}
+  -I${GUS_INC_DIR}/GL \
+  -I${GL_INC_DIR}
  
 #---------------------------------------------------------------------
 # Default target for "make" with no target: 
 
-all: debug-make uninstall build-lib install
+all: debug-make uninstall compare-libs build-lib install
 
 #---------------------------------------------------------------------
 # Directories to search for #include files:
@@ -93,6 +95,12 @@ C_FLAGS := \
 
 # -Wno-sign-conversion \
 # -Wno-type-limits \
+
+# "make compare-libs" compares the pickled sources in this folder 
+# with the official sources in JSLIBS:
+
+compare-libs:
+	./compare_libs.sh 
 
 #---------------------------------------------------------------------
 # "make build" and "make build-lib" make sure that the ${DEPFILE}

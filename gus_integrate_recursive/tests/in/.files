@@ -1,0 +1,12 @@
+mv -vi fourob/0512x0422{-,/}RF-Z.png
+mv -vi fourob/0512x0422{-,/}PM-N.fni
+mv -vi fourob/0512x0422{-,/}RF-Z.fni
+mv -vi fourob/0512x0422{-,/}MF-Z.fni
+mv -vi cplat3/0256x0192{-,/}MF-Z.fni
+mv -vi cplat3/0256x0192{-,/}MF-Z.png
+mv -vi cplat3/0256x0192{-,/}PM-G.png
+mv -vi cplat3/0256x0192{-,/}PM-G.fni
+mv -vi cbabel/0256x0192{-,/}MF-Z.fni
+mv -vi cbabel/0256x0192{-,/}MF-Z.png
+mv -vi cbabel/0256x0192{-,/}PM-G.png
+mv -vi cbabel/0256x0192{-,/}PM-G.fni

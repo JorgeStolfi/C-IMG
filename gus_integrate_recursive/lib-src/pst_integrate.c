@@ -1,5 +1,5 @@
 /* See pst_integrate.h */
-/* Last edited on 2025-04-03 17:35:10 by stolfi */
+/* Last edited on 2025-04-04 11:49:52 by stolfi */
 
 #include <stdio.h>
 #include <assert.h>
@@ -233,7 +233,7 @@ pst_imgsys_t* pst_integrate_build_system
        
     bool_t append_edge_term(pst_imgsys_equation_t *eqk, int32_t x, int32_t y, int32_t ux, int32_t uy)
       { 
-        bool_t debug = TRUE;
+        bool_t debug = FALSE;
         
         /* Check if we got enough equations: */
         if (eqk->nt >= MAX_COEFFS) { return FALSE; }

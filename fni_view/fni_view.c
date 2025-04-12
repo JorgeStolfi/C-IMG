@@ -4,7 +4,7 @@
 
 #define PROG_C_COPYRIGHT "Copyright © 2005 Universidade Estadual Fluminense (UFF)."
 
-/* Last edited on 2025-03-02 13:10:54 by stolfi */
+/* Last edited on 2025-04-10 16:19:14 by stolfi */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
@@ -40,8 +40,7 @@
   " displayed by conecting those points with quadrangular" \
   " patches formed by 4 or 8 triangles.  Alternatively, they may be" \
   " displayed as parallelepipeds (bar-graph style). The sample" \
-  " values may be optionally magnified" \
-  " by a scale factor before displaying.\n" \
+  " values may be optionally magnified by a scale factor before displaying.\n" \
   "\n" \
   "COLORIZATION\n" \
   "  The terrain or histogram is colorized either by otaining, for each height" \
@@ -112,28 +111,33 @@
   " as an histogram, with each pixel as a horizontal square and vertical" \
   " walls between adjacent pixels. In this case the \"-txFile\" option" \
   " is ignored. If {HISTFLAG} is false (\"F\" or 0), draws values as a continuous" \
-  " triangle mesh.  The default is \"-hist F\".  See" \
+  " triangle mesh.  The default is \"-hist T\".  See" \
   " also the interactive keyboard command 'h'.\n" \
   "\n" \
   "  -range {VMIN} {VMAX}\n" \
   "  -range auto\n" \
-  "    Specifies the nominal min and max pixel values for the purpose of" \
-  " scaling and centering.  In the first variant, the heights" \
-  " obtained from the height map will be scaled so that the given range" \
-  " from {XMIN} to {XMAX} will be stretched to be equal to the diameter" \
-  " of the map's domain.  The \"auto\" option is similar but" \
-  " assumes {VMIN} and {VMAX} are the minimum and maximum" \
-  " height values.  The default is \"-range auto\".  See also" \
-  " the interactive keyboard commands 's' and 'S'.  This argument" \
-  " also sets the position of the" \
-  " lower and upper reference planes; see the 'p' key command.\n" \
+  "    These options specify the vertical centering and possibly the vertical" \
+  " scale of the plot.  The first variant tells the program to assume that the" \
+  " heights vary between {VMIN} and {VMAX} in all channels.  The second variant" \
+  " tells the program to use as {VMIN} and {VMAX}, when displaying each" \
+  " channel, the actual minimum and maximum values in that channel.  Either" \
+  " way, the plot will be shifted along the Z axis so that the" \
+  " mid-value {(VMIN+VMAX)/2} is at the center of the  window.  The default" \
+  " is \"-range auto\".  The arguments {VMIN} and {VMAX} also determine the" \
+  " position of the reference planes; see the 'p' interactive keyboard command.  These" \
+  " arguments also determine the Z axis scale in the absence of" \
+  " the \"-scale\" option (q. v.).\n" \
   "\n" \
   "  -scale {VSCALE}\n" \
-  "    Specifies an additional multiplying scale factor for the heights" \
-  " recovered from the height map.  This scaling factor is applied in" \
-  " addition to the scaling implied \"-range\", if given.  The default" \
-  " is \"-scale 1.0\".  See" \
-  " also the interactive keyboard commands 's' and 'S'.\n" \
+  "  -scale auto\n" \
+  "    These optional arguments specify the the Z axis scale for the heights" \
+  " recovered from the height map.  The first variant specifies that each" \
+  " unit of height in the map corresponds to a Z increment of {VSCALE} times" \
+  " the X and Y sizes of a pixel.   The second variant specifies a {VSCALE} such" \
+  " that a height difference equal to {VMIN-VMAX} (as defined" \
+  " by the \"-range\" arguments) corresponds to a Z increment" \
+  " equal to half the diameter of the image domain.  The default" \
+  " is \"-scale auto\".  See also the interactive keyboard commands 's' and 'S'.\n" \
   "\n" \
   "  -colorize {VMIN} {VMAX}\n" \
   "  -colorize auto\n" \
@@ -184,18 +188,21 @@
   "  Created 2005 by Rafael Saracchini, IC-UFF.\n" \
   "\n" \
   "MODIFICATION HISTORY\n" \
-  "  apr/2006 by Jorge Stolfi, IC-UNICAMP: Recast to use jslibs, argparser, etc..\n" \
+  "  By J. Stolfi, IC-UNICAMP unless indicated otherwise.\n" \
+  "  apr/2006 Recast to use jslibs, argparser, etc..\n" \
   "  jul/2009 by R. Saracchini: Changed to use lights and display list.\n" \
   "  jun/2010 by R. Saracchini: Added mouse support.\n" \
-  "  jul/2010 by Jorge Stolfi: Added PGM/PPM input.\n" \
-  "  jul/2010 by Jorge Stolfi: Added support for same-size textures.\n" \
-  "  jul/2010 by Jorge Stolfi: Added \"-colorize\" option.\n" \
-  "  aug/2010 by Jorge Stolfi: Added \"-isMask\" option.\n" \
-  "  jan/2011 by Jorge Stolfi: Added \"-hist\" option.\n" \
-  "  oct/2022 by Jorge Stolfi: Added \"-range\" option.\n" \
-  "  jan/2025 by Jorge Stolfi: Added \"-txChannels\" option.\n" \
-  "  jan/2025 by Jorge Stolfi: Added \"-verbose\" option.\n" \
-  "  mar/2025 by Jorge Stolfi: Added \"-title\" option.\n" \
+  "  jul/2010 Added PGM/PPM input.\n" \
+  "  jul/2010 Added support for same-size textures.\n" \
+  "  jul/2010 Added \"-colorize\" option.\n" \
+  "  aug/2010 Added \"-isMask\" option.\n" \
+  "  jan/2011 Added \"-hist\" option.\n" \
+  "  oct/2022 Added \"-range\" option.\n" \
+  "  jan/2025 Added \"-txChannels\" option.\n" \
+  "  jan/2025 Added \"-verbose\" option.\n" \
+  "  mar/2025 Added \"-title\" option.\n" \
+  "  mar/2025 Changed default of \"-hist\" to true.\n" \
+  "  apr/2025 Added \"-scale auto\" and made \"-scale\" absolute.\n" \
   "\n" \
   "WARRANTY\n" \
   argparser_help_info_NO_WARRANTY "\n" \
@@ -238,6 +245,10 @@
 
 #define fvw_ht_scale_step_ratio (pow(2.0,1.0/12.0))
   /* Scale incr/decr kbd commands multiply/divide the extra height scale factor by this amount. */
+  
+#define fvw_scale_MIN (1.0e-30)
+#define fvw_scale_MAX (1.0e+30)
+  /* Max values for the "-scale" option.  Considers that heights are {float} not {double}. */
 
 /* COMMAND-LINE OPTIONS */
 
@@ -252,7 +263,7 @@ typedef struct options_t
   { char* height_file;        /* Name of height map. */
     /* Height scaling options: */
     options_range_t range;    /* Height range options for scaling. */
-    double scale;             /* Additional height scale factor. */
+    double scale;             /* Height scale factor, or {NAN} if auto. */
     /* Colorizing options: */
     char* txFile;             /* Name of texture map, or NULL if not specified. */
     int32_t txChannels[3];    /* Texture map channels to use, or {-1} if not specified. */
@@ -290,9 +301,8 @@ typedef struct fvw_state_t
     /* Reference pixel values for height scaling: */
     fvw_state_range_t ht_range; 
 
-    /* Extra height magnification factor: */
-    double def_ht_mag;        /* Default extra height scale factor for new channels (mutable). */
-    double_vec_t ht_mag;      /* Current extra scale factor per channel, or NAN if undefined (mutable). */
+    /* Scale factor: */
+    double_vec_t ht_scale;    /* Current scale factor per channel, or NAN if auto and still undef (mutable). */
     
     /* Texture map: */
     fvw_texture_t *tx;   /* Texture information. */
@@ -326,6 +336,11 @@ static fvw_state_t *fvw_state = NULL; /* The state displayed in the GL window. *
 /* INTERNAL PROTOTYPES */
  
 options_range_t fvw_parse_options_range(argparser_t *pp, char *keyword);
+  /* Returns {orn} with {orn.vmin = orn.vmax = NAN} and {orn.auto = TRUE}
+    if the option is "auto". */
+
+double fvw_parse_options_scale(argparser_t *pp, char *keyword);
+  /* Returns {NAN} if the argument value is "auto". */
 
 fvw_state_range_t fvw_state_range_make(options_range_t *orn, int32_t NC);
   /* Creates a {fvw_state_range_t} from the user options {orn} for
@@ -341,12 +356,12 @@ fvw_texture_t* fvw_make_texture_record(options_t *o, float_image_t *ht);
     If no texture file was specified, but texture channels were, uses the height map {ht}.
     If neither texture file nor texture channels were specified, returns {NULL}. */
   
-void fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP);  
-  /* Obtains the height scaling or colormapping pixel range {*vminP} and {*vmaxP} for channel {c}
-    of the image {ht}.  If the range has been previously computed and saved in the record {srn},
-    takes it from there.  Otherwise, if {srn} has a user-specified range, uses that range.
-    Otherwise recomputes the range from the pixel values of {ht}. Either way, saves these
-    values in the {srn} record for future use. */
+bool_t fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP);  
+  /* Obtains the height or colormapp value range {vmin,vmax} for channel {c}
+    of the image {ht}, returning them in {*vminP} and {*vmaxP}.  If {srn.auto} is false, or {srn.auto} is true
+    and {srn.vmin} and {srn.vmax} are not {NAN}, takes {vmin,vmax} from {srn} and returns {FALSE}. 
+    Otherwise, recomputes the range from the pixel values of {ht}, saves those
+    values in {srn.vmin} and {srn.vmax} record for future use, and returns {TRUE}. */
 
 void  fvw_get_sample_range_from_image(float_image_t *timg, int32_t c, float *vmin_P, float *vmax_P);
   /* Gets the min and max sample values in channel {c} of {timg}, fudging
@@ -459,10 +474,9 @@ fvw_state_t *fvw_create_state(options_t *o)
     /* Pixel ranges for height scaling: */
     w->ht_range = fvw_state_range_make(&(o->range), NC_ht);
 
-    /* Extra height scaling factors: */
-    w->def_ht_mag = o->scale;
-    w->ht_mag = double_vec_new((uint32_t)NC_ht);
-    for (uint32_t c = 0;  c < NC_ht; c++) { w->ht_mag.e[c] = NAN; }
+    /* Height scaling factors ({NAN} if auto): */
+    w->ht_scale = double_vec_new((uint32_t)NC_ht);
+    for (uint32_t c = 0;  c < NC_ht; c++) { w->ht_scale.e[c] = o->scale; }
 
     /* Pixel ranges for color mapping, if not texturized: */
     w->cm_range = fvw_state_range_make(&(o->colorize), NC_ht);
@@ -561,9 +575,10 @@ fvw_texture_t* fvw_make_texture_record(options_t *o, float_image_t *ht)
     return tx;
   }
     
-void fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP)
+bool_t fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float *vminP, float *vmaxP)
   { float vmin = srn->vmin.e[c];
     float vmax = srn->vmax.e[c];
+    bool_t changed = FALSE;
     if (isnan(vmin) || isnan(vmax))
       { if (isnan(srn->def_vmin) || isnan(srn->def_vmax))
           { fvw_get_sample_range_from_image(ht, (int32_t)c, &vmin, &vmax); }
@@ -573,11 +588,13 @@ void fvw_get_vrange(uint32_t c, fvw_state_range_t *srn, float_image_t *ht, float
           }
         srn->vmin.e[c] = vmin; 
         srn->vmax.e[c] = vmax; 
+        changed = TRUE;
       }
     assert(! isnan(vmin));
     assert(! isnan(vmax));
     (*vminP) = vmin;
     (*vmaxP) = vmax;
+    return changed;
   }
               
 void  fvw_get_sample_range_from_image(float_image_t *timg, int32_t c, float *vmin_P, float *vmax_P)
@@ -654,29 +671,25 @@ void fvw_paint_everything(fvw_state_t *w)
     /* Get the channel {c} to display: */
     uint32_t c = w->channel;
     
-    /* Recompute the height scale range if needed: */
+    /* Get the (nominal or actual) height range for this channel: */
     float ht_vmin, ht_vmax;
-    fvw_get_vrange(c, &(w->ht_range), w->ht, &(ht_vmin), &(ht_vmax));
-    if (w->verbose) { fprintf(stderr, "channel range = [ %15.7e _ %15.7e ]\n", ht_vmin, ht_vmax); }
-    double ht_vdif = ((double)ht_vmax) - ((double)ht_vmin);
+    bool_t ht_range_changed = fvw_get_vrange(c, &(w->ht_range), w->ht, &(ht_vmin), &(ht_vmax));
+    if (w->verbose && ht_range_changed) { fprintf(stderr, "channel range = [ %15.7e _ %15.7e ]\n", ht_vmin, ht_vmax); }
     double ht_vmid = (((double)ht_vmin) + ((double)ht_vmax))/2;
-    
-    /* Recover the extra height scale factor for this channel: */
-    double ht_mag = w->ht_mag.e[c];
-    if (isnan(ht_mag))
-      { ht_mag = w->def_ht_mag;
-        w->ht_mag.e[c] = ht_mag;
+    double ht_vdif = ((double)ht_vmax) - ((double)ht_vmin);
+
+    /* Get the scale factor for this channel: */
+    double ht_scale = w->ht_scale.e[c];
+    if (isnan(ht_scale))
+      { /* Auto-scale based on (nominal or actual) height range: */
+        double diam = hypot(NX_ht, NY_ht);
+        ht_scale = (ht_vdif == 0.0 ? 1.0 : diam/ht_vdif/sqrt(8));
+        if (w->verbose) { fprintf(stderr, "height scale factor = %15.7e\n", ht_scale); }
+        w->ht_scale.e[c] = ht_scale;
       }
-    assert (! isnan(ht_mag));
+    assert(! isnan(ht_scale));
     
-    /* Make {ht_mag} the default height scale factor for any other "new" channels: */
-    w->def_ht_mag = ht_mag;
-    
-    /* Compute the total height scale factor: */
-    double ht_scale = (ht_vdif == 0.0 ? 1.0 : ht_mag/ht_vdif);
-    if (w->verbose) { fprintf(stderr, "height scale factor = %15.7e\n", ht_scale); }
-    
-    /* Recompute the color scale range if needed: */
+    /* Recompute the color map value range if needed: */
     float cm_vmin, cm_vmax;
     fvw_get_sample_range_from_image(w->ht, (int32_t)c, &(cm_vmin), &(cm_vmax));
     
@@ -903,16 +916,18 @@ void fvw_keyboard_method(unsigned char key, int32_t x, int32_t y)
           break;
 
         case 'S':
-          /* Increase extra height scale factor: */
-          w->ht_mag.e[w->channel] *= fvw_ht_scale_step_ratio;
-          if (w->verbose) { fprintf(stderr, "extra scale factor = %15.7e\n", w->ht_mag.e[w->channel]); }
+          /* Increase height scale factor: */
+          assert(! isnan(w->ht_scale.e[w->channel]));
+          w->ht_scale.e[w->channel] *= fvw_ht_scale_step_ratio;
+          if (w->verbose) { fprintf(stderr, "scale factor = %15.7e\n", w->ht_scale.e[w->channel]); }
           glutPostRedisplay();
           break;
 
         case 's':
-          /* Reduce extra height scale factor: */
-          w->ht_mag.e[w->channel] /= fvw_ht_scale_step_ratio;
-          if (w->verbose) { fprintf(stderr, "extra scale factor = %15.7e\n", w->ht_mag.e[w->channel]); }
+          /* Reduce extra height ???scale factor: */
+          assert(! isnan(w->ht_scale.e[w->channel]));
+          w->ht_scale.e[w->channel] /= fvw_ht_scale_step_ratio;
+          if (w->verbose) { fprintf(stderr, "scale factor = %15.7e\n", w->ht_scale.e[w->channel]); }
           glutPostRedisplay();
           break;
 
@@ -1042,10 +1057,7 @@ options_t *fvw_parse_options(int32_t argc, char **argv)
 
     o->range = fvw_parse_options_range(pp, "-range");
     
-    if (argparser_keyword_present(pp, "-scale"))
-      { o->scale = argparser_get_next_double(pp, -DBL_MAX, +DBL_MAX); }
-    else
-      { o->scale = 1.00; }
+    o->scale = fvw_parse_options_scale(pp, "-scale");
 
     if (argparser_keyword_present(pp, "-isMask"))
       { o->isMask = argparser_get_next_bool(pp); }
@@ -1097,4 +1109,17 @@ options_range_t fvw_parse_options_range(argparser_t *pp, char *keyword)
     else
       { orn.vauto = TRUE; }
     return orn;
+  }
+
+double fvw_parse_options_scale(argparser_t *pp, char *keyword)
+  { double scale;
+    if (argparser_keyword_present(pp, keyword))
+      { if (argparser_keyword_present_next(pp, "auto"))
+          { scale = NAN; }
+        else
+          { scale = argparser_get_next_double(pp, fvw_scale_MIN, fvw_scale_MAX); }
+      }
+    else
+      { scale = NAN; }
+    return scale;
   }

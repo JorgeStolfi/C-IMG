@@ -1,5 +1,5 @@
 #! /bin/bash 
-# Last edited on 2025-02-18 22:53:39 by stolfi
+# Last edited on 2025-04-12 10:23:09 by stolfi
  
 PROG_NAME=${0##*/}
 PROG_DESC="make a 3D Postscript plot of a selected channel of a FNI file"

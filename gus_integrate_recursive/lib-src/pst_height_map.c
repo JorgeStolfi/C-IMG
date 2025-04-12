@@ -1,5 +1,5 @@
 /* See pst_height_map.h */
-/* Last edited on 2025-03-04 18:28:48 by stolfi */
+/* Last edited on 2025-04-04 11:50:05 by stolfi */
 
 #include <stdint.h>
 #include <math.h>
@@ -50,7 +50,7 @@ float_image_t *pst_height_map_expand(float_image_t *JZ, int32_t NXI, int32_t NYI
   }
 
 void pst_height_map_perturb(float_image_t *A, int32_t wch, double relNoise, double absNoise)
-  { bool_t debug = TRUE;
+  { bool_t debug = FALSE;
     demand(isfinite(relNoise) && (relNoise >= 0), "invalid {relNoise}");
     demand(isfinite(absNoise) && (absNoise >= 0), "invalid {absNoise}");
     
@@ -110,7 +110,7 @@ void pst_height_map_analyze_and_write
     bool_t verbose
   )
   {
-    bool_t debug = TRUE;
+    bool_t debug = FALSE;
     int32_t indent = (level <= -1 ? 0 : 2*level+2);
     if (debug) { fprintf(stderr, "%*sentering {%s} iter = %d\n", indent, "", __FUNCTION__, iter); }
     

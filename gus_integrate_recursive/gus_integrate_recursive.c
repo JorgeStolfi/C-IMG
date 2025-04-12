@@ -4,7 +4,7 @@
 
 #define gus_integrate_recursive_C_COPYRIGHT "Copyright © 2005 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2025-04-03 16:59:20 by stolfi */
+/* Last edited on 2025-04-08 09:05:58 by stolfi */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
@@ -82,10 +82,10 @@
 #define DEFAULT_MAX_LEVEL 30
   /* Anything greater than the {log_2} of the max image dimension. */
 
-#define DEFAULT_MAX_ITER 100000
+#define DEFAULT_MAX_ITER 500
   /* Default max iterations per level. */
 
-#define DEFAULT_CONV_TOL 0.0000005
+#define DEFAULT_CONV_TOL 0.00005
   /* Default convergence threshold per level. */
 
 #define stringify(x) strngf(x)
@@ -217,11 +217,11 @@
   "    This optional argument specifies the file name" \
   " containing the independent estimated height map {H}, which must" \
   " be a one- or two-channel image in FNI format" \
-  " (see pst_height_map.h).  The argument {H_WT} must be a number" \
-  " between 0 and 1 that will be multiplied  by the reliability weight" \
-  " of every height in {H}.  If the \"scale\" keyword is" \
+  " (see pst_height_map.h).  If the \"scale\" keyword is" \
   " present, the {Z} values in the map {H} will be multiplied" \
-  " by {H_SZ}.\n" \
+  " by {H_SZ}.  The argument {H_WT} must be a number" \
+  " between 0 and 1 that will be multiplied  by the reliability weight" \
+  " of every height in {H}.\n" \
   "\n" \
   "  -reference {R_FNI_NAME} [ scale {R_SZ} ]\n" \
   "    This optional argument specifies the file that contains the" \
@@ -560,9 +560,9 @@ void tire_compute_and_write_height_map
       free(fname_ini);
     }
 
-    char *debugDir = jsprintf("%s-iters", o->outPrefix); /* Folder for debug files. */
-    mkdir(debugDir, 0755);
-    char *debugPrefix = jsprintf("%s/it-", debugDir); /* Prefix for debug file names. */
+    char *iterDir = jsprintf("%s-iters", o->outPrefix); /* Folder for debug files. */
+    mkdir(iterDir, 0755);
+    char *iterPrefix = jsprintf("%s/it", iterDir); /* Prefix for debug file names. */
 
     auto void reportSys(int32_t level, pst_imgsys_t *S);
       /* This procedure is called by once per level on the way up.
@@ -607,8 +607,8 @@ void tire_compute_and_write_height_map
         &reportHeights
       );
 
-    free(debugDir);
-    free(debugPrefix);
+    free(iterDir);
+    free(iterPrefix);
 
     return;
 
@@ -679,7 +679,7 @@ void tire_compute_and_write_height_map
       )
       { assert(level >= 0);
         pst_height_map_analyze_and_write
-          ( (final || (iter == 0) ? o->outPrefix : debugPrefix), 
+          ( (final || (iter == 0) ? o->outPrefix : iterPrefix), 
             level, (final ? -1 : iter), change,
             cur_Z, cur_R, o->verbose
           );
