@@ -1,6 +1,6 @@
-# Last edited on 2025-04-13 04:15:57 by stolfi
+# Last edited on 2025-04-18 17:19:29 by stolfi
 
-PROG := fni_view
+PROG := gus_fni_view
 
 PROGDIR := ..
 

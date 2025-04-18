@@ -4,14 +4,14 @@
 
 #define gus_integrate_recursive_C_COPYRIGHT "Copyright © 2005 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2025-04-08 09:05:58 by stolfi */
+/* Last edited on 2025-04-13 03:53:44 by stolfi */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
   "    { -slopes {G_FNI_NAME} | -normals {N_FNI_NAME} } [ scale {G_SX} {G_SY} ] \\\n" \
   "    [ -reference {R_FNI_NAME} [ scale {R_SZ} ] \\\n" \
   "    [ -hints {H_FNI_NAME} [ scale {H_SZ} ] weight {H_WT} ] \\\n" \
-  "    [ -initial {INIT_OPT} {INIT_NOISE} ] \\\n" \
+  "    [ -initial {INIT_Z_SOURCE} {INIT_Z_NOISE} ] \\\n" \
   "    [ -clear {CLX_MIN} {CLX_MAX} {CLY_MIN} {CLY_MAX} ... ] \\\n" \
   "    [ -maxLevel {MAX_LEVEL} ] \\\n" \
   "    [ -convTol [CONV_TOL} ] \\\n" \
@@ -231,23 +231,21 @@
   " present, the {Z} values in the map {R} will be multiplied" \
   " by {R_SZ}.\n" \
   "\n" \
-  "  -initial {INIT_OPT} {INIT_NOISE}\n" \
+  "  -initial {INIT_Z_SOURCE} {INIT_Z_NOISE}\n" \
   "    This optional argument specifies the initial guess of the height" \
   " map for the iterative solver, at the deepest level" \
-  " (smallest map).  The {INIT_OPT} may be either \"zero\", to" \
+  " (smallest map).  The {INIT_Z_SOURCE} may be either \"zero\", to" \
   " mean all initial heights are zero, \"hints\" to mean they are to be" \
   " copied from the hints map {H}, or \"reference\", to mean that" \
   " they are to be copied from the reference height map {R}, both reduced" \
   " in size to the deepest level and scaled by the" \
-  " respective \"scale\" factors.  In any case" \
-  " case, if {INIT_NOISE} is nonzero, the intial map specified as" \
+  " respective \"scale\" factors.  In any" \
+  " case, if {INIT_Z_NOISE} is nonzero, the intial map specified as" \
   " above will be perturbed before" \
   " the iteration starts.  The perturbation consists in adding to every" \
   " finite height value in the map {Z} a pseudorandom amount in the" \
-  " interval {[-mag _ +mag]}, where {mag} is {INIT_NOISE} times" \
-  " {hypot(rad, vmax-vmin)}, {rad} is half of the smallest" \
-  " dimension (cols or rows) of the map {Z}, and {[vmin _ vmax]} the" \
-  " original range of the heights in {Z} (ignoring non-finite values).  If this" \
+  " interval {[-mag _ +mag]}, where {mag} is {INIT_Z_NOISE} times" \
+  " half of the diameter of the map domain.  If this" \
   " argument is not specified, the default is \"-initial zero 0.0\".\n" \
   "\n" \
   "  -clear {CLX_MIN} {CLX_MAX} {CLY_MIN} {CLY_MAX}}\n" \
@@ -348,7 +346,7 @@ typedef struct options_t
     i2_vec_t clear_max;       /* Upper corners of rectangles to be cleared. */
     char *outPrefix;          /* Output file name prefix. */
     char *initial_opt;        /* Initial option: "zero" or "hints" or "reference". */
-    double initial_noise;     /* Relative magnitude of perturbations to the initial map. */
+    double initial_noise;     /* Magnitude of perturbations to the initial map, rel to map size. */
     uint32_t maxLevel;        /* Max recursion level. */
     uint32_t maxIter;         /* Max iterations per level. */
     double convTol;           /* Convergence threshold for top level. */
@@ -549,8 +547,8 @@ void tire_compute_and_write_height_map
 
     if (o->initial_noise > 0.0)
       { fprintf(stderr, "perturbing the initial guess ...\n");
-        double relNoise = o->initial_noise;
-        double absNoise = o->initial_noise*fmin(NX_Z, NY_Z)/2;
+        double relNoise = 0.0;
+        double absNoise = o->initial_noise*hypot(NX_Z, NY_Z)/2;
         pst_height_map_perturb(Z, 1, relNoise, absNoise);
       }
 

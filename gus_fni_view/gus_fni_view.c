@@ -1,10 +1,10 @@
-#define PROG_NAME "fni_view"
-#define PROG_DESC "3D interactive visualization of a height map"
-#define PROG_VERS "2.0"
+#define PROG_NAME "gus_fni_view"
+#define PROG_DESC "3D interactive visualization of a height map (pickled)"
+#define PROG_VERS "2.0 (pickled)"
 
 #define PROG_C_COPYRIGHT "Copyright © 2005 Universidade Estadual Fluminense (UFF)."
 
-/* Last edited on 2025-04-14 08:48:38 by stolfi */
+/* Last edited on 2025-04-18 17:06:49 by stolfi */
 
 #define PROG_HELP \
   "  " PROG_NAME " \\\n" \
