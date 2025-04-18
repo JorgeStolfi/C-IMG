@@ -1,4 +1,4 @@
-# Last edited on 2025-04-12 08:15:59 by stolfi
+# Last edited on 2025-04-18 17:38:38 by stolfi
 
 SHELL := /bin/bash
 
@@ -6,7 +6,12 @@ LIBNAME := libgus
 
 IGNORE :=
 
-.PHONY: debug-make uninstall compare-libs build-lib install
+.PHONY: debug-make uninstall pickle-libs compare-libs build-lib install
+ 
+#---------------------------------------------------------------------
+# Default target for "make" with no target: 
+
+all: debug-make uninstall pickle-libs compare-libs build-lib install
 
 # ----------------------------------------------------------------------
 # Install folders for derived files and precompiled foreign libs:
@@ -37,11 +42,6 @@ GL_INC_DIR := /usr/include/GL
 GL_I_FLAGS := \
   -I${GUS_INC_DIR}/GL \
   -I${GL_INC_DIR}
- 
-#---------------------------------------------------------------------
-# Default target for "make" with no target: 
-
-all: debug-make uninstall compare-libs build-lib install
 
 #---------------------------------------------------------------------
 # Directories to search for #include files:
@@ -51,6 +51,24 @@ I_FLAGS := \
   -I${GUS_INC_DIR} \
   ${GL_I_FLAGS} \
   ${X11_I_FLAGS} \
+  
+  
+# ----------------------------------------------------------------------
+# "make pickle-libs" makes local copies of the JSLIB sources listed in 00-SOURCES.txt
+
+pickle-libs: 00-SOURCES.txt
+	cat 00-SOURCES.txt | gawk '/^lib/ { printf "%s/%s\n", $$1, $$2; }' > .libs
+	for f in `cat .libs` ; do \
+          cp -avu ../../../JSLIBS/$$f ./ ; \
+	  chmod a-w $${f/*\/} ; \
+        done
+
+# ----------------------------------------------------------------------
+# "make compare-libs" compares the pickled sources in this folder 
+# with the official sources in JSLIBS:
+
+compare-libs: 00-SOURCES.txt compare_libs.sh
+	./compare_libs.sh 
 
 #---------------------------------------------------------------------
 # "make depend" recreates the source dependency file ${DEPFILE}.
@@ -95,12 +113,6 @@ C_FLAGS := \
 
 # -Wno-sign-conversion \
 # -Wno-type-limits \
-
-# "make compare-libs" compares the pickled sources in this folder 
-# with the official sources in JSLIBS:
-
-compare-libs:
-	./compare_libs.sh 
 
 #---------------------------------------------------------------------
 # "make build" and "make build-lib" make sure that the ${DEPFILE}

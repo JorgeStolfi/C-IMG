@@ -2,7 +2,7 @@
 #define pst_slope_map_H
 
 /* pst_slope_map.h -- procedures for working with slope maps. */
-/* Last edited on 2025-04-03 17:25:45 by stolfi */
+/* Last edited on 2025-04-03 17:27:16 by stolfi */
 
 #include <bool.h>
 #include <r2.h>

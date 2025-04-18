@@ -2,7 +2,7 @@
 #define pst_integrate_iterative_H
 
 /* procedures for integratings slope maps by smultiscale ieration. */
-/* Last edited on 2025-04-03 17:35:17 by stolfi */
+/* Last edited on 2025-04-03 17:35:57 by stolfi */
 
 #include <bool.h>
 #include <r2.h>

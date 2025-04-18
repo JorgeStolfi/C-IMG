@@ -1,4 +1,4 @@
-# Last edited on 2025-04-18 17:17:26 by stolfi
+# Last edited on 2025-04-18 17:38:18 by stolfi
 
 SHELL := /bin/bash
 
@@ -7,6 +7,11 @@ LIBNAME := libfniview_gus
 IGNORE :=
 
 .PHONY: debug-make uninstall pickle-libs compare-libs build-lib install
+ 
+#---------------------------------------------------------------------
+# Default target for "make" with no target: 
+
+all: debug-make uninstall pickle-libs compare-libs build-lib install
 
 # ----------------------------------------------------------------------
 # Install folders for derived files and precompiled foreign libs:
@@ -37,11 +42,6 @@ GL_INC_DIR := /usr/include/GL
 GL_I_FLAGS := \
   -I${GUS_INC_DIR}/GL \
   -I${GL_INC_DIR}
- 
-#---------------------------------------------------------------------
-# Default target for "make" with no target: 
-
-all: debug-make uninstall pickle-libs compare-libs build-lib install
 
 #---------------------------------------------------------------------
 # Directories to search for #include files:

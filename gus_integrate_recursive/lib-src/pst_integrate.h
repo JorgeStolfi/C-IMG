@@ -2,7 +2,7 @@
 #define pst_integrate_H
 
 /* pst_integrate.h -- simple procedures for integratings slope maps. */
-/* Last edited on 2025-04-03 17:35:14 by stolfi */
+/* Last edited on 2025-04-03 17:35:31 by stolfi */
 
 #include <bool.h>
 #include <r2.h>
