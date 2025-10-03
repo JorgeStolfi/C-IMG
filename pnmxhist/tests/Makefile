@@ -1,4 +1,4 @@
-# Last edited on 2023-03-07 19:49:57 by stolfi
+# Last edited on 2025-08-02 12:16:55 by stolfi
 
 PROG := pnmxhist
 PROGDIR := ..
@@ -108,6 +108,8 @@ OUT_PREFIX := ${OUT_DIR}/${OUT_TAG}
 HIST_FILE := ${OUT_PREFIX}-hist.dat
 PLOT_FILE := ${OUT_PREFIX}-hist.png
 
+PLOT_SCRIPT := plot_pnm_hist.sh
+
 ifeq "${PLOT}" "YES"
   TARGET_FILES := ${HIST_FILE} ${PLOT_FILE}
 else
@@ -126,8 +128,8 @@ ${HIST_FILE}: ${PROGDIR}/${PROG} ${DEP_FILES}
             -verbose \
           > $@
 
-${PLOT_FILE}: plot_test_hist.sh ${HIST_FILE}
-	plot_test_hist.sh ${HIST_FILE} ${PLOT_FILE} ${NEW_MAXVAL}
+${PLOT_FILE}: ${PLOT_SCRIPT} ${HIST_FILE}
+	${PLOT_SCRIPT} ${HIST_FILE} ${PLOT_FILE} ${NEW_MAXVAL}
 ifeq "/${SHOW}" "/YES"
 	-if [ -s ${PLOT_FILE} ] ; then \
           display -title '%f' ${PLOT_FILE} ; \

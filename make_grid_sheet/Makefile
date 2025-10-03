@@ -1,4 +1,4 @@
-# Last edited on 2020-11-29 20:52:41 by jstolfi
+# Last edited on 2025-04-24 14:19:57 by stolfi
 
 PROG := make_grid_sheet
 
@@ -7,6 +7,7 @@ JS_LIBS := \
   libimg.a \
   libeps.a \
   libgeo.a \
+  libgausol.a \
   libjs.a
   
 OTHER_LIBS := \

@@ -2,7 +2,7 @@
 #define PROG_DESC "creates a Postscript and/or PNG file with a grid of dots and crosses"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2025-01-30 07:42:17 by stolfi */
+/* Last edited on 2025-04-24 14:19:32 by stolfi */
 
 #define make_grid_sheet_C_COPYRIGHT \
   "Copyright © 2018  by the State University of Campinas (UNICAMP)"
@@ -120,6 +120,7 @@
 #include <i2.h>
 #include <jsfile.h>
 #include <jsstring.h>
+#include <jsprintf.h>
 #include <epswr.h>
 #include <frgb.h>
 #include <argparser.h>
@@ -320,7 +321,7 @@ void mgs_draw_grid_png(options_t *o)
     
     r2_t ctr = (r2_t){{ 0.5*NX, 0.5*NY }}; /* Pixel coordinates of center of grid. */
     
-    int32_t subsamp = 2; /* Antialiasing subsampling order. */
+    uint32_t subsamp = 2; /* Antialiasing subsampling order. */
     mkgr_mark_grid_paint_image(img, 1, NULL, gr, pxpmm, &ctr, subsamp);
     mgs_write_png_image(o->outPrefix, img);
     mgs_write_mark_data(o->outPrefix, "png", gr);

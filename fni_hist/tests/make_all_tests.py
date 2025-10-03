@@ -1,28 +1,7 @@
 #! /usr/bin/python3
-# Last edited on 2025-04-09 06:12:34 by stolfi
+# Last edited on 2025-04-19 06:43:20 by stolfi
 
 import os, sys, subprocess
-
-def Er(msg):
-  sys.stderr.write(msg)
-  # ......................................................................
-  
-def bash(cmd):
-  # The {cmd} must be a string with a command in {bash} syntax. 
-  # Executes {cmd} with "/bin/bash".
-  subprocess.run([ cmd ], shell=True, executable="/bin/bash")
-  # ......................................................................
-
-def run_command(cmd):
-  # The {cmd} must be a list where the first elem is an executable file name
-  # and the other elements are the command line arguments to be passed 
-  # to its as the {argv} array. 
-  result = subprocess.run(cmd, text = True)
-  print(result.stderr)
-  print(result.stdout)
-  assert result.returncode == 0, f"** {cmd[0]} failed - returned status = {result}"
-  return
-  # ......................................................................
 
 progDir = ".."
 prog = "fni_hist.sh"
@@ -82,6 +61,28 @@ def run_test(name, tag, channel, logScale, step, bins, vMin, vMax, eMin, eMax, b
   Er("\n")
   
   return
+  # ......................................................................
+
+def Er(msg):
+  sys.stderr.write(msg)
+  # ......................................................................
+
+def run_command(command):
+  result = subprocess.run(command, text = True)
+  if result.returncode != 0:
+    print(result.stderr)
+    print(result.stdout)
+    assert False, f"** {command[0]} failed - returned status = {result}"
+  return
+  # ......................................................................
+  
+def bash(cmd):
+  # Execute the string {cmd} with "/bin/bash".
+  result = subprocess.run([ cmd ], shell = True, executable = "/bin/bash")
+  if result.returncode != 0:
+    print(result.stderr)
+    print(result.stdout)
+    assert False, f"** {cmd} failed - returned status = {result}"
   # ......................................................................
 
 main()

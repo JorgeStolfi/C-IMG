@@ -2,7 +2,7 @@
 #define PROG_DESC "ink analysis of digital images"
 #define PROG_VERS "1.0"
 
-/* Last edited on 2024-12-21 11:59:04 by stolfi */
+/* Last edited on 2025-08-07 21:22:31 by stolfi */
 
 /* Copyright © 2004 by the State University of Campinas (UNICAMP).*/
 /* See the copyright, authorship, and warranty notice at end of file.*/
@@ -216,10 +216,12 @@
 #include <frgb_ops.h>
 #include <frgb_inksep.h>
 #include <jspnm.h>
+#include <jsprintf.h>
 #include <argparser.h>
 #include <jsfile.h>
 #include <uint16_image.h>
 #include <sample_conv.h>
+#include <sample_conv_gamma.h>
 
 #define CHNS frgb_inksep_CHNS
 #define LAYS frgb_inksep_LAYS
@@ -263,7 +265,7 @@ typedef struct options_t
   
 typedef struct color_scale_t
   { /* Gamma encoding exponents, per channel: */
-    int32_t do_gamma;       /* TRUE if gamma correction is not trivial. */
+    int32_t do_gamma;   /* TRUE if gamma correction is not trivial. */
     frgb_t expo;        /* Rel intensity is {(pixval/maxval)**expo}. */
     /* Parameters for input/output logscale conversion: */
     double eps;         /* Use linear scale for abs values below this. */
@@ -352,8 +354,8 @@ layer_data_t *alloc_layer_data_record(int32_t np);
     
 void process_pixels
   ( options_t *o, 
-    int32_t rows, 
-    int32_t cols, 
+    uint32_t rows, 
+    uint32_t cols, 
     FILE *f_in, 
     uint16_t maxval_in,
     bool_t raw_in,
@@ -397,7 +399,7 @@ int32_t main(int32_t argc, char **argv)
     FILE *f_in = open_read(o->f_in_name, TRUE);       /* Input file. */
     
     /* Format specs from input file: */
-    int32_t rows, cols, chns;
+    uint32_t rows, cols, chns;
     uint16_t imaxval;
     bool_t iraw, ibits;
     pnm_format_t iformat;
@@ -417,7 +419,7 @@ int32_t main(int32_t argc, char **argv)
     
     /* Open output files and write headers: */
     FILE *f_ot[otfs];  /* Output files: sep layers, exceptions, stretched. */
-    for (uint32_t k = 0;  k < LAYS; k++)
+    for (int32_t k = 0;  k < LAYS; k++)
       { f_ot[k] = pis_open_write_ppm(o->outPrefix, o->layer[k].name, TRUE);
         pnm_write_header(f_ot[k], cols, rows, omaxval, oformat);
       }
@@ -446,7 +448,7 @@ int32_t main(int32_t argc, char **argv)
         f_ot, omaxval, oraw, obits
       );
 
-    for (uint32_t k = 0;  k < otfs; k++) { if (f_ot[k] != NULL) { fclose(f_ot[k]); } }
+    for (int32_t k = 0;  k < otfs; k++) { if (f_ot[k] != NULL) { fclose(f_ot[k]); } }
     if (f_in != stdin) { fclose(f_in); }
     pnm_message("done.");
     return 0;
@@ -461,8 +463,8 @@ FILE *pis_open_write_ppm(char *outPrefix, char *imgName, bool_t verbose)
 
 void process_pixels
   ( options_t *o, 
-    int32_t rows, 
-    int32_t cols, 
+    uint32_t rows, 
+    uint32_t cols, 
     FILE *f_in, 
     uint16_t maxval_in,
     bool_t raw_in,
@@ -492,10 +494,12 @@ void process_pixels
     color_scale_t cs_ot = make_color_scale(&(o->outGamma_expo), o->logScale, eps);
 
     /* Convert color options to internal scale: */
-    for (uint32_t i = 0;  i < LAYS; i++)  
-      { lut_in(&(o->layer[i].color), &cs_in);
+    for (int32_t i = 0;  i < LAYS; i++)  
+      { if (main_debug) { fprintf(stderr, "layer %s colors:\n", o->layer[i].name); }
+        lut_in(&(o->layer[i].color), &cs_in);
         lut_in(&(o->layer[i].remap), &cs_in);
       }
+    if (main_debug) { fprintf(stderr, "bg color:\n"); }
     lut_in(&(o->bgColor), &cs_in);
     
     /* Provide suitable defaults for stretched image colors: */
@@ -508,10 +512,10 @@ void process_pixels
     assert(LAYS == 4);
     r4x4_t mix_org; /* Syntesis matrix for original inks. */
     r4x4_t mix_new; /* Syntesis matrix for new inks. */
-    for (uint32_t i = 0;  i < 4; i++)
+    for (int32_t i = 0;  i < 4; i++)
       { debug_color("lc", -1, -1, &(o->layer[i].color), "\n");
         debug_color("lr", -1, -1, &(o->layer[i].remap), "\n");
-        for (uint32_t j = 0;  j < 4; j++)
+        for (int32_t j = 0;  j < 4; j++)
           { mix_org.c[i][j] = (j < CHNS ? o->layer[i].color.c[j] : 1.0);
             mix_new.c[i][j] = (j < CHNS ? o->layer[i].remap.c[j] : 1.0);
           }
@@ -544,7 +548,7 @@ void process_pixels
     /* Scanline buffers for each output file. */
     uint16_t *smp_ot[otfs];
     
-    for (uint32_t k = 0;  k < otfs; k++)
+    for (int32_t k = 0;  k < otfs; k++)
       { smp_ot[k] = uint16_image_alloc_pixel_row(cols, CHNS); }
       
     /* Loop on pixels: */
@@ -552,12 +556,12 @@ void process_pixels
     for (int32_t row = 0; row < rows; ++row)
       { pnm_read_pixels(f_in, smp_in, cols, CHNS, maxval_in, raw_in, bits_in);
         xp_in = &(smp_in[0]);
-        for (uint32_t k = 0;  k < otfs; k++) { xp_ot[k] = &(smp_ot[k][0]); }
+        for (int32_t k = 0;  k < otfs; k++) { xp_ot[k] = &(smp_ot[k][0]); }
         for(int32_t col = 0; col < cols; ++col)
           { main_debug = (col == 15) && (row == 15);
             /* Process input image. Assumes PPM_FORMAT or RPPM_FORMAT: */
             frgb_t fv;
-            for (uint32_t c = 0;  c < CHNS; c++)
+            for (int32_t c = 0;  c < CHNS; c++)
               { fv.c[c] = (float)frgb_floatize(*xp_in, maxval_in, zero_in, scale_in);
                 xp_in++;
               }
@@ -597,7 +601,7 @@ void process_pixels
             debug_color("ce", col, row,&sv, "\n");
             
             /* Generate output pixels: */
-            for (uint32_t k = 0;  k < otfs; k++)
+            for (int32_t k = 0;  k < otfs; k++)
               { 
                 frgb_t gv;
                 int32_t iv[CHNS];
@@ -624,16 +628,16 @@ void process_pixels
                     lut_ot(&gv, &cs_ot);  
                     debug_color("co", col, row,&gv, "\n");
 
-                    for (uint32_t i = 0;  i < CHNS; i++) 
+                    for (int32_t i = 0;  i < CHNS; i++) 
                       { iv[i] = frgb_quantize(gv.c[i], zero_ot, scale_ot, maxval_ot); }
                     debug_int_pixel("qo", col, row,iv, "\n");
                     
-                    for (uint32_t i = 0;  i < CHNS; i++) { *(xp_ot[k]) = (uint16_t)iv[i]; ++xp_ot[k]; }
+                    for (int32_t i = 0;  i < CHNS; i++) { *(xp_ot[k]) = (uint16_t)iv[i]; ++xp_ot[k]; }
                     if (main_debug) { fprintf(stderr, "\n\n"); }
                   }
               }
           }
-        for (uint32_t k = 0;  k < otfs; k++)
+        for (int32_t k = 0;  k < otfs; k++)
           { if (f_ot[k] != NULL)
               { pnm_write_pixels(f_ot[k], smp_ot[k], cols, CHNS, maxval_ot, raw_ot, bits_ot); }
           }
@@ -644,7 +648,7 @@ color_scale_t make_color_scale(frgb_t *expo, int32_t logScale, double eps)
   {
     color_scale_t cs;
     cs.expo = (*expo);
-    cs.do_expo = (! eq_color(*expo, Ones));
+    cs.do_gamma = (! eq_color(*expo, Ones));
     if (logScale)
       { cs.eps = eps;
         cs.lmag = (eps < 1.0 ? 1.0/eps/(1 - log(eps)) : 1.0);
@@ -660,11 +664,11 @@ void lut_in(frgb_t *p, color_scale_t *cs)
   {
     debug_color("  lut_in p in", -1, -1, p, "\n");
     if (cs->do_gamma) 
-      { for (uint32_t i = 0;  i < CHNS; i++)
+      { for (int32_t i = 0;  i < CHNS; i++)
           { p->c[i] = sample_conv_gamma(p->c[i], cs->expo.c[i], BT_ENC_BIAS); }
       }
     if (cs->eps < INF)
-      { for (uint32_t i = 0;  i < CHNS; i++)
+      { for (int32_t i = 0;  i < CHNS; i++)
           { p->c[i] = (float)log_in(p->c[i], cs->eps, cs->lmag); }
       }
     debug_color("  lut_in p ot", -1, -1, p, "\n");
@@ -673,11 +677,11 @@ void lut_in(frgb_t *p, color_scale_t *cs)
 void lut_ot(frgb_t *p, color_scale_t *cs)
   {
     if (cs->eps < INF)
-      { for (uint32_t i = 0;  i < CHNS; i++)
+      { for (int32_t i = 0;  i < CHNS; i++)
           { p->c[i] = (float)log_ot(p->c[i], cs->eps, cs->lmag); }
       }
     if (cs->do_gamma) 
-      { for (uint32_t i = 0;  i < CHNS; i++)
+      { for (int32_t i = 0;  i < CHNS; i++)
           { p->c[i] = sample_conv_gamma(p->c[i], 1/cs->expo.c[i], BT_ENC_BIAS); }
       }
   }
@@ -709,7 +713,7 @@ double log_ot(double y, double eps, double lmag)
   }
       
 int32_t eq_color(frgb_t a, frgb_t b)
-  { for (uint32_t ch = 0;  ch < CHNS; ch++)
+  { for (int32_t ch = 0;  ch < CHNS; ch++)
       { float ac = a.c[ch];
         float bc = b.c[ch];
         if ((ac != bc) || (isnan(ac) != isnan(bc))) { return FALSE; }
@@ -727,21 +731,21 @@ void fix_remap_colors(layer_data_t *layer, double y_min, double y_med, double y_
     if (CHNS != 3) { pnm_error("oops, CHNS not 3!"); }
     /* Check if any map-color needs to be fixed: */
     int32_t undef = 0;
-    for (uint32_t k = 0;  k < LAYS; k++)
+    for (int32_t k = 0;  k < LAYS; k++)
       { undef += eq_color(layer[k].remap, NoColor); }
     if (undef == 0) { return; } 
     if (undef < LAYS)
       { pnm_error("option \"-remap\" must be given for all layers or for none"); }
     /* Find the lightest layer {kwh}, map to white: */
     int32_t kwh = -1; double ymax = -INF;
-    for (uint32_t k = 0;  k < LAYS; k++)
+    for (int32_t k = 0;  k < LAYS; k++)
       { double y = brightness(&(layer[k].color));
         if (y >= ymax) { ymax = y; kwh = k; }
       }
     layer[kwh].remap = (frgb_t){{ (float)y_max, (float)y_max, (float)y_max }};
     /* Find the darkest layer {kbk} other than {kwh}, map to black: */
     int32_t kbk = -1; double ymin = INF;
-    for (uint32_t k = 0;  k < LAYS; k++)
+    for (int32_t k = 0;  k < LAYS; k++)
       { double y = brightness(&(layer[k].color));
         if (y <= ymin) { ymin = y; kbk = k; }
       }
@@ -749,7 +753,7 @@ void fix_remap_colors(layer_data_t *layer, double y_min, double y_med, double y_
 
     /* Find mean color: */
     frgb_t ctr = Black;
-    for (uint32_t k = 0;  k < LAYS; k++)
+    for (int32_t k = 0;  k < LAYS; k++)
       { ctr.c[0] += layer[k].color.c[0];
         ctr.c[1] += layer[k].color.c[1];
         ctr.c[2] += layer[k].color.c[2];
@@ -802,7 +806,7 @@ void fix_remap_colors(layer_data_t *layer, double y_min, double y_med, double y_
 
     /* Report choices: */
     pnm_message("default colors for stretched image:");
-    for (uint32_t k = 0;  k < LAYS; k++)
+    for (int32_t k = 0;  k < LAYS; k++)
      { fprintf(stderr, "  layer %d", k);
        print_color(stderr, " = ", &(layer[k].remap), "");
        fprintf(stderr, "\n");
@@ -812,7 +816,7 @@ void fix_remap_colors(layer_data_t *layer, double y_min, double y_med, double y_
 frgb_t max_color(frgb_t *ctr, frgb_t *dir)
   {
     double t = +INF;
-    for (uint32_t i = 0;  i < CHNS; i++)
+    for (int32_t i = 0;  i < CHNS; i++)
       { double ci = ctr->c[i], di = dir->c[i];
         double ti = (di == 0 ? +INF : (di > 0 ? (1.0 - ci)/di : (0.0 - ci)/di));
         if (ti < t) { t = ti; }
@@ -821,7 +825,7 @@ frgb_t max_color(frgb_t *ctr, frgb_t *dir)
       { return *ctr; }
     else
       { frgb_t res;
-        for (uint32_t i = 0;  i < CHNS; i++)
+        for (int32_t i = 0;  i < CHNS; i++)
           { res.c[i] = (float)(ctr->c[i] + t*dir->c[i]); }
         return res;
       }
@@ -839,7 +843,7 @@ void debug_int_pixel(char *label, int32_t col, int32_t row, int32_t *iv, char *t
 void print_color(FILE *f, char *pref, frgb_t *fv, char *suff)
   { 
     fprintf(f, "%s", pref);
-    for (uint32_t k = 0;  k < CHNS; k++) 
+    for (int32_t k = 0;  k < CHNS; k++) 
       { fprintf(f, "%s%7.4f", (k == 0 ? "" : " "), fv->c[k]); }
     fprintf(f, "%s", suff);
   }
@@ -847,7 +851,7 @@ void print_color(FILE *f, char *pref, frgb_t *fv, char *suff)
 void print_int_pixel(FILE *f, char *pref, int32_t *iv, char *suff)
   { 
     fprintf(f, "%s", pref);
-    for (uint32_t k = 0;  k < CHNS; k++) 
+    for (int32_t k = 0;  k < CHNS; k++) 
       { fprintf(stderr, "%s%3d", (k == 0 ? "" : " "), iv[k]); }
     fprintf(f, "%s", suff);
   }
@@ -943,7 +947,7 @@ layer_data_t parse_layer_data (argparser_t *pp)
   
 frgb_t parse_triplet(argparser_t *pp, double lo, double hi)
   { frgb_t p;
-    for (uint32_t i = 0;  i < 3; i++)
+    for (int32_t i = 0;  i < 3; i++)
       { p.c[i] = (float)argparser_get_next_double(pp, lo, hi); }
     return p;
   }

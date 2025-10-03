@@ -5,7 +5,7 @@
 #define pnmxhist_C_COPYRIGHT \
   "Copyright © 2010 by the State University of Campinas (UNICAMP)"
 
-/* Last edited on 2024-12-25 21:36:09 by stolfi */
+/* Last edited on 2025-08-02 12:14:04 by stolfi */
 
 #define PROG_HELP \
   PROG_NAME " \\\n" \
@@ -177,7 +177,7 @@ int32_t main(int32_t argc, char **argv)
     
     /* Open input image and read header: */
     FILE *in_file = open_read(o->in_filename, o->verbose);
-    int32_t chns, cols, rows;
+    uint32_t chns, cols, rows;
     bool_t in_raw, in_bits;
     uint16_t in_maxval;
     { pnm_format_t in_format;
@@ -196,7 +196,7 @@ int32_t main(int32_t argc, char **argv)
     if (o->wt_filename != NULL)
       { /* Open weight image, and read header: */
         wt_file = open_read(o->wt_filename, o->verbose);
-        int32_t wt_chns, wt_cols, wt_rows;
+        uint32_t wt_chns, wt_cols, wt_rows;
         pnm_format_t wt_format;
         pnm_read_header(wt_file, &wt_cols, &wt_rows, &wt_chns, &wt_maxval, &wt_raw, &wt_bits, &wt_format);
         if (wt_chns != 1)
@@ -250,7 +250,7 @@ int32_t main(int32_t argc, char **argv)
         if (wt_file != NULL)
           { pnm_read_pixels(wt_file, wt_pix, cols, 1, wt_maxval, wt_raw, wt_bits); }
         for (int32_t x = 0;  x < cols; x++)
-          { int32_t vxy = in_pix[x*chns + chn];
+          { int32_t vxy = in_pix[x*((int32_t)chns) + chn];
             int32_t wxy = (wt_file == NULL ? 1 : wt_pix[x]);
             if (o->ignore.e[vxy]) { wxy = 0; }
             count[vxy] += (uint64_t)wxy;

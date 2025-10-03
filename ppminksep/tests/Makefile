@@ -1,4 +1,4 @@
-# Last edited on 2023-02-08 11:36:10 by stolfi
+# Last edited on 2025-08-07 21:35:04 by stolfi
 
 PROG := ppminksep
 
@@ -60,36 +60,27 @@ PPMSH := ${OUT_PREFIX}-sh.ppm
 PPMEX := ${OUT_PREFIX}-ex.ppm
 PPMXX := ${OUT_PREFIX}-xx.ppm
 
-LOCAL_PARMS := ${OUT_PREFIX}.parms
-
-PPMOUT := ${PPMBG} ${PPMCA} ${PPMCB} ${PPMSH} ${PPMEX} ${PPMXX} ${TIFXX} 
+PPMOUTS := ${PPMBG} ${PPMCA} ${PPMCB} ${PPMSH} ${PPMEX} ${PPMXX} ${TIFXX} 
 
 single: single-run
 # single: single-clean single-run
 
 single-clean:
-	rm -f ${PPMOUT} ${PPMOUTGZ}
+	rm -f ${PPMOUTS}
 
-single-run: ${PPMBG} single-show
+single-run: single-show ${PPMBG}
 
-${LOCAL_PARMS}: ${PARMS} Makefile
-	cat ${PARMS} \
-           | sed \
-               -e 's/[#].*//g' \
-           > ${LOCAL_PARMS}
-
-single-show: ${LOCAL_PARMS} ${PPMBG} Makefile
-	display -title '%f' ${PPMOUT} ${IN_PPM}
-	./show_color_cloud.sh \
-            `cat ${LOCAL_PARMS} | egrep '[-](inGamma|logScale)'` \
+single-show: ${PARMS} ${IN_PPM} Makefile
+	view_ppm_colors.sh \
             ${IN_PPM} \
-            ${OUT_PREFIX}
+            ${PARMS}
 
-${PPMBG}: ${PROGDIR}/${PROG} ${IN_PPM} ${LOCAL_PARMS} Makefile
+${PPMBG}: ${PROGDIR}/${PROG} ${IN_PPM} ${PARMS} Makefile
 	cat ${IN_PPM} \
           | ${PROGDIR}/${PROG} \
-              `cat ${LOCAL_PARMS}` \
+              `cat ${PARMS} | sed -e 's/[#].*//g'` \
               -outPrefix ${OUT_PREFIX}
+	if [[ -s ${PPMBG} ]]; then display -title '%f' ${PPMOUTS} ${IN_PPM} ; fi
         
 endif
 # end ${IMGNAME}
